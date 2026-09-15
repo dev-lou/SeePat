@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { VoiceError, startCapture } from './audio.ts'
+import { VoiceError, speechDurationMs, startCapture } from './audio.ts'
 import type { Recorder } from './audio.ts'
 import type { AsrEngine } from './asr.ts'
 import { readPersisted, removePersisted, writePersisted } from './storage.ts'
@@ -13,10 +13,11 @@ import type { Bilingual } from './i18n/index.ts'
  * is the *accurate* one but it is a network feature, so the whole offline claim
  * in the concept note rested on there being a locally-runnable alternative.
  * There is one, and it is not the 320MB Tagalog model the earlier note costed
- * out. `Xenova/whisper-tiny` is multilingual (it transcribes Tagalog), MIT
- * licensed, and a quantized download in the tens of megabytes — small enough
- * that "download this once to use voice without internet" is a reasonable thing
- * to offer a sari-sari store owner on mobile data.
+ * out. A multilingual Whisper is MIT licensed and a quantized download in the
+ * tens of megabytes — small enough that "download this once to use voice without
+ * internet" is a reasonable thing to offer a sari-sari store owner on mobile
+ * data. (It started on `whisper-tiny`; see `VOICE_MODEL_REPO` for why the weights
+ * are now `whisper-base`.)
  *
  * What this deliberately is NOT:
  *
@@ -46,8 +47,24 @@ import type { Bilingual } from './i18n/index.ts'
  * mechanism.)
  */
 
-/** The documented example model for this pipeline, and multilingual. */
-const VOICE_MODEL_REPO = 'Xenova/whisper-tiny'
+/*
+ * THE MODEL, and why this one.
+ *
+ * `whisper-base` rather than the `whisper-tiny` this started on. Tiny is the
+ * smallest Whisper and Tagalog is one of its weakest languages, which showed up
+ * as the owner's own sale coming back as a different sentence. Base is 74M
+ * parameters instead of 39M — roughly twice the download — and materially better
+ * at exactly the short, code-switched utterances this product depends on.
+ *
+ * It is published by `onnx-community` with ONNX weights already built, which is
+ * what makes it usable here at all: a model without ONNX on the Hub cannot be
+ * loaded by transformers.js, however good it is. The best Tagalog fine-tunes
+ * found (`LWobole/whisper-small-tagalog`, 16.7% WER on FLEURS fil_ph) ship
+ * safetensors only, so they are not an option without a conversion step.
+ *
+ * ONNX conversion of OpenAI's Whisper weights (MIT).
+ */
+const VOICE_MODEL_REPO = 'onnx-community/whisper-base'
 
 /**
  * The engine's id, exported so callers can route to it by name — the Voice
@@ -62,9 +79,20 @@ const MODEL_STORAGE = {
   legacyKey: 'timbangai.voice.model.v1',
 }
 
-/** Whisper's language token for Tagalog. Forcing it stops whisper-tiny from
+/** Whisper's language token for Tagalog. Forcing it stops the model from
  *  guessing English on short Taglish utterances and translating them. */
 const SPOKEN_LANGUAGE = 'tl'
+
+/**
+ * Below this much detected speech, a recording is not sent to the model at all.
+ *
+ * Whisper answers silence with invention rather than with an empty string (see
+ * `speechDurationMs`), and a fabricated sentence is indistinguishable from a
+ * correct one once it is on screen. 200ms is well under any real utterance —
+ * "Coke" alone is longer — and the failure it replaces was a confident, wrong
+ * sentence, so the asymmetry is worth being strict about.
+ */
+const MIN_VOICED_FOR_TRANSCRIPTION_MS = 200
 
 // ---------------------------------------------------------------------------
 // Model catalogue — shown in Settings, so the "why not the 320MB one?" question
@@ -84,10 +112,13 @@ export interface OfflineModelInfo {
 }
 
 export const WHISPER_MODEL: OfflineModelInfo = {
-  key: 'whisper-tiny',
-  label: { en: 'Whisper Tiny (multilingual)', fil: 'Whisper Tiny (multilingual)' },
+  key: 'whisper-base',
+  label: { en: 'Whisper Base (multilingual)', fil: 'Whisper Base (multilingual)' },
   repo: VOICE_MODEL_REPO,
-  approxMB: 42,
+  // Measured from the browser cache after a real install: 76MB of weights. (The
+  // library's own progress events under-report this, which is why the number
+  // comes from the cache rather than from the download callback.)
+  approxMB: 76,
   languages: {
     en: 'Tagalog, Taglish, English — over 90 languages',
     fil: 'Tagalog, Taglish, English — mahigit 90 wika',
@@ -95,8 +126,8 @@ export const WHISPER_MODEL: OfflineModelInfo = {
   license: { en: 'Model: MIT · Runtime: Apache-2.0', fil: 'Modelo: MIT · Runtime: Apache-2.0' },
   installable: true,
   why: {
-    en: 'Small, licensed for commercial use, and it runs entirely on your phone. Less accurate than the browser engine on Taglish, so it is the fallback.',
-    fil: 'Maliit, legal gamitin sa komersyo, at tumatakbo nang tuluyan sa phone mo. Hindi kasingtumpak ng browser engine sa Taglish, kaya pang-fallback ito.',
+    en: 'Runs entirely on your phone and is licensed for commercial use. Twice the size of the smallest Whisper and noticeably better on short Taglish — but still behind the browser engine, so it is the fallback.',
+    fil: 'Tumatakbo nang tuluyan sa phone mo at legal gamitin sa komersyo. Doble ang laki sa pinakamaliit na Whisper at mas matino sa maikling Taglish — pero nasa likod pa rin ng browser engine, kaya pang-fallback ito.',
   },
 }
 
@@ -175,7 +206,23 @@ export interface InstalledVoiceModel {
 function isInstalled(value: unknown): value is InstalledVoiceModel {
   if (typeof value !== 'object' || value === null) return false
   const c = value as Partial<InstalledVoiceModel>
-  return typeof c.key === 'string' && typeof c.installedAt === 'string' && typeof c.bytes === 'number'
+  return (
+    typeof c.key === 'string' &&
+    typeof c.installedAt === 'string' &&
+    typeof c.bytes === 'number' &&
+    /*
+     * The key must be *this* model, not merely a string.
+     *
+     * A record naming a different model is not this model being installed. When
+     * the weights moved from `whisper-tiny` to `whisper-base`, a phone holding
+     * the old record would have reported "working offline" while the runtime
+     * needed 76MB it did not have — and it would discover that at the instant the
+     * owner spoke, which is the one moment there may be no signal to fetch it
+     * with. A stale record is therefore treated as no record, so the app asks for
+     * the download up front instead of failing in the field.
+     */
+    c.key === WHISPER_MODEL.key
+  )
 }
 
 function readRecord(): InstalledVoiceModel | null {
@@ -292,11 +339,7 @@ async function loadTranscriber(
       options?: Record<string, unknown>,
     ) => Promise<Transcriber>
 
-    return createPipeline('automatic-speech-recognition', VOICE_MODEL_REPO, {
-      // Quantization is left to the library default, which is int8 (`q8`) on
-      // WASM — the whole reason this is a tens-of-megabytes download rather
-      // than a hundreds-of-megabytes one.
-      progress_callback: (event: unknown) => {
+    const progress_callback = (event: unknown) => {
         if (!onProgress) return
         const e = event as {
           status?: string
@@ -316,13 +359,46 @@ async function loadTranscriber(
           totalBytes += entry.total
         }
 
-        onProgress({
-          file: e.name,
-          filePercent: typeof e.progress === 'number' ? e.progress : null,
-          downloadedBytes,
-          totalBytes: totalBytes > 0 ? totalBytes : null,
-        })
-      },
+      onProgress({
+        file: e.name,
+        filePercent: typeof e.progress === 'number' ? e.progress : null,
+        downloadedBytes,
+        totalBytes: totalBytes > 0 ? totalBytes : null,
+      })
+    }
+
+    /*
+     * Inference runs in a worker rather than on the page's thread.
+     *
+     * On WASM the ONNX session otherwise executes on the main thread, so a
+     * transcription freezes the interface outright — the owner says their sale
+     * and then watches the app stop responding for the length of the model run.
+     * That cannot be papered over with a nicer spinner, because a blocked thread
+     * cannot paint one. `proxy` moves the session to a worker and leaves the
+     * interface alive, which is the actual fix for the "hang".
+     */
+    const wasmBackend = transformers.env.backends?.onnx?.wasm
+    if (wasmBackend) wasmBackend.proxy = true
+
+    /*
+     * WHY THERE IS NO `device: 'webgpu'` HERE, DESPITE IT LOOKING OBVIOUS.
+     *
+     * It was tried, and measured rather than assumed. The WebGPU path silently
+     * selects fp32 weights instead of the WASM path's q8, so the download went
+     * from the promised ~42MB to **154MB (147MiB)** — a 3.5× data cost in a market
+     * where prepaid data is the constraint — while a 3-second clip still took
+     * **7.7s cold and 7.6s warm** to transcribe on a machine that does expose a
+     * WebGPU adapter. A working adapter is not the same as a fast one.
+     *
+     * So it is not enabled on the strength of an assumption about the owner's
+     * GPU. If it is revisited, it needs measurements from real target devices,
+     * with an explicit `dtype` so it cannot quietly pull fp32 again.
+     */
+    return createPipeline('automatic-speech-recognition', VOICE_MODEL_REPO, {
+      // Quantization is left to the library default, which is int8 (`q8`) on
+      // WASM — the whole reason this is a tens-of-megabytes download rather
+      // than a hundreds-of-megabytes one.
+      progress_callback,
     })
   })()
 
@@ -395,8 +471,9 @@ async function downloadAndWarm(
     key: WHISPER_MODEL.key,
     repo: VOICE_MODEL_REPO,
     installedAt: new Date().toISOString(),
-    // Re-read from the library's own accounting rather than guessing.
-    bytes: await cachedBytes(),
+    // Measured from this model's own cached files rather than from the shared
+    // cache total — see `cachedModelBytes`.
+    bytes: await cachedModelBytes(),
   }
 
   // Private mode: the model is cached anyway, only the badge is lost.
@@ -412,7 +489,20 @@ async function downloadAndWarm(
  * Counts both the model weights and the runtime's WASM binaries, because both
  * are only on the device for this one feature.
  */
-async function cachedBytes(): Promise<number> {
+/**
+ * How many bytes this model occupies in the browser cache.
+ *
+ * This used to sum the whole shared cache — every `transformers-*`,
+ * `wasm-runtime` and `onnx-runtime` entry — which produced the wrong number as
+ * soon as any second model had ever been fetched: measured at **262MB for a model
+ * that occupies 76MB**, because an earlier `whisper-tiny` download was still
+ * sitting in the same cache.
+ *
+ * The badge this feeds reads as "what did this cost me", in a product sold to
+ * people paying for mobile data by the megabyte, so it has to be this model's
+ * files and nothing else.
+ */
+async function cachedModelBytes(repo: string = VOICE_MODEL_REPO): Promise<number> {
   try {
     if (typeof caches === 'undefined') return 0
     let total = 0
@@ -420,6 +510,7 @@ async function cachedBytes(): Promise<number> {
       if (!/(transformers|wasm-runtime|onnx-runtime)/.test(name)) continue
       const cache = await caches.open(name)
       for (const request of await cache.keys()) {
+        if (!request.url.includes(repo)) continue
         const response = await cache.match(request)
         if (!response) continue
         const length = response.headers.get('content-length')
@@ -473,7 +564,7 @@ export function createWhisperOfflineEngine(): AsrEngine {
 
   return {
     id: OFFLINE_ENGINE_ID,
-    label: { en: 'Offline (Whisper Tiny)', fil: 'Offline (Whisper Tiny)' },
+    label: { en: 'Offline (Whisper Base)', fil: 'Offline (Whisper Base)' },
     note: model
       ? {
           en: `Installed (${megabytes > 0 ? `${megabytes}MB` : 'small'}). Works with no internet — but it is weak on Taglish, so confirm the numbers.`,
@@ -551,6 +642,21 @@ export function createWhisperOfflineEngine(): AsrEngine {
           // slower than the browser engine. Saying so is better than a spinner
           // that looks like a freeze.
           onStatus?.('transcribing')
+
+          const voicedMs = speechDurationMs(utterance.samples)
+          if (voicedMs < MIN_VOICED_FOR_TRANSCRIPTION_MS) {
+            // Refused before the model sees it, so there is nothing to hallucinate
+            // from. The owner is told nothing was heard rather than shown words
+            // they never said.
+            onError(
+              say(
+                'No words were heard. Try again, a little louder.',
+                'Walang narinig na salita. Subukan muli nang mas malakas.',
+              ),
+              'no-speech',
+            )
+            return
+          }
 
           try {
             const transcript = await transcribeOffline(utterance.samples)

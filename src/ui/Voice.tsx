@@ -13,7 +13,7 @@ import {
 import { Pat, moodForVoice } from './Pat.tsx'
 import { SAMPLE_UTTERANCES, getEngines } from '../asr.ts'
 import type { AsrErrorCode, AsrStatus } from '../asr.ts'
-import { OFFLINE_ENGINE_ID, useVoiceModel } from '../asr-offline.ts'
+import { OFFLINE_ENGINE_ID, RUNTIME_APPROX_MB, WHISPER_MODEL, useVoiceModel } from '../asr-offline.ts'
 import { formatPHP, parseSpoken, pesos } from '../engine/index.ts'
 import type { Sku } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
@@ -389,7 +389,9 @@ export function VoiceScreen({
         <Card className="border-dashed">
           <SectionTitle hint={t('offline.onceHint')}>{t('voice.offlineTitle')}</SectionTitle>
           <p className="text-[0.7rem] leading-relaxed text-fg-subtle">
-            {t('voice.offlineIntro')}
+            {/* Weights plus runtime, computed from the catalogue so the figure
+                quoted here cannot drift from the one the Offline screen shows. */}
+            {t('voice.offlineIntro', { mb: WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB })}
           </p>
           <Button variant="ghost" className="mt-3 w-full" onClick={onOpenOffline}>
             {t('voice.downloadModel')}

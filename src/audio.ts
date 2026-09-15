@@ -90,6 +90,37 @@ export const SILENCE_DEFAULTS: SilenceOptions = {
 /** How often the level is sampled while recording. */
 export const VAD_INTERVAL_MS = 60
 
+/**
+ * How much of a recording sits above the speech floor.
+ *
+ * This exists to stop Whisper being asked a question it will answer wrongly. Fed
+ * silence or room noise, a Whisper model does not return nothing — it invents a
+ * fluent sentence. Measured on this app's own weights with three seconds of
+ * silence, it produced `"[Song ang kawakong]"`: confident, well-formed, and
+ * completely fabricated.
+ *
+ * That is the "it transcribed something different from what I said" failure, and
+ * the model is not at fault — it was handed audio containing no speech, so every
+ * word it emitted was made up. Nothing downstream can tell a hallucination from a
+ * real reading, which is why the only safe place to catch it is before the call.
+ */
+export function speechDurationMs(
+  samples: Float32Array,
+  speechRms: number = SILENCE_DEFAULTS.speechRms,
+): number {
+  const window = Math.max(1, Math.round((TARGET_SAMPLE_RATE * VAD_INTERVAL_MS) / 1000))
+  let voicedMs = 0
+  for (let start = 0; start < samples.length; start += window) {
+    const end = Math.min(samples.length, start + window)
+    let sum = 0
+    for (let i = start; i < end; i += 1) sum += samples[i] * samples[i]
+    if (Math.sqrt(sum / (end - start)) >= speechRms) {
+      voicedMs += ((end - start) / TARGET_SAMPLE_RATE) * 1000
+    }
+  }
+  return Math.round(voicedMs)
+}
+
 export interface SilenceTracker {
   /**
    * Feed one level sample. Returns true when capture should end.

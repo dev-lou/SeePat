@@ -12,10 +12,18 @@
  * feature, which is the one thing an offline-first product cannot ship as its
  * only voice path.
  *
+ * One caveat worth stating because it is invisible until it bites: the Web Speech
+ * API is a *capability of the browser build*, not of the platform. Chrome ships
+ * the speech service; Chromium embedded in another application (desktop app
+ * shells, some in-app browsers) exposes the same constructor, accepts the
+ * microphone, and then fails with `network` on every utterance. `describeSpeechError`
+ * names that case instead of blaming the connection, and the Voice screen routes
+ * the owner to the on-device model from there.
+ *
  * The offline path is now real, and it is not the 320MB Tagalog model the
  * concept note costed out — that one (`vosk-model-tl-ph-generic-0.6`) is
  * licensed CC-BY-NC-SA and so cannot ship in a commercial product at all. See
- * `asr-offline.ts`: a multilingual Whisper Tiny runs on-device from a download
+ * `asr-offline.ts`: a multilingual Whisper (base) runs on-device from a download
  * one order of magnitude smaller and with a licence that permits commercial use.
  */
 
@@ -138,6 +146,17 @@ export function describeSpeechError(raw: string, lang: Lang = getLang()): AsrFai
  * and guarantees the UI can never be stuck in a listening state again.
  */
 const LISTEN_CAP_MS = 25_000
+
+/**
+ * Retried once if the platform rejects the Filipino locale.
+ *
+ * Mobile is where this matters: an Android build can report
+ * `language-not-supported` for `fil-PH` while its recognizer works perfectly well
+ * on `en-PH` — and the utterances this app expects are Taglish anyway ("limang
+ * Coke, bayad cash"), which an English-locale recognizer handles. Failing over
+ * beats telling an owner their phone cannot do voice.
+ */
+const FALLBACK_LOCALE = 'en-PH'
 
 export interface AsrEngine {
   id: string
@@ -290,18 +309,42 @@ export function createWebSpeechEngine(): AsrEngine {
         }
       }
 
+      let locale = SPOKEN_LOCALE
+      let triedFallbackLocale = false
+
+      const arm = (): boolean => {
+        instance.lang = locale
+        try {
+          instance.start()
+          return true
+        } catch {
+          return false
+        }
+      }
+
       instance.onerror = (event) => {
         const failure = describeSpeechError(event.error)
         // Null means "not a failure" — `aborted` is us stopping it.
         if (!failure) return
+
+        // One silent retry in the other locale, because the alternative is
+        // telling the owner their phone cannot do voice when it can.
+        if (failure.code === 'language' && !triedFallbackLocale) {
+          triedFallbackLocale = true
+          locale = FALLBACK_LOCALE
+          arm()
+          return
+        }
+
         onError(failure.message, failure.code)
       }
 
       instance.onend = finish
 
-      try {
-        instance.start()
-      } catch {
+      // `arm` reports failure by returning false, so the try/catch that used to
+      // wrap `start()` would now be unreachable — and a microphone that refused
+      // to open would sit silently instead of saying so.
+      if (!arm()) {
         onError(
           say('The microphone could not start. Try again.', 'Hindi masimulan ang mikropono. Subukan muli.'),
           'unknown',

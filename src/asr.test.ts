@@ -59,16 +59,24 @@ afterEach(() => {
 })
 
 interface Recorded {
-  results: string[]
+  results: { transcript: string; final: boolean }[]
   errors: { message: string; code?: string }[]
   statuses: string[]
   ends: number
 }
 
+/** A `SpeechRecognitionEvent`-shaped object, since the engine reads only this much. */
+function speechEvent(transcript: string, final: boolean) {
+  return {
+    resultIndex: 0,
+    results: { length: 1, 0: { isFinal: final, length: 1, 0: { transcript, confidence: 0.9 } } },
+  }
+}
+
 function record(engine: AsrEngine): Recorded {
   const rec: Recorded = { results: [], errors: [], statuses: [], ends: 0 }
   engine.start(
-    (result) => rec.results.push(result.transcript),
+    (result) => rec.results.push({ transcript: result.transcript, final: result.final }),
     (message, code) => rec.errors.push({ message, code }),
     (status) => rec.statuses.push(status),
     () => {
@@ -151,6 +159,44 @@ describe('the browser engine always reports the end of a session', () => {
 
     expect(rec.errors).toHaveLength(1)
     expect(rec.errors[0]?.code).toBe('network')
+    expect(rec.ends).toBe(1)
+  })
+
+  it('retries once in another locale instead of blaming the phone', () => {
+    installFakeBrowser()
+    const rec = record(createWebSpeechEngine())
+    const instance = FakeRecognition.latest
+    expect(instance?.lang).toBe('fil-PH')
+
+    // Android can reject fil-PH while its recognizer is perfectly capable — and
+    // the utterances this app expects are Taglish anyway.
+    instance?.onerror?.({ error: 'language-not-supported' })
+    expect(rec.errors).toEqual([])
+    expect(instance?.lang).toBe('en-PH')
+    expect(instance?.started).toBe(true)
+
+    // If the fallback locale fails too, that is a real failure and is reported.
+    instance?.onerror?.({ error: 'language-not-supported' })
+    expect(rec.errors).toHaveLength(1)
+    expect(rec.errors[0]?.code).toBe('language')
+  })
+
+  it('forwards a final transcript with the final flag set', () => {
+    // The wiring the whole product rests on: Google produces words, and they
+    // arrive at the screen as a finished transcript rather than as interim noise.
+    installFakeBrowser()
+    const rec = record(createWebSpeechEngine())
+    const instance = FakeRecognition.latest
+
+    instance?.onresult?.(speechEvent('limang Coke bayad cash', false))
+    expect(rec.results).toEqual([{ transcript: 'limang Coke bayad cash', final: false }])
+
+    // The final result is what the screen turns into a draft, so the flag has to
+    // survive the trip — a transcript marked non-final would leave the owner
+    // looking at their own words with nothing to confirm.
+    instance?.onresult?.(speechEvent('limang Coke bayad cash', true))
+    instance?.onend?.()
+    expect(rec.results.at(-1)).toEqual({ transcript: 'limang Coke bayad cash', final: true })
     expect(rec.ends).toBe(1)
   })
 

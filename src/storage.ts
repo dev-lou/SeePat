@@ -3,7 +3,7 @@
  *
  * The product was renamed from TimbangAI to SeePat. Renaming a storage key is
  * not free: the ledger, the subscription entitlement, and the record that says a
- * 42MB voice model is already installed all live under the previous prefix.
+ * voice model is already installed all live under the previous prefix.
  * Dropping them would hand an owner back an empty store and make them re-download
  * the model — a rebrand should not cost the user anything.
  *

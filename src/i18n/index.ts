@@ -559,8 +559,11 @@ export const UI = {
   'voice.engineUnavailable': { en: '— unavailable', fil: '— hindi available' },
   'voice.offlineWorks': { en: 'Working offline', fil: 'Gumagana offline' },
   'voice.offlineIntro': {
-    en: 'The browser engine needs internet — it sends your voice to Google. If you download the model (≈47MB including the runtime), your phone understands what you say with no signal. It is free, and it runs on your device.',
-    fil: 'Ang browser engine ay kailangan ng internet — ipinapadala nito ang boses sa Google. Kung mag-download ka ng modelo (≈47MB kasama ang runtime), maiintindihan ng phone mo ang sinasabi mo kahit walang signal. Libre ito, at tumatakbo sa device mo.',
+    // `{mb}` rather than a hardcoded figure: this string used to promise 47MB
+    // while the catalogue said 42MB, and a download size is not a number to keep
+    // in two places.
+    en: 'The browser engine needs internet — it sends your voice to Google. If you download the model (≈{mb}MB including the runtime), your phone understands what you say with no signal. It is free, and it runs on your device.',
+    fil: 'Ang browser engine ay kailangan ng internet — ipinapadala nito ang boses sa Google. Kung mag-download ka ng modelo (≈{mb}MB kasama ang runtime), maiintindihan ng phone mo ang sinasabi mo kahit walang signal. Libre ito, at tumatakbo sa device mo.',
   },
   'voice.downloadModel': {
     en: 'Download the offline model',

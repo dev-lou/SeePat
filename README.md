@@ -306,7 +306,7 @@ option so a demo cannot fail on a WASM filesystem.
 | `seepat.welcome.v1` | welcome deck seen (versioned) | — |
 
 Reads fall back to the legacy key **once** and write forward. A rebrand should not cost the owner
-their ledger, their subscription, or a 42MB model download.
+their ledger, their subscription, or a voice model download.
 
 ## 7. Voice pipeline
 
@@ -315,10 +315,10 @@ Voice is the centrepiece and the least certain component, so it sits behind one 
 
 | | Browser engine | On-device engine |
 |---|---|---|
-| Backend | `SpeechRecognition` (Web Speech API) | `Xenova/whisper-tiny` via transformers.js |
-| Model | vendor, on their servers | ~42 MB quantised weights (~47 MB with the ML runtime), downloaded once on consent |
-| Licence | n/a | MIT |
-| Taglish quality | strongest available | usable, looser |
+| Backend | `SpeechRecognition` (Web Speech API) | `onnx-community/whisper-base` via transformers.js |
+| Model | vendor, on their servers | ~76 MB quantised weights (~81 MB with the ML runtime), downloaded once on consent |
+| Licence | n/a | MIT (ONNX conversion of OpenAI's Whisper weights) |
+| Taglish quality | strongest available | materially better than `whisper-tiny`, still behind Google |
 | Works offline | **no** | **yes** |
 | Cost | ₱0 to SeePat | ₱0 to SeePat and to the owner |
 
@@ -339,6 +339,44 @@ Runtime whose graph optimiser refuses to build a session for these quantised wei
 `qdq_actions.cc: TransposeDQWeightsForMatMulNBits Missing required scale` on every dtype,
 including fp32, and identically with a cold cache. 3.7.6 loads the same weights correctly. If a
 future bump breaks offline voice, **this pin is the first thing to check.**
+
+**How the on-device model actually runs — measured, not assumed.** Inference executes in a worker
+via `onnx.wasm.proxy` rather than on the page's thread, so a transcription cannot freeze the
+interface: a blocked main thread cannot paint a spinner, so no amount of loading-state polish would
+have fixed the "hang". WebGPU is deliberately **not** used, and that is a measurement rather than a
+preference — the WebGPU path silently selects fp32 weights instead of q8, taking the download from
+the promised ~42MB to **154MB**, while a 3-second clip still took **7.7s cold and 7.6s warm** on a
+machine that does expose a WebGPU adapter. The q8/WASM path with the worker proxy measured **2.1s**
+for the same clip, with the interface still painting. Cheaper *and* faster: enabling WebGPU would
+have charged the owner 3.5× the data for a slower result.
+
+**Which Whisper, and why not the best one.** The installable model is
+`onnx-community/whisper-base`: 74M parameters instead of `whisper-tiny`'s 39M, measured at **76MB**
+of weights and **3.5s** for a 3-second clip (tiny measured 2.1s on the same clip). The upgrade was
+taken because accuracy is the owner's actual problem — tiny returned their own sale as a different
+sentence — and base is materially stronger on short, code-switched utterances, which is what this
+product records.
+
+The size figure is worth trusting over the in-progress display: the library's download callbacks
+under-report (they summed to 51MB for what the browser cache showed was 76MB). That same cache also
+exposed a bug — the installed-size badge summed the *shared* cache, so it reported **262MB** for this
+76MB model once an earlier `whisper-tiny` install was still present. It now measures this model's
+own files, because a badge that reads as "what this cost me" has to be true in a product where data
+is bought by the megabyte.
+
+The better Tagalog models on the Hub are not an option *in a browser*: the strongest fine-tune
+found, `LWobole/whisper-small-tagalog` (**16.7% WER** on FLEURS `fil_ph`), publishes safetensors
+only, and transformers.js can only load ONNX. A model that cannot be loaded is worthless however
+accurate it is, so the choice is constrained to the ONNX-ready set — where base is the sweet spot.
+`whisper-large-v3-turbo` is ONNX-ready and far stronger, and is also ~800MB, which is not a
+download to put in front of a sari-sari store on prepaid data.
+
+**Silence is never sent to the model.** Given silence, a Whisper model does not return nothing — it
+invents a fluent sentence. Measured on these weights with three seconds of silence: `"[Musica]"` in
+one run, `"[Song ang kawakong]"` in another. That is the *"it transcribed something completely
+different from what I said"* failure, and because no downstream check can tell a hallucination from
+a real reading, a recording containing under 200ms of detected speech is refused **before** the call
+and the owner is told nothing was heard.
 
 **The parser is constrained on purpose** (`engine/voice.ts`), with three constraints each tied to
 a failure mode:
@@ -551,7 +589,7 @@ never fakes a finished paid feature.
 | Build | Vite + rolldown | 8.3 | sub-second builds; `manualChunks` isolates the offline voice runtime |
 | Styling | Tailwind CSS | 4.3 | `@tailwindcss/vite` with tokens as CSS custom properties, so one variable changes every screen |
 | PWA | vite-plugin-pwa (Workbox) | 1.3 | precache + runtime cache declared in one place instead of hand-written cache logic |
-| On-device ML | `@huggingface/transformers` | **3.7.6 (exact)** | Whisper Tiny runs in-browser with no server; pinned — see §7 |
+| On-device ML | `@huggingface/transformers` | **3.7.6 (exact)** | Whisper Base runs in-browser with no server; pinned — see §7 |
 | Fonts | `@fontsource-variable/sora`, `plus-jakarta-sans` | 5.3 | self-hosted, no third-party request, no FOUT on a slow connection |
 | Tests | Vitest | 5.0 | pure-logic suites in a **node** environment — no jsdom, no DOM mocking |
 | Asset pipeline | sharp | 0.35 | one source image → icons, touch icon, social card, wordmark |
@@ -621,7 +659,7 @@ correctly; Facebook does not.
 
 ## 14. Testing & verification
 
-**140 tests across 9 files**, all in a `node` environment — no jsdom, which is the practical
+**169 tests across 12 files**, all in a `node` environment — no jsdom, which is the practical
 consequence of keeping the engine pure.
 
 | Suite | Lines | What it guards |
@@ -635,13 +673,18 @@ consequence of keeping the engine pure.
 | `ui/pat.test.ts` | 129 | band → mood mapping, voice-state moods, the tip is the engine's own string in both languages |
 | `onboarding.test.ts` | 107 | versioned first-run gate, slide clamping |
 | `shell.test.ts` | 90 | `index.html`'s contract: splash floor and fail-open deadline, OG/Twitter tags, manifest icons |
+| `asr.test.ts` | 276 | speech failures are *diagnosed* rather than printed; the `fil-PH` → `en-PH` retry; a final transcript arrives with its final flag; every engine reports its session ending, including when starting throws |
+| `audio.test.ts` | 125 | the take-ending rule (1.8s of silence, a mid-sentence pause survives, a throttled timer cannot cut one short) and the speech-presence measure that keeps silence away from the model |
+| `asr-offline.test.ts` | 88 | a stored install record is only trusted for the model the runtime actually loads |
 
-That last suite is the one that keeps the *shell* honest — the splash timing and social metadata
-are not reachable from TypeScript, so they are asserted by reading `index.html`.
+`shell.test.ts` is the one that keeps the *shell* honest — the splash timing and social metadata
+are not reachable from TypeScript, so they are asserted by reading `index.html`. The three voice
+suites exist because that is where the behaviour is least visible: a stuck microphone, a wrong
+transcript and a stale model record all look the same from the outside — like nothing happening.
 
 ```bash
 npm run typecheck      # tsc --noEmit
-npm test               # 140 passing
+npm test               # 169 passing
 npm run check:contrast # all token pairs, WCAG AA
 npm run build          # typecheck + production build
 ```
@@ -710,9 +753,12 @@ Honest status, because a prototype that overstates itself is a liability.
 
 **Open engineering questions:**
 
-- **On-device Taglish accuracy** is the honest weak point. Whisper Tiny is usable and free but
-  looser than the browser engine, which is why it is the fallback rather than the default, and why
-  the draft step is mandatory.
+- **On-device Taglish accuracy** is the honest weak point, and the one claim in this document that
+  is *not* measured: the move from `whisper-tiny` to `whisper-base` was decided on architecture and
+  download cost, not on a Tagalog accuracy test, because no labelled Filipino audio was available in
+  the build environment. It should be confirmed by ear on a real phone before it is trusted. Either
+  way it stays behind the browser engine, which is why it is the fallback and why the draft step is
+  mandatory.
 - **The transformers.js pin** must be re-tested before any upgrade (§7).
 - **`Date.now()` and clocks.** Period boundaries are the device's local time; a store that closes
   late and records next morning makes the day boundary a real product concern rather than an
@@ -742,7 +788,7 @@ apply regardless:
 
 | Component | Licence |
 |---|---|
-| `Xenova/whisper-tiny` weights | MIT — commercial use permitted |
+| `onnx-community/whisper-base` weights | MIT (OpenAI Whisper) — commercial use permitted |
 | `vosk-model-tl-ph-generic-0.6` | CC-BY-NC-SA — **not installable; cannot ship commercially** |
 | Sora, Plus Jakarta Sans | SIL Open Font License (licence texts in `public/fonts/`) |
 | React, Vite, Tailwind, Vitest, Workbox | MIT |

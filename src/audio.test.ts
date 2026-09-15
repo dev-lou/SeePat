@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SILENCE_DEFAULTS, createSilenceTracker } from './audio.ts'
+import { SILENCE_DEFAULTS, createSilenceTracker, speechDurationMs } from './audio.ts'
 
 /**
  * When does a take end?
@@ -93,6 +93,25 @@ describe('the take ends when the talking does', () => {
     spoken.push(LOUD, 0)
     spoken.push(LOUD, 500)
     expect(spoken.heardSpeech()).toBe(true)
+  })
+
+  it('measures how much of a recording actually contains speech', () => {
+    // The guard that keeps silence away from Whisper. Fed three seconds of
+    // nothing, the model returned `"[Musica]"` in one run and
+    // `"[Song ang kawakong]"` in another — confidently worded fabrications, and
+    // proof that the words came from the model rather than from the microphone.
+    expect(speechDurationMs(new Float32Array(16000 * 3))).toBe(0)
+
+    // 16 kHz, so 0.5s of speech is 8000 samples. Alternating ±0.3 keeps the RMS
+    // well clear of the floor without needing a real waveform.
+    const half = new Float32Array(8000)
+    for (let i = 0; i < half.length; i += 1) half[i] = i % 2 === 0 ? 0.3 : -0.3
+    expect(speechDurationMs(half)).toBeGreaterThanOrEqual(400)
+
+    // Room noise below the floor is not speech, however long it runs.
+    const hum = new Float32Array(16000)
+    for (let i = 0; i < hum.length; i += 1) hum[i] = 0.001
+    expect(speechDurationMs(hum)).toBe(0)
   })
 
   it('takes its thresholds as options, so the rule is not buried in the wiring', () => {
