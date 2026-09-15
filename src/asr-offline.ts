@@ -49,6 +49,13 @@ import type { Bilingual } from './i18n/index.ts'
 /** The documented example model for this pipeline, and multilingual. */
 const VOICE_MODEL_REPO = 'Xenova/whisper-tiny'
 
+/**
+ * The engine's id, exported so callers can route to it by name — the Voice
+ * screen switches to this engine when browser recognition cannot work, and a
+ * second copy of the string would be a silent breakage the day it changes.
+ */
+export const OFFLINE_ENGINE_ID = 'offline-whisper'
+
 /** `legacyKey` carries the slot from before the TimbangAI → SeePat rename. */
 const MODEL_STORAGE = {
   key: 'seepat.voice.model.v1',
@@ -465,7 +472,7 @@ export function createWhisperOfflineEngine(): AsrEngine {
   const megabytes = model ? Math.round(model.bytes / (1024 * 1024)) : 0
 
   return {
-    id: 'offline-whisper',
+    id: OFFLINE_ENGINE_ID,
     label: { en: 'Offline (Whisper Tiny)', fil: 'Offline (Whisper Tiny)' },
     note: model
       ? {
@@ -473,72 +480,98 @@ export function createWhisperOfflineEngine(): AsrEngine {
           fil: `Naka-install (${megabytes > 0 ? `${megabytes}MB` : 'maliit'}). Gumagana kahit walang internet — pero mahina sa Taglish, kaya kumpirmahin ang mga numero.`,
         }
       : {
-          en: 'Not downloaded yet. Go to Settings → Offline and Voice to install it (~75MB, once).',
-          fil: 'Hindi pa naka-download. Pumunta sa Settings → Offline at Boses para i-install (~75MB, isang beses lang).',
+          // Computed from the catalogue rather than written twice: this note used
+          // to promise ~75MB while the catalogue said 42MB, and the number an
+          // owner has to spend data on is not a good place for two answers. Model
+          // plus runtime is the figure that matches what they actually download,
+          // which is what the Voice screen and the Offline card both quote.
+          en: `Not downloaded yet. Go to Settings → Offline and Voice to install it (~${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB, once).`,
+          fil: `Hindi pa naka-download. Pumunta sa Settings → Offline at Boses para i-install (~${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB, isang beses lang).`,
         },
     available: model !== null,
-    start(onResult, onError, onStatus) {
+    start(onResult, onError, onStatus, onEnd) {
+      /*
+       * One exit path, wrapped in `try/finally` so *every* branch below reports
+       * the end of the session — including the throws we did not anticipate.
+       *
+       * This is not tidiness. Two of these branches used to return without
+       * calling anything at all (an empty recording, a discarded utterance),
+       * which left the screen showing "listening" for a session that had already
+       * ended. A dead microphone and a dead session have to look different.
+       */
       void (async () => {
-        if (!getInstalledVoiceModel()) {
-          onError(say(
-            'The offline model is not installed yet. Download it in Settings first.',
-            'Hindi pa naka-install ang offline na modelo. I-download muna sa Settings.',
-          ))
-          return
-        }
-
-        let session: Recorder
         try {
-          session = await startCapture()
-        } catch (error) {
-          onError(
-            error instanceof Error
-              ? error.message
-              : say('The microphone could not start.', 'Hindi masimulan ang mikropono.'),
-          )
-          return
-        }
-
-        recorder = session
-        onStatus?.('listening')
-
-        let utterance
-        try {
-          utterance = await session.finished
-        } catch (error) {
-          recorder = null
-          onError(
-            error instanceof Error ? error.message : say('Recording failed.', 'Nabigo ang pag-record.'),
-          )
-          return
-        }
-
-        if (!utterance) {
-          recorder = null
-          return
-        }
-
-        // Recognizing on-device is slow — seconds, not milliseconds, and far
-        // slower than the browser engine. Saying so is better than a spinner
-        // that looks like a freeze.
-        onStatus?.('transcribing')
-
-        try {
-          const transcript = await transcribeOffline(utterance.samples)
-          if (!transcript) {
+          if (!getInstalledVoiceModel()) {
             onError(
               say(
-                'No words were heard. Try again, a little louder.',
-                'Walang narinig na salita. Subukan muli nang mas malakas.',
+                'The offline model is not installed yet. Download it in Settings first.',
+                'Hindi pa naka-install ang offline na modelo. I-download muna sa Settings.',
               ),
+              'unknown',
             )
             return
           }
-          onResult({ transcript, confidence: 0, final: true })
-        } catch (error) {
-          onError(explainOfflineFailure(error))
+
+          let session: Recorder
+          try {
+            session = await startCapture()
+          } catch (error) {
+            onError(
+              error instanceof Error
+                ? error.message
+                : say('The microphone could not start.', 'Hindi masimulan ang mikropono.'),
+              'no-microphone',
+            )
+            return
+          }
+
+          recorder = session
+          onStatus?.('listening')
+
+          let utterance
+          try {
+            utterance = await session.finished
+          } catch (error) {
+            recorder = null
+            onError(
+              error instanceof Error
+                ? error.message
+                : say('Recording failed.', 'Nabigo ang pag-record.'),
+              'no-microphone',
+            )
+            return
+          }
+
+          if (!utterance) {
+            recorder = null
+            return
+          }
+
+          // Recognizing on-device is slow — seconds, not milliseconds, and far
+          // slower than the browser engine. Saying so is better than a spinner
+          // that looks like a freeze.
+          onStatus?.('transcribing')
+
+          try {
+            const transcript = await transcribeOffline(utterance.samples)
+            if (!transcript) {
+              onError(
+                say(
+                  'No words were heard. Try again, a little louder.',
+                  'Walang narinig na salita. Subukan muli nang mas malakas.',
+                ),
+                'no-speech',
+              )
+              return
+            }
+            onResult({ transcript, confidence: 0, final: true })
+          } catch (error) {
+            onError(explainOfflineFailure(error), 'unknown')
+          } finally {
+            recorder = null
+          }
         } finally {
-          recorder = null
+          onEnd?.()
         }
       })()
     },

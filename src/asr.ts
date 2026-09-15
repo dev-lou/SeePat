@@ -32,6 +32,113 @@ export interface AsrResult {
  */
 export type AsrStatus = 'listening' | 'transcribing'
 
+/**
+ * Why recognition stopped, when we can tell.
+ *
+ * Codes exist so the UI can *act* on a failure instead of only printing it: a
+ * network failure is the one case where the fix is a button — switch to, or
+ * download, the on-device model — and finding that out by string-matching a
+ * translated sentence would be brittle.
+ */
+export type AsrErrorCode =
+  | 'permission'
+  | 'no-speech'
+  | 'network'
+  | 'language'
+  | 'no-microphone'
+  | 'blocked'
+  | 'unknown'
+
+export interface AsrFailure {
+  code: AsrErrorCode
+  message: string
+}
+
+/**
+ * SpeechRecognition error code → something the owner can act on.
+ *
+ * Pure and language-parameterized, so the mapping is testable without a DOM. It
+ * is worth the ceremony because the earlier version mis-diagnosed the failure
+ * that matters most: every network failure — including the one that happens in
+ * any browser built without a speech service, which is every embedded Chromium —
+ * was reported as "Internet is needed for browser recognition". That sends an
+ * owner to check a connection that was never the problem.
+ *
+ * `null` means "not a failure": `aborted` is what we get when *we* stop the
+ * recognizer, and `bad-grammar` is ours to fix rather than the owner's to read.
+ */
+export function describeSpeechError(raw: string, lang: Lang = getLang()): AsrFailure | null {
+  if (raw === 'aborted' || raw === 'bad-grammar') return null
+
+  // Typed as everything *except* `unknown`: the fallback below already owns that
+  // case, and the copy table has no entry for it.
+  const CODES: Record<string, Exclude<AsrErrorCode, 'unknown'>> = {
+    'not-allowed': 'permission',
+    'service-not-allowed': 'blocked',
+    'no-speech': 'no-speech',
+    network: 'network',
+    'language-not-supported': 'language',
+    'audio-capture': 'no-microphone',
+  }
+
+  const COPY: Record<Exclude<AsrErrorCode, 'unknown'>, Bilingual> = {
+    permission: {
+      en: 'Microphone permission is needed. Allow it in the address bar, then tap the mic again.',
+      fil: 'Kailangan ng pahintulot sa mikropono. Payagan ito sa address bar, tapos pindutin ulit ang mic.',
+    },
+    blocked: {
+      en: 'The browser blocked the speech service. Use Chrome or Edge, or switch to the offline model below.',
+      fil: 'Hinadlangan ng browser ang speech service. Gumamit ng Chrome o Edge, o lumipat sa offline model sa baba.',
+    },
+    'no-speech': {
+      en: 'Nothing was heard. Tap the mic and speak as soon as it turns red.',
+      fil: 'Walang narinig. Pindutin ang mic at magsalita agad pagka-pula nito.',
+    },
+    /*
+     * The honest wording, because this is the failure an owner cannot fix by
+     * retrying or by checking wifi. Browsers that embed Chromium without
+     * Google's speech service (desktop app shells, some in-app browsers) expose
+     * `webkitSpeechRecognition`, accept a microphone, start a session, and then
+     * fail here — a silent dead end unless we name it.
+     */
+    network: {
+      en: 'This browser could not reach Google\u2019s speech service. Chrome or Edge on a desktop can; a browser built into another app usually cannot. Voice still works offline once the model below is downloaded.',
+      fil: 'Hindi naabot ng browser na ito ang speech service ng Google. Gumagana ito sa Chrome o Edge sa desktop; sa browser na kasama ng ibang app, kadalasan hindi. Gumagana pa rin ang boses offline kapag na-download ang modelo sa baba.',
+    },
+    language: {
+      en: 'This browser cannot recognize Filipino speech. Use Chrome or Edge, or switch to the offline model below.',
+      fil: 'Hindi kayang kilalanin ng browser na ito ang Tagalog na pananalita. Gumamit ng Chrome o Edge, o lumipat sa offline model sa baba.',
+    },
+    'no-microphone': {
+      en: 'No microphone was found. Check that one is connected, then try again.',
+      fil: 'Walang nakitang mikropono. Tingnan kung may nakakabit, tapos subukan muli.',
+    },
+  }
+
+  const code = CODES[raw]
+  if (!code) {
+    return {
+      code: 'unknown',
+      message: pick(lang, {
+        en: `Speech recognition failed (${raw}).`,
+        fil: `Nabigo ang speech recognition (${raw}).`,
+      }),
+    }
+  }
+  return { code, message: pick(lang, COPY[code]) }
+}
+
+/**
+ * How long a single browser recognition session may run before we cut it off.
+ *
+ * With `continuous: false` the recognizer is meant to end on its own after the
+ * owner stops talking, but silence is not always delivered as `no-speech` — a
+ * session can be left open indefinitely with the mic showing red. A store
+ * utterance is a sentence, not a speech, so a cap costs a real recording nothing
+ * and guarantees the UI can never be stuck in a listening state again.
+ */
+const LISTEN_CAP_MS = 25_000
+
 export interface AsrEngine {
   id: string
   label: Bilingual
@@ -40,15 +147,22 @@ export interface AsrEngine {
   available: boolean
   start(
     onResult: (result: AsrResult) => void,
-    onError: (message: string) => void,
+    onError: (message: string, code?: AsrErrorCode) => void,
     onStatus?: (status: AsrStatus) => void,
+    /**
+     * The session is over — whatever the reason, including reasons that fired no
+     * other callback at all. Without this the screen had no way back out of
+     * "listening", which is exactly what an owner sees when a session dies
+     * silently: a red mic and a waveform that never stop.
+     */
+    onEnd?: () => void,
   ): void
   stop(): void
 }
 
 import { createWhisperOfflineEngine } from './asr-offline.ts'
-import { say } from './i18n/index.ts'
-import type { Bilingual } from './i18n/index.ts'
+import { getLang, pick, say } from './i18n/index.ts'
+import type { Bilingual, Lang } from './i18n/index.ts'
 
 // --- Minimal structural types for the Web Speech API -------------------------
 
@@ -108,6 +222,7 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
  */
 export function createWebSpeechEngine(): AsrEngine {
   let recognition: SpeechRecognitionLike | null = null
+  let watchdog: ReturnType<typeof setTimeout> | undefined
 
   return {
     id: 'web-speech',
@@ -117,21 +232,52 @@ export function createWebSpeechEngine(): AsrEngine {
       fil: 'Pinakatumpak para sa Taglish. Kailangan ng internet. Libre — walang bayad kada salita.',
     },
     available: getRecognitionCtor() !== null,
-    start(onResult, onError, onStatus) {
+    start(onResult, onError, onStatus, onEnd) {
       const Ctor = getRecognitionCtor()
       if (!Ctor) {
-        onError(say('Speech recognition is not available in this browser.', 'Hindi available ang speech recognition sa browser na ito.'))
+        onError(
+          say(
+            'Speech recognition is not available in this browser.',
+            'Hindi available ang speech recognition sa browser na ito.',
+          ),
+          'unknown',
+        )
+        onEnd?.()
         return
       }
 
-      recognition = new Ctor()
-      onStatus?.('listening')
-      recognition.lang = 'fil-PH'
-      recognition.continuous = false
-      recognition.interimResults = true
-      recognition.maxAlternatives = 1
+      const instance = new Ctor()
+      recognition = instance
+      let ended = false
 
-      recognition.onresult = (event) => {
+      /*
+       * One exit path. Every branch below — error, natural end, watchdog, throw
+       * — funnels through here, so the screen is never left holding a listening
+       * state that no longer exists. Detaching the handlers is part of it: a
+       * late `no-speech` arriving after the owner already moved on would render
+       * as a stale error about a session they abandoned.
+       */
+      const finish = (): void => {
+        if (ended) return
+        ended = true
+        if (watchdog !== undefined) {
+          clearTimeout(watchdog)
+          watchdog = undefined
+        }
+        instance.onresult = null
+        instance.onerror = null
+        instance.onend = null
+        if (recognition === instance) recognition = null
+        onEnd?.()
+      }
+
+      onStatus?.('listening')
+      instance.lang = SPOKEN_LOCALE
+      instance.continuous = false
+      instance.interimResults = true
+      instance.maxAlternatives = 1
+
+      instance.onresult = (event) => {
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
           const result = event.results[i]
           const alternative = result[0]
@@ -144,34 +290,51 @@ export function createWebSpeechEngine(): AsrEngine {
         }
       }
 
-      recognition.onerror = (event) => {
-        const messages: Record<string, string> = {
-          'not-allowed': say('Microphone permission is needed.', 'Kailangan ng pahintulot sa mikropono.'),
-          'no-speech': say('Nothing was heard. Try again.', 'Walang narinig. Subukan muli.'),
-          'service-not-allowed': say(
-            'The browser blocked the speech service.',
-            'Hindi pinayagan ng browser ang speech service.',
-          ),
-          network: say(
-            'Internet is needed for browser recognition.',
-            'Kailangan ng internet para sa browser recognition.',
-          ),
-        }
-        onError(
-          messages[event.error] ??
-            say(`Microphone error: ${event.error}`, `Error sa mikropono: ${event.error}`),
-        )
+      instance.onerror = (event) => {
+        const failure = describeSpeechError(event.error)
+        // Null means "not a failure" — `aborted` is us stopping it.
+        if (!failure) return
+        onError(failure.message, failure.code)
       }
 
+      instance.onend = finish
+
       try {
-        recognition.start()
+        instance.start()
       } catch {
-        onError(say('The microphone could not start. Try again.', 'Hindi masimulan ang mikropono. Subukan muli.'))
+        onError(
+          say('The microphone could not start. Try again.', 'Hindi masimulan ang mikropono. Subukan muli.'),
+          'unknown',
+        )
+        finish()
+        return
       }
+
+      watchdog = setTimeout(() => {
+        try {
+          instance.stop()
+        } catch {
+          finish()
+        }
+      }, LISTEN_CAP_MS)
     },
     stop() {
-      recognition?.stop()
+      const instance = recognition
       recognition = null
+      if (watchdog !== undefined) {
+        clearTimeout(watchdog)
+        watchdog = undefined
+      }
+      if (!instance) return
+      try {
+        instance.stop()
+      } catch {
+        // Already stopped, or the browser refused. Either way the UI has moved
+        // on — `finish` will not run because the handlers are detached below.
+      }
+      instance.onresult = null
+      instance.onerror = null
+      instance.onend = null
     },
   }
 }
@@ -190,8 +353,15 @@ export function createTypedEngine(): AsrEngine {
       fil: 'Gumagana kahit walang internet at walang mikropono.',
     },
     available: true,
-    start(_onResult, onError) {
-      onError(say('Typed input does not use the microphone.', 'Ang typed na input ay hindi gumagamit ng mikropono.'))
+    start(_onResult, onError, _onStatus, onEnd) {
+      onError(
+        say(
+          'Typed input does not use the microphone.',
+          'Ang typed na input ay hindi gumagamit ng mikropono.',
+        ),
+        'unknown',
+      )
+      onEnd?.()
     },
     stop() {
       /* no-op */
@@ -207,6 +377,16 @@ export function createTypedEngine(): AsrEngine {
 export function getEngines(): AsrEngine[] {
   return [createWebSpeechEngine(), createTypedEngine(), createWhisperOfflineEngine()]
 }
+
+/**
+ * The locale we ask the browser recognizer for.
+ *
+ * `fil-PH` is a locale Chrome's speech service supports, and the Code-Switching
+ * is handled by the constrained parser rather than by the recognizer: the matcher
+ * looks for shop vocabulary ("Coke", "bigas", "utang") and numbers, so taglish
+ * mixed with English product names still lands.
+ */
+const SPOKEN_LOCALE = 'fil-PH'
 
 /** Example utterances used to seed the demo and the empty state. */
 export const SAMPLE_UTTERANCES = [

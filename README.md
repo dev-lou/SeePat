@@ -316,7 +316,7 @@ Voice is the centrepiece and the least certain component, so it sits behind one 
 | | Browser engine | On-device engine |
 |---|---|---|
 | Backend | `SpeechRecognition` (Web Speech API) | `Xenova/whisper-tiny` via transformers.js |
-| Model | vendor, on their servers | ~42 MB quantised, downloaded once on consent |
+| Model | vendor, on their servers | ~42 MB quantised weights (~47 MB with the ML runtime), downloaded once on consent |
 | Licence | n/a | MIT |
 | Taglish quality | strongest available | usable, looser |
 | Works offline | **no** | **yes** |
@@ -352,6 +352,20 @@ a failure mode:
 
 Whisper-family models can also hallucinate fluent text from silence, which is exactly why the
 draft-confirmation step is not optional.
+
+**When a take ends, and what happens next.** Neither engine asks the owner to say when they are
+done. The browser engine ends the session through Google's own endpointing; the on-device engine
+watches the live level and ends the take after ~1.8s of silence. Four rules govern that, each tied
+to a way it could go wrong: 300ms of speech must be heard first (a cough or a tap on the counter
+cannot end a take before it starts), 1.8s rather than 3s (long enough to survive the pause in
+*"limang Coke … bayad cash"*, short enough not to feel stuck), 10s of total silence abandons the
+take (an accidentally opened microphone gets an answer, not a red light), and a 30s ceiling
+backstops both.
+
+A take that **ends on its own** is parsed immediately into the confirmation table — speak, check,
+confirm. A take the owner **stops by hand** is deliberately not parsed: the partial words land in
+the text box to be finished, because half a sentence parses to wrong quantities. Nothing reaches
+the ledger on either path until "Confirm and record".
 
 ## 8. Offline & the PWA
 

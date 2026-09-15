@@ -12,8 +12,8 @@ import {
 } from './components.tsx'
 import { Pat, moodForVoice } from './Pat.tsx'
 import { SAMPLE_UTTERANCES, getEngines } from '../asr.ts'
-import type { AsrStatus } from '../asr.ts'
-import { useVoiceModel } from '../asr-offline.ts'
+import type { AsrErrorCode, AsrStatus } from '../asr.ts'
+import { OFFLINE_ENGINE_ID, useVoiceModel } from '../asr-offline.ts'
 import { formatPHP, parseSpoken, pesos } from '../engine/index.ts'
 import type { Sku } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
@@ -73,6 +73,7 @@ export function VoiceScreen({
   const [transcript, setTranscript] = useState('')
   const [draftText, setDraftText] = useState('')
   const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState<AsrErrorCode | null>(null)
   const [edited, setEdited] = useState<EditedLine[] | null>(null)
   const [draftKind, setDraftKind] = useState<'cash_sale' | 'credit_sale' | 'purchase' | 'expense'>(
     'cash_sale',
@@ -80,6 +81,13 @@ export function VoiceScreen({
   const [draftCustomer, setDraftCustomer] = useState<string | undefined>(undefined)
   const [posted, setPosted] = useState('')
   const engineRef = useRef<ReturnType<typeof getEngines>[number] | null>(null)
+  /*
+   * What the current session produced, held in a ref rather than in state on
+   * purpose: the engine's end callback can fire in the same tick as its error
+   * callback, and reading `error`/`transcript` state there would see the values
+   * from *before* the update. The ref is what the session actually did.
+   */
+  const sessionRef = useRef<{ final: string; failed: boolean }>({ final: '', failed: false })
 
   const engine = engines.find((e) => e.id === engineId)
   // Data-driven rather than hardcoded: voice happens to be free today because
@@ -113,26 +121,58 @@ export function VoiceScreen({
       return
     }
     setError('')
+    setErrorCode(null)
     setTranscript('')
     setStatus(null)
     setListening(true)
+    sessionRef.current = { final: '', failed: false }
     const instance = getEngines().find((e) => e.id === engineId)
     engineRef.current = instance ?? null
     instance?.start(
       (result) => {
         setTranscript(result.transcript)
         if (result.final) {
+          sessionRef.current.final = result.transcript
           setListening(false)
           setStatus(null)
           setDraftText(result.transcript)
         }
       },
-      (message) => {
+      (message, code) => {
+        sessionRef.current.failed = true
         setError(message)
+        setErrorCode(code ?? null)
         setListening(false)
         setStatus(null)
       },
       (next) => setStatus(next),
+      () => {
+        // The session is over, whatever the reason. Leaving the listening state
+        // on the assumption that a callback is coming is how the mic ended up
+        // pulsing red at an owner who had already stopped talking.
+        setListening(false)
+        setStatus(null)
+        const session = sessionRef.current
+        if (session.final) {
+          setDraftText(session.final)
+          /*
+           * Parse as soon as a complete take lands, so the flow is speak → check
+           * → confirm instead of speak → tap → tap. Nothing is posted by doing
+           * this: `buildDraft` fills the confirmation table, and the ledger is
+           * untouched until "Confirm and record".
+           *
+           * A *partial* transcript is deliberately not parsed — stopping the mic
+           * mid-sentence leaves the words in the box for the owner to finish.
+           * Half a sentence parses to wrong quantities, and quantities are the
+           * part that must never be inferred.
+           */
+          buildDraft(session.final)
+          return
+        }
+        // Nothing usable came back. If the engine already explained why, that
+        // message stands; if it just died, say so plainly.
+        if (!session.failed) setError(t('voice.error.nothingHeard'))
+      },
     )
   }
 
@@ -207,6 +247,30 @@ export function VoiceScreen({
     hasError: error !== '',
     hasDraft: (edited?.length ?? 0) > 0,
   })
+
+  /*
+   * A failure the owner can act on gets a button, not just a sentence. This is
+   * the case that matters: in a browser with no speech service, browser
+   * recognition can never work no matter how well the owner speaks, so the only
+   * route to voice is the on-device model — either switch to it if it is already
+   * installed, or fetch it.
+   */
+  const offlineRoute:
+    | { label: string; action: () => void }
+    | null = (() => {
+    if (!errorCode || !['network', 'language', 'blocked'].includes(errorCode)) return null
+    if (voiceModel.installed) {
+      return {
+        label: t('voice.switchOffline'),
+        action: () => {
+          setEngineId(OFFLINE_ENGINE_ID)
+          setError('')
+          setErrorCode(null)
+        },
+      }
+    }
+    return { label: t('voice.downloadModel'), action: onOpenOffline }
+  })()
 
   const draftTotal = (edited ?? []).reduce((sum, l) => {
     const sku = ledger.skus.find((s) => s.id === l.skuId)
@@ -307,6 +371,15 @@ export function VoiceScreen({
           ) : null}
           {error ? (
             <p className="mt-3 text-center text-[0.72rem] leading-relaxed text-red-100">{error}</p>
+          ) : null}
+          {offlineRoute ? (
+            <button
+              type="button"
+              onClick={offlineRoute.action}
+              className="mt-3 rounded-full bg-white px-4 py-2 text-[0.72rem] font-semibold text-brand-700 transition active:scale-95"
+            >
+              {offlineRoute.label}
+            </button>
           ) : null}
         </div>
       </HeroShell>

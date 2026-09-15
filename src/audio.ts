@@ -43,6 +43,100 @@ const MIN_SECONDS = 0.4
 /** Hard ceiling so a stuck microphone cannot grow an unbounded buffer. */
 const DEFAULT_MAX_MS = 30000
 
+/**
+ * When a take ends, and why it is not up to the owner to say so.
+ *
+ * The recorder used to stop only on a second tap or the 30-second ceiling, which
+ * made "just say the sale" false: you spoke, and then waited. Worse, the wait was
+ * silent — the mic stayed red for up to half a minute with nothing to look at.
+ *
+ * So the take now ends when the talking does. The browser engine has always
+ * behaved this way (Google's own endpointing), so this also makes the two engines
+ * feel like the same product.
+ *
+ * The numbers, and the trade they make:
+ *  - 1.8s of silence after speech ends the take. Short enough not to feel stuck;
+ *    long enough to survive the pause in "limang Coke … bayad cash". Set it
+ *    higher and a store owner who is thinking keeps recording; set it lower and
+ *    a list gets cut in half mid-thought.
+ *  - 300ms of voiced audio is required first, so a cough or a tap on the counter
+ *    cannot end a take before it starts.
+ *  - 10s of complete silence gives up. Somebody opened the mic by accident; they
+ *    should get an answer, not a red light.
+ *
+ * `speechRms` is an amplitude heuristic, not a calibrated gate: capture runs with
+ * `autoGainControl`, so speech sits far above it and room hum far below. It is
+ * deliberately the *only* judgement made from level — everything else is timing,
+ * because a threshold that adapts to a noisy room would end takes unpredictably.
+ */
+export interface SilenceOptions {
+  /** Root-mean-square amplitude above which a frame counts as speech. */
+  speechRms: number
+  /** Silence after speech that ends the take. */
+  silenceMs: number
+  /** Silence before speech that abandons the take. */
+  noSpeechMs: number
+  /** Voiced audio required before silence is allowed to end anything. */
+  minVoicedMs: number
+}
+
+export const SILENCE_DEFAULTS: SilenceOptions = {
+  speechRms: 0.02,
+  silenceMs: 1800,
+  noSpeechMs: 10_000,
+  minVoicedMs: 300,
+}
+
+/** How often the level is sampled while recording. */
+export const VAD_INTERVAL_MS = 60
+
+export interface SilenceTracker {
+  /**
+   * Feed one level sample. Returns true when capture should end.
+   *
+   * Takes the clock as an argument rather than reading it, so the whole decision
+   * is a pure function of the samples — which is what makes "it stops 1.8s after
+   * you stop talking" testable without a microphone.
+   */
+  push(level: number, nowMs: number): boolean
+  /** Whether anything above the speech floor was heard at all. */
+  heardSpeech(): boolean
+}
+
+export function createSilenceTracker(overrides: Partial<SilenceOptions> = {}): SilenceTracker {
+  const { speechRms, silenceMs, noSpeechMs, minVoicedMs } = { ...SILENCE_DEFAULTS, ...overrides }
+
+  let firstAt: number | null = null
+  let lastAt: number | null = null
+  let lastVoiceAt: number | null = null
+  let voicedMs = 0
+  let heard = false
+
+  return {
+    push(level, nowMs) {
+      if (firstAt === null) firstAt = nowMs
+      // Measured from the previous sample rather than from the nominal interval,
+      // so a throttled timer in a background tab cannot shorten the silence
+      // window and cut a take short.
+      const dt = lastAt === null ? 0 : Math.max(0, nowMs - lastAt)
+      lastAt = nowMs
+
+      if (level >= speechRms) {
+        voicedMs += dt
+        lastVoiceAt = nowMs
+        if (voicedMs >= minVoicedMs) heard = true
+        return false
+      }
+
+      if (!heard) return nowMs - firstAt >= noSpeechMs
+      return lastVoiceAt !== null && nowMs - lastVoiceAt >= silenceMs
+    },
+    heardSpeech() {
+      return heard
+    },
+  }
+}
+
 export interface Utterance {
   samples: Float32Array
   /** Always 16 kHz — the caller should not need to know that. */
@@ -163,16 +257,27 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
   const recorder = new MediaRecorder(stream)
   let stopping = false
   let cancelled = false
+  let closeMonitor: (() => void) | null = null
+
+  /** The one way a take ends: the timer, the owner, or the talking stopping. */
+  const finish = (): void => {
+    if (stopping) return
+    stopping = true
+    clearTimeout(timer)
+    recorder.stop()
+  }
 
   const finished = new Promise<Utterance | null>((resolve, reject) => {
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunks.push(event.data)
     }
     recorder.onerror = () => {
+      closeMonitor?.()
       releaseStream(stream)
       reject(new VoiceError(say('Recording failed. Try again.', 'Nabigo ang pag-record. Subukan muli.')))
     }
     recorder.onstop = () => {
+      closeMonitor?.()
       releaseStream(stream)
       if (cancelled) {
         resolve(null)
@@ -205,12 +310,7 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
     }
   })
 
-  const timer = setTimeout(() => {
-    if (!stopping) {
-      stopping = true
-      recorder.stop()
-    }
-  }, maxMs)
+  const timer = setTimeout(finish, maxMs)
 
   try {
     recorder.start()
@@ -220,20 +320,61 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
     throw new VoiceError(say('The microphone could not start. Try again.', 'Hindi masimulan ang mikropono. Subukan muli.'))
   }
 
+  /*
+   * Best-effort on purpose. If the browser refuses an AudioContext the take is
+   * still perfectly usable — tapping the mic stops it, and the ceiling still
+   * applies — so a monitoring failure must never fail the recording.
+   */
+  try {
+    closeMonitor = startSilenceMonitor(stream, finish)
+  } catch {
+    closeMonitor = null
+  }
+
   return {
     finished,
-    stop() {
-      if (stopping) return
-      stopping = true
-      clearTimeout(timer)
-      recorder.stop()
-    },
+    stop: finish,
     cancel() {
       cancelled = true
-      if (stopping) return
-      stopping = true
-      clearTimeout(timer)
-      recorder.stop()
+      finish()
     },
+  }
+}
+
+/**
+ * Watch the live level and end the take when the talking stops.
+ *
+ * Returns its own teardown, because an interval and an AudioContext that outlive
+ * a finished take are exactly the kind of leak that keeps a microphone indicator
+ * lit on the device after the app is done with it.
+ */
+function startSilenceMonitor(stream: MediaStream, onSilence: () => void): () => void {
+  const Ctor = getAudioContextCtor()
+  const context = new Ctor()
+  const source = context.createMediaStreamSource(stream)
+  const analyser = context.createAnalyser()
+  analyser.fftSize = 1024
+  // Deliberately not connected to the destination: listening to the microphone
+  // must never play it back through the speaker.
+  source.connect(analyser)
+
+  const frame = new Float32Array(analyser.fftSize)
+  const tracker = createSilenceTracker()
+
+  const id = setInterval(() => {
+    analyser.getFloatTimeDomainData(frame)
+    let sum = 0
+    for (let i = 0; i < frame.length; i += 1) sum += frame[i] * frame[i]
+    if (tracker.push(Math.sqrt(sum / frame.length), performance.now())) onSilence()
+  }, VAD_INTERVAL_MS)
+
+  return () => {
+    clearInterval(id)
+    try {
+      source.disconnect()
+    } catch {
+      // Already torn down.
+    }
+    void context.close()
   }
 }

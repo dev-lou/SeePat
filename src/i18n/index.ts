@@ -519,6 +519,14 @@ export const UI = {
     fil: 'Walang nakilalang paninda. Subukan ang ibang salita.',
   },
   'voice.error.noEngine': { en: 'That engine is not available.', fil: 'Hindi available ang engine na ito.' },
+  'voice.error.nothingHeard': {
+    en: 'The mic stopped without hearing any words. Try again, closer to the phone.',
+    fil: 'Tumigil ang mic na walang narinig na salita. Subukan muli, ilapit sa phone.',
+  },
+  'voice.switchOffline': {
+    en: 'Use the offline engine instead',
+    fil: 'Gamitin na lang ang offline engine',
+  },
   'voice.lockedBody': {
     en: 'Voice is part of PRO. Typing below keeps working, and nothing you have already recorded changes — it all stays on your device.',
     fil: 'Ang boses ay kasama sa PRO. Patuloy na gumagana ang pag-i-type sa ibaba, at hindi nagbabago ang anumang naitala mo — nasa device mo pa rin lahat ng ito.',
