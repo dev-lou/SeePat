@@ -1,0 +1,37 @@
+{
+  "name": "seepat",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SeePat — voice-enabled, explainable financial decision copilot for Filipino microentrepreneurs",
+  "scripts": {
+    "dev": "vite",
+    "dev:offline": "vite --mode pwadev",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "offline": "vite build && vite preview",
+    "typecheck": "tsc --noEmit",
+    "check:contrast": "node tools/contrast-check.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@fontsource-variable/sora": "^5.3.0",
+    "@huggingface/transformers": "3.7.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.1"
+  }
+}

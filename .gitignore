@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dev-dist/
+
+# Local dev servers
+.vite-dev.log
+.vite-preview.log
+*.log
+
+# Freebuff workspace metadata
+.freebuff/
+
+# OS noise
+.DS_Store
+Thumbs.db

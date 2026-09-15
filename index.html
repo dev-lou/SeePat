@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f5f7fb" />
+    <meta name="description" content="SeePat — ang financial copilot ng bawat Filipino negosyo." />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <!-- iOS takes the icon from here, not from the manifest, and it will not
+         accept an SVG: it wants an opaque raster square. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!--
+      Social card. The image (public/og-image.png, generated from the wordmark by
+      node tools/make-assets.mjs) carries the lockup, so these lines only have to
+      carry the words.
+
+      %VITE_SITE_URL% is Vite's HTML environment substitution. Crawlers —
+      Facebook and LinkedIn in particular — do not reliably resolve a relative
+      og:image, so the tag needs a host. Deploying means setting VITE_SITE_URL
+      (see .env) and every URL below becomes absolute; left empty, these fall
+      back to root-relative paths, which Twitter, Slack and WhatsApp resolve and
+      Facebook may not.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SeePat" />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:title" content="SeePat — See Your Business Clearly" />
+    <meta
+      property="og:description"
+      content="Voice-first bookkeeping and financial intelligence for Filipino micro-businesses. Free, private, and it works with no signal."
+    />
+    <meta property="og:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta property="og:image:secure_url" content="%VITE_SITE_URL%/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The SeePat wordmark" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SeePat — See Your Business Clearly" />
+    <meta
+      name="twitter:description"
+      content="Voice-first bookkeeping and financial intelligence for Filipino micro-businesses. Free, private, and it works with no signal."
+    />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta name="twitter:image:alt" content="The SeePat wordmark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>SeePat</title>
+
+    <!-- The mark and the display face are both needed by the splash itself, so
+         they start downloading before the bundle is even parsed. -->
+    <link rel="preload" as="image" href="/seepat-wordmark.png" />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/sora-latin-wght-normal.woff2"
+      crossorigin
+    />
+
+    <!--
+      The boot splash.
+
+      It lives in the HTML, with its CSS inline, for one reason: it has to paint
+      on the first byte. A splash rendered by React cannot appear until the
+      bundle has been parsed and the first render committed, which is exactly the
+      window where a cold load shows a blank page. Done this way the brand is on
+      screen before the app exists, and the app removes it when it is genuinely
+      ready (see `src/boot.ts`) — no artificial delay, no blank flash.
+
+      The shine, and why it is built the way it is: the wordmark's own ink is
+      navy and gold on transparency, so a white highlight blended with `overlay`
+      lights up the LETTERS as it crosses them and leaves the canvas behind them
+      untouched. That is what makes a sheen visible on a light background — a
+      plain white gradient would have been invisible against a white page.
+
+      Fails open by design: the inline script at the bottom removes the splash on
+      a timer no matter what the app does, so a JavaScript error can never leave
+      a user staring at a logo. With JS disabled entirely, <noscript> hides it.
+    -->
+    <style>
+      @font-face {
+        font-family: 'Sora';
+        font-style: normal;
+        font-weight: 100 800;
+        font-display: swap;
+        src: url('/fonts/sora-latin-wght-normal.woff2') format('woff2');
+      }
+
+      html,
+      body {
+        margin: 0;
+        background-color: #f5f7fb;
+      }
+
+      /* The splash carries the app's own canvas — the same base colour and the
+         same top light — so the handoff to the interface is a fade, not a jump
+         from one look to another. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        background-color: #f5f7fb;
+        background-image:
+          radial-gradient(900px 420px at 12% -12%, rgb(27 69 166 / 0.16), transparent 60%),
+          radial-gradient(760px 400px at 104% -6%, rgb(245 194 29 / 0.18), transparent 58%);
+        background-repeat: no-repeat;
+        color: #0a1428;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        opacity: 1;
+        transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #boot.is-done {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .boot-inner {
+        display: grid;
+        justify-items: center;
+        gap: 0;
+      }
+
+      /* The lockup and its shine. The wordmark is the official artwork, never
+         type we set ourselves, so the letterforms cannot drift from the brand. */
+      .boot-lockup {
+        position: relative;
+        display: inline-block;
+        animation: boot-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .boot-lockup img {
+        display: block;
+        width: min(74vw, 262px);
+        height: auto;
+      }
+
+      /*
+       * The sheen. `overlay` is the trick that makes a highlight work on a light
+       * canvas: white over the navy and gold ink lifts those pixels sharply,
+       * while white over the transparent (page-coloured) parts changes almost
+       * nothing — so the light appears to travel along the letters themselves.
+       */
+      .boot-sheen {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        mix-blend-mode: overlay;
+      }
+      .boot-sheen::after {
+        content: '';
+        position: absolute;
+        inset: -20% -70%;
+        background: linear-gradient(
+          100deg,
+          transparent 40%,
+          rgb(255 255 255 / 0.5) 46%,
+          rgb(255 255 255 / 1) 50%,
+          rgb(255 255 255 / 0.5) 54%,
+          transparent 60%
+        );
+        transform: translateX(-60%);
+        animation: boot-sheen 1.9s cubic-bezier(0.45, 0, 0.25, 1) 0.3s infinite;
+      }
+
+      .boot-tag {
+        margin: 14px 0 0;
+        font-size: 0.66rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #58657f;
+        animation: boot-up 520ms cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+      }
+
+      .boot-bar {
+        position: relative;
+        margin-top: 26px;
+        width: 132px;
+        height: 3px;
+        border-radius: 9999px;
+        background: rgb(10 22 34 / 0.08);
+        overflow: hidden;
+      }
+      .boot-bar i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #12357f, #dda60c);
+        /* Matched to the 2000ms hold so the bar completes exactly as the app
+           takes over, instead of finishing and then sitting full. */
+        animation: boot-fill 1.85s cubic-bezier(0.3, 0.9, 0.2, 1) forwards;
+      }
+
+      @keyframes boot-in {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes boot-up {
+        from {
+          opacity: 0;
+          transform: translateY(7px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes boot-sheen {
+        0% {
+          transform: translateX(-60%);
+        }
+        55%,
+        100% {
+          transform: translateX(60%);
+        }
+      }
+      @keyframes boot-fill {
+        to {
+          width: 100%;
+        }
+      }
+
+      /* Reduced motion: no sweep, no spin, no reveal. The splash still appears —
+         it is the app's first paint — but it holds still and leaves sooner. */
+      @media (prefers-reduced-motion: reduce) {
+        .boot-lockup,
+        .boot-tag,
+        .boot-sheen::after,
+        .boot-bar i {
+          animation: none;
+        }
+        .boot-bar i {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <div id="boot" role="status" aria-label="Loading SeePat">
+      <div class="boot-inner">
+        <div class="boot-lockup">
+          <img src="/seepat-wordmark.png" alt="SeePat" width="660" height="175" />
+          <span class="boot-sheen" aria-hidden="true"></span>
+        </div>
+        <p class="boot-tag">See Your Business Clearly.</p>
+        <span class="boot-bar" aria-hidden="true"><i></i></span>
+      </div>
+    </div>
+
+    <noscript>
+      <style>
+        #boot {
+          display: none;
+        }
+      </style>
+    </noscript>
+
+    <script>
+      /*
+       * The splash handoff. `__seepatBoot` is the only interface between this
+       * file and the app: it records when the splash appeared, exposes the
+       * dismissal, and arms a fallback so a failed bundle cannot trap the user
+       * behind a logo.
+       */
+      ;(function () {
+        var el = document.getElementById('boot')
+        if (!el) return
+
+        var start = performance.now()
+        /*
+         * Two seconds on a normal device. Deliberately not "as fast as
+         * possible": at 900ms the splash flashed and the sheen sweep was over
+         * before the eye caught it, which read as a glitch rather than as a
+         * brand moment. Two seconds is one clean pass of the highlight and one
+         * unhurried read of the wordmark — and it is the owner's FIRST two
+         * seconds with the product, so it is worth them.
+         *
+         * Reduced motion still gets a shorter splash (800ms): the animation is
+         * what was asked for, and without it there is nothing to look at.
+         *
+         * FALLBACK_MS is the fail-open deadline: if the bundle never runs, the
+         * splash removes itself. Keep it comfortably above MIN_MS — a test
+         * asserts that, because a fallback below the floor would cut the splash
+         * short on exactly the slow devices the floor is for.
+         */
+        var MIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 800 : 2000
+        var FALLBACK_MS = 3200
+        var done = false
+
+        function remove() {
+          if (done) return
+          done = true
+          el.classList.add('is-done')
+          var drop = function () {
+            if (el.parentNode) el.parentNode.removeChild(el)
+          }
+          // Remove after the fade, and again on a timer in case the transition
+          // never fires (background tab, throttled timers).
+          el.addEventListener('transitionend', drop, { once: true })
+          setTimeout(drop, 700)
+        }
+
+        window.__seepatBoot = {
+          start: start,
+          minMs: MIN_MS,
+          /* The app calls this on its first committed frame. Any remaining time
+             is spent here rather than in a spinner, and the hard cap below keeps
+             a slow network from turning the splash into a wall. */
+          finish: function () {
+            var elapsed = performance.now() - start
+            var wait = Math.max(0, MIN_MS - elapsed)
+            setTimeout(remove, wait)
+          },
+        }
+
+        setTimeout(remove, FALLBACK_MS)
+      })()
+    </script>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

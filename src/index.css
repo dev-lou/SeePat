@@ -1,0 +1,928 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+ * SeePat — a Philippine-flag fintech surface.
+ *
+ * Navy for structure, gold for accent, flag red for anything that needs
+ * attention — the three colours of the flag, and the three colours of the brand
+ * lockup: "See" in navy, "Pat" in gold, the sun in gold on navy.
+ *
+ * Light canvas, one deep-navy jewel card per screen carrying the numbers that
+ * matter, gold reserved for premium and for lit data on that navy surface, and
+ * emerald kept for exactly one job: money coming in. That last one is a
+ * deliberate exception to the three-colour rule — a Philippine bank statement
+ * still prints credits in green, and "kita" reading as green is a stronger
+ * signal to an owner than palette purity is.
+ *
+ * Depth comes from three tiers of navy-tinted shadow (never flat grey), a faint
+ * grain so large flat areas have texture, and warm light bleeding in from the
+ * top of the page. Figures are set in a geometric display face at an
+ * unapologetic size — the money is the interface.
+ *
+ * Type: Sora for headlines and every figure (geometric, confident at 3rem+);
+ * Plus Jakarta Sans for UI copy, which stays crisp at 0.62rem and has real
+ * tabular figures. The brand wordmark is not type at all — it is the official
+ * lockup image, imported so its letterforms cannot drift from the brand.
+ * ------------------------------------------------------------------------- */
+
+/* Self-hosted so the type survives a dead network: Workbox precaches **\/*.woff2.
+ * latin-ext is NOT optional — the peso sign (U+20B1) lives inside U+20AD-20C0,
+ * and without it every ₱ falls back to a mismatched system glyph. */
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/sora-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/sora-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Jakarta';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Jakarta';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@theme {
+  --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Jakarta', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Brand — navy. The flag's blue, darkened at the top of the ramp so white
+     text on a button clears 9:1 and navy text on white clears 11:1. */
+  --color-brand-50: #eef3fc;
+  --color-brand-100: #dce7fa;
+  --color-brand-200: #bbd0f5;
+  --color-brand-300: #8fb0ec;
+  --color-brand-400: #5c87de;
+  --color-brand-500: #2f5fc9;
+  --color-brand-600: #1b45a6;
+  --color-brand-700: #12357f;
+  --color-brand-800: #0c2760;
+  --color-brand-900: #081b44;
+  --color-brand-950: #050f28;
+
+  /* Gold — the flag's yellow. Bright gold is a *surface and graphic* colour: it
+     is what the sun, the premium material and the lit data on a navy card are
+     made of. It is never small text on white (1.7:1); gold-700 exists for that
+     and reads as antique gold rather than as UI chrome. */
+  --color-gold-50: #fff9e6;
+  --color-gold-100: #fef0bf;
+  --color-gold-200: #fde38a;
+  --color-gold-300: #fbd350;
+  --color-gold-400: #f5c21d;
+  --color-gold-500: #dda60c;
+  --color-gold-600: #b07f08;
+  --color-gold-700: #8a6206;
+
+  /* Surfaces. A touch of warmth in the neutrals so the cool navy does not make
+     the page feel like a spreadsheet. */
+  --color-page: #f5f7fb;
+  --color-card: #ffffff;
+  /* The foot of every card's fill. A card whose fill is *exactly* one flat
+     colour has nothing to catch the light, which is why white cards on a white
+     page look like wireframes however good the shadows are. */
+  --color-card-deep: #f7f9fd;
+  --color-sunken: #eef1f8;
+
+  /* Hairlines as ALPHA navy rather than an opaque grey. An opaque border is a
+     stroke that sits on top of the surface and reads as a box; a 5% navy ring
+     tints with whatever is underneath it — page or card — so the edge belongs to
+     the surface instead of being drawn around it. */
+  --color-hairline: rgb(10 22 34 / 0.06);
+  --color-hairline-strong: rgb(10 22 34 / 0.1);
+
+  /* Hairlines — soft, never structural */
+  --color-line: #e5eaf3;
+  --color-line-strong: #d2dae8;
+
+  /* Text ramp — navy-black rather than pure grey, so the type sits in the same
+     family as the brand. Every step clears 4.5:1 on all three light surfaces
+     (page, card AND sunken), which a pair-by-pair audit verifies. */
+  --color-fg: #0a1428;
+  --color-fg-muted: #3a4761;
+  --color-fg-subtle: #58657f;
+  --color-fg-faint: #5f6c86;
+
+  /* Overlays */
+  --color-veil: rgb(255 255 255 / 0.72);
+  --color-scrim: rgb(10 22 34 / 0.5);
+
+  /* Semantic states: kita / bantayan / utang. */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+
+  /* Red — the flag's red, anchored at #ce1126. Danger, negatives and the
+     recording mic. Overrides Tailwind's default red ramp so there is one red in
+     the system and it is the flag's. */
+  --color-red-50: #fef2f3;
+  --color-red-100: #fde2e4;
+  --color-red-200: #fbc9ce;
+  --color-red-300: #f79aa3;
+  --color-red-400: #f06575;
+  --color-red-500: #e23a4e;
+  --color-red-600: #ce1126;
+  --color-red-700: #a50e1f;
+  --color-red-800: #7e0b18;
+
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-200: #bae6fd;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+  --color-sky-700: #0369a1;
+
+  --color-slate-200: #e2e8f0;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-900: #0f172a;
+
+  /* Radii — 20px cards, 28px sheets, 999px pills. */
+  --radius-card: 1.25rem;
+  --radius-sheet: 1.75rem;
+
+  /* Elevation. Shadows are tinted with the ink navy and stacked in two parts
+     (a tight contact shadow + a wide ambient one) so cards sit *above* the page
+     instead of being outlined on it. */
+  /* Elevation is three layers, never one: a 1px contact shadow (the card
+     touching the page), a mid layer that does the modelling, and a wide ambient
+     pool that suggests height. A single flat shadow is the tell of a template;
+     three stacked ones are what makes white-on-white read as stacked paper. */
+  --shadow-e1: 0 1px 1px rgb(10 22 34 / 0.035), 0 3px 8px -2px rgb(10 22 34 / 0.05);
+  --shadow-e2: 0 1px 1px rgb(10 22 34 / 0.03), 0 4px 10px -3px rgb(10 22 34 / 0.05),
+    0 16px 34px -14px rgb(10 22 34 / 0.1);
+  --shadow-e3: 0 1px 1px rgb(10 22 34 / 0.03), 0 8px 20px -6px rgb(10 22 34 / 0.06),
+    0 30px 64px -22px rgb(10 22 34 / 0.18);
+  --shadow-dock: 0 2px 4px rgb(10 22 34 / 0.06), 0 16px 40px -12px rgb(10 22 34 / 0.26);
+  --shadow-jewel: 0 6px 14px -6px rgb(6 78 59 / 0.5), 0 26px 50px -18px rgb(6 78 59 / 0.45);
+  --shadow-pop: 0 4px 10px -4px rgb(4 120 87 / 0.5), 0 16px 32px -12px rgb(4 120 87 / 0.4);
+
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/*
+ * Atmosphere. Three light sources bleeding in from above — navy, gold, flag red
+ * — plus a floor glow at the bottom so the page is lit from both ends and the
+ * middle never goes flat. Fixed to the viewport so the light stays put while the
+ * sheet scrolls, which is what makes it read as a room rather than a background.
+ */
+body {
+  margin: 0;
+  background-color: var(--color-page);
+  background-image:
+    radial-gradient(900px 420px at 12% -12%, rgb(27 69 166 / 0.14), transparent 60%),
+    radial-gradient(760px 400px at 104% -6%, rgb(245 194 29 / 0.16), transparent 58%),
+    radial-gradient(680px 380px at 60% -22%, rgb(206 17 38 / 0.07), transparent 62%),
+    radial-gradient(820px 460px at -6% 108%, rgb(27 69 166 / 0.09), transparent 62%),
+    radial-gradient(760px 420px at 106% 104%, rgb(221 166 12 / 0.1), transparent 60%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/*
+ * The dot grid — the one piece of texture that answers "what is missing".
+ *
+ * A micro dot grid at 22px, at barely-visible alpha, *dissolving downward*: it
+ * is strongest behind the header and gone by mid-page. That is the opposite of
+ * how a grid is usually misused — run across a whole canvas it becomes graph
+ * paper and competes with the data; faded out it reads as a drafting surface
+ * under the interface, which is the "engineered" quality people mean when they
+ * say a finance UI feels premium.
+ *
+ * Crucially it sits BEHIND the cards (z-index -1), not inside them. Texture in a
+ * card fill is 2021 dribbble work: it puts a pattern under the numbers and makes
+ * them harder to read. The cards get light instead — gradient, hairline ring,
+ * stacked shadow.
+ */
+.canvas-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(10 22 34 / 0.16) 1px, transparent 1.3px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.5) 30%, transparent 64%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.5) 30%, transparent 64%);
+}
+
+/* --- Surfaces ------------------------------------------------------------ */
+
+/*
+ * One physics for every light surface in the app: a vertical fill gradient so
+ * the card has a top and a bottom, an inset hairline ring, a 1px light catch on
+ * the top edge, and the three-layer elevation. The jewel card has had this
+ * treatment since it was built; the ordinary cards had a flat fill and a grey
+ * outline, which is exactly why they read as wireframes.
+ */
+.surface {
+  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-card-deep) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px var(--color-hairline),
+    var(--shadow-e2);
+}
+
+/* Interactive cards: lifts on hover, settles on press. */
+.surface-raise {
+  transition:
+    transform 220ms var(--ease-spring),
+    box-shadow 220ms var(--ease-spring);
+}
+.surface-raise:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px var(--color-hairline),
+    var(--shadow-e3);
+}
+.surface-raise:active {
+  transform: translateY(0) scale(0.995);
+}
+
+/*
+ * Tinted materials. Used where a card means something rather than merely holds
+ * something: gold for a plan or a value, navy for a reading the engine produced,
+ * sunken for a well inside a card. Each is the same gradient, stopped in a
+ * different tint, so they read as one family.
+ */
+.surface-gold {
+  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-gold-50) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px rgb(176 127 8 / 0.16),
+    var(--shadow-e2);
+}
+.surface-brand {
+  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-brand-50) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px rgb(27 69 166 / 0.14),
+    var(--shadow-e2);
+}
+/* Same edge and shadow, no gradient — for cards that carry their own state
+   fill, since a background-image paints over a background-colour. */
+.surface-flat {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    inset 0 0 0 1px var(--color-hairline),
+    var(--shadow-e2);
+}
+
+.surface-inset {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-sunken) 0%,
+    color-mix(in srgb, var(--color-sunken) 62%, white) 100%
+  );
+  box-shadow:
+    inset 0 1px 2px rgb(10 22 34 / 0.05),
+    inset 0 0 0 1px rgb(10 22 34 / 0.03);
+}
+
+/* --- Type roles ---------------------------------------------------------- */
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+/* Money. Tight tracking and tabular figures so columns line up to the centavo. */
+.figure-xl {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.figure-lg {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Small caps-ish label above a value. */
+.eyebrow {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+}
+
+.meta {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Pill badge. The tint is derived from the current text colour, so a badge is
+ * coloured by writing `badge text-emerald-700` and nothing else — one source of
+ * truth for the tone, and no second palette to keep in sync.
+ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  border-radius: 9999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  background: color-mix(in srgb, currentColor 12%, white);
+}
+
+/* --- Texture ------------------------------------------------------------- */
+
+/* Grain. Large flat areas (the page, the jewel card) read as plastic without it;
+   3% of fractal noise is invisible as texture but stops the surfaces looking
+   digitally empty. Encoded inline so it costs no request. */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* The jewel card: navy lit from the top-left, falling to near-black at the
+   bottom-right, plus a diagonal sheen that sweeps once on mount.
+
+   The lightest stop (#12357f-ish) is the worst case for the white text on top of
+   it, so the gradient starts there rather than at a brighter blue. */
+.jewel {
+  background-image:
+    linear-gradient(148deg, #123f8f 0%, #0c2760 40%, #071a3d 74%, #050f28 100%);
+}
+.jewel::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 130%;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 28%,
+    rgb(255 255 255 / 0.16) 40%,
+    rgb(255 255 255 / 0.03) 48%,
+    transparent 60%
+  );
+  transform: translateX(-30%);
+  animation: sheen 1.5s var(--ease-spring) 0.25s both;
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(32%);
+    opacity: 0;
+  }
+}
+
+/* A 1px inner highlight along the top edge is what makes a surface look like it
+   has thickness rather than being a coloured rectangle — and on navy it wants a
+   warm gold line rather than white, which is how the brand lockup reads too. */
+.edge-light {
+  box-shadow: inset 0 1px 0 0 rgb(253 227 138 / 0.35);
+}
+
+/* --- Motion -------------------------------------------------------------- */
+
+/*
+ * A from-only keyframe, filled backwards. That detail matters: an element whose
+ * animation *fills forwards* keeps the animated transform as a computed identity
+ * matrix even after it finishes, and any ancestor with a transform becomes the
+ * containing block for `position: fixed` descendants — which is exactly how the
+ * checkout sheet ended up anchored to the Plan screen instead of the viewport.
+ * Here the transform exists only while the entrance plays, then collapses to
+ * `none`, so a fixed overlay rendered inside a screen still works.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem) scale(0.985);
+  }
+}
+
+/* One orchestrated entrance per screen beats scattered micro-interactions. */
+.enter > * {
+  animation: rise 0.5s var(--ease-spring) backwards;
+}
+.enter > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.enter > *:nth-child(2) {
+  animation-delay: 55ms;
+}
+.enter > *:nth-child(3) {
+  animation-delay: 110ms;
+}
+.enter > *:nth-child(4) {
+  animation-delay: 165ms;
+}
+.enter > *:nth-child(5) {
+  animation-delay: 220ms;
+}
+.enter > *:nth-child(6) {
+  animation-delay: 275ms;
+}
+.enter > *:nth-child(n + 7) {
+  animation-delay: 330ms;
+}
+
+@keyframes ring-in {
+  from {
+    stroke-dashoffset: var(--ring-circumference);
+  }
+}
+
+.ring-progress {
+  animation: ring-in 1.3s var(--ease-spring) 0.15s both;
+}
+
+/* Charts draw themselves in: the line is dash-offset animated, the fill fades up
+   behind it, and each column grows from the baseline. */
+@keyframes line-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* pathLength={1} normalises the path, so the dash math is the same for every
+   chart regardless of how long the curve actually is. */
+.chart-line {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: line-draw 1.4s var(--ease-spring) 0.2s forwards;
+}
+
+@keyframes area-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.chart-area {
+  animation: area-in 1s ease-out 0.55s both;
+}
+
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+.chart-col {
+  transform-origin: bottom;
+  animation: grow-up 0.9s var(--ease-spring) both;
+}
+
+@keyframes fill-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+.chart-bar {
+  transform-origin: left;
+  animation: fill-x 1s var(--ease-spring) both;
+}
+
+/* The mic waveform. Each bar carries its own delay so the row ripples instead of
+   blinking in unison. */
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.wave-on span {
+  animation: wave 0.95s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * The live-mic pulse. `.mic-ring` declares its own positioning context on
+ * purpose: the ring is absolutely positioned, so it anchors to the nearest
+ * positioned ancestor — and a caller that forgets `relative` (the welcome deck
+ * did) gets the ring sized to whatever big box happens to be above it. It was
+ * rendering as a red circle across the entire slide. Putting it here means the
+ * class cannot be misused from any screen, which is cheaper than remembering.
+ */
+.mic-ring {
+  position: relative;
+}
+.mic-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid var(--color-red-600);
+  animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- Pat, the SeePat owl -------------------------------------------------- */
+
+/*
+ * Motion is procedural: no sprite sheet and no animation runtime, because this
+ * app precaches its shell and every install pays that weight on prepaid data.
+ * The bird is paths plus these keyframes.
+ *
+ * Every part runs on its OWN clock -- 3.6s, 4.3s, 4.4s, 5.1s, 6.2s, 6.9s, 7.3s
+ * and 9.7s share no common beat, so nothing ever lines up twice and the loop
+ * never becomes visible. A single shared duration reads as a metronome within
+ * seconds; that difference is the whole illusion.
+ *
+ * Amplitudes are in the drawing's own units, and the drawing is rendered LARGE
+ * (84-140px), because a 1.6px lift on a 58px bird is sub-pixel on screen and
+ * reads as a still image. Every number below is sized for the place Pat
+ * actually appears.
+ */
+.pat {
+  /* Gold-600 rather than bright gold: a 1.2px dashed ring at 1.7:1 on a white
+     card is invisible, and this is the step the contrast audit already holds to
+     the 3:1 graphic floor. On navy the ring flips to lit gold instead. */
+  --pat-accent: var(--color-gold-600);
+  --pat-glow: rgb(221 166 12 / 0.18);
+}
+
+/* On the navy jewel surface a navy bird would vanish, so Pat inverts into the
+   lit material -- the same light-on-dark relationship as the gold sun. */
+.pat[data-tone='dark'] {
+  --pat-accent: var(--color-gold-300);
+  --pat-glow: rgb(255 255 255 / 0.14);
+}
+/* Worry moves the ring to the flag's red -- and on navy it has to be the 300
+   step, because red-600 is the one red that disappears against navy. */
+.pat[data-mood='concerned'] {
+  --pat-accent: var(--color-red-600);
+}
+.pat[data-tone='dark'][data-mood='concerned'] {
+  --pat-accent: var(--color-red-300);
+}
+
+/* SVG transforms need their own box, or a rotating eyelid pivots around the
+   origin of the whole drawing and flies off the face. */
+.pat [class*='pat-'] {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Two layers of idle motion on deliberately different periods: the whole bird
+   floats, and the body breathes inside that float. */
+.pat-float {
+  animation: pat-float 4.4s ease-in-out infinite;
+}
+.pat-breathe {
+  animation: pat-breathe 3.6s ease-in-out infinite;
+}
+.pat-sway {
+  animation: pat-sway 5.1s ease-in-out infinite;
+}
+.pat-tuft-l {
+  animation: pat-tuft 7.3s ease-in-out infinite;
+}
+.pat-tuft-r {
+  animation: pat-tuft 7.3s ease-in-out infinite;
+  animation-delay: -2.6s;
+}
+.pat-wing-l {
+  animation: pat-wing 6.2s ease-in-out infinite;
+}
+.pat-wing-r {
+  animation: pat-wing 6.2s ease-in-out infinite;
+  animation-delay: -1.4s;
+}
+
+/*
+ * Blinking is the signature owl move, rigged the way a 2D animator does it: an
+ * eyelid the colour of the face, parked at scaleY(0), snapping shut for about
+ * 130ms -- how long a real blink lasts, and long enough to actually be seen.
+ * The second lid runs on its own clock, so the two occasionally overlap into a
+ * double blink, which is exactly what real eyes do.
+ *
+ * Lids blink in EVERY mood, including the worried one. Holding them still is
+ * what made the bird read as a static image on the dashboard, where a ledger
+ * warning is present most of the time.
+ */
+.pat-lid {
+  /* Origin top: a lid pivoting from the middle of the eye would grow outwards
+     from the pupil and read as a dilated pupil, not a closing eyelid. */
+  transform-box: fill-box;
+  transform-origin: center top;
+  transform: scaleY(0);
+  animation: pat-blink 4.3s infinite;
+}
+.pat-lid-b {
+  animation-duration: 6.9s;
+  animation-delay: -1.7s;
+}
+
+.pat-pupil {
+  animation: pat-scan 9.7s ease-in-out infinite;
+}
+
+/* The instrument ring. This is the element that says "device" rather than
+   "cartoon": a gauge bezel, not decoration. */
+.pat-orbit {
+  stroke: var(--pat-accent);
+  animation: pat-orbit 26s linear infinite;
+}
+.pat-glow {
+  fill: var(--pat-glow);
+  animation: pat-glow 5.4s ease-in-out infinite;
+}
+
+/* Mood changes speed and colour -- never geometry, because the geometry is
+   attributes and the animations own the transforms. */
+.pat[data-mood='thinking'] .pat-orbit {
+  animation-duration: 6s;
+}
+.pat[data-mood='thinking'] .pat-pupil {
+  animation-duration: 2.6s;
+}
+.pat[data-mood='thinking'] .pat-glow {
+  animation-duration: 2.8s;
+}
+.pat[data-mood='listening'] .pat-orbit {
+  animation-duration: 11s;
+}
+.pat[data-mood='listening'] .pat-glow {
+  animation-duration: 2.2s;
+}
+/* A worried bird narrows its eyes -- but keeps blinking, so it never freezes. */
+.pat[data-mood='concerned'] .pat-lid {
+  transform: scaleY(0.4);
+}
+.pat[data-mood='concerned'] .pat-glow {
+  animation-duration: 7.5s;
+}
+
+/* The one element that changes with the mood instead of merely speeding up. */
+.pat-pose {
+  opacity: 0;
+}
+.pat[data-mood='concerned'] .pat-pose-worry,
+.pat[data-mood='pleased'] .pat-pose-happy {
+  animation: pat-pose-in 300ms var(--ease-spring) both;
+}
+@keyframes pat-pose-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2.5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pat-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes pat-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-3.4px) scaleY(1.03);
+  }
+}
+
+@keyframes pat-sway {
+  0%,
+  100% {
+    transform: rotate(-3.4deg);
+  }
+  50% {
+    transform: rotate(3.4deg);
+  }
+}
+
+@keyframes pat-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(0);
+  }
+  95.2%,
+  97% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pat-tuft {
+  0%,
+  88%,
+  100% {
+    transform: rotate(0deg);
+  }
+  91% {
+    transform: rotate(-11deg);
+  }
+  95% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes pat-wing {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(6.5deg);
+  }
+}
+
+@keyframes pat-scan {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  22% {
+    transform: translate(-2.2px, 1px);
+  }
+  58% {
+    transform: translate(2.2px, 0);
+  }
+  80% {
+    transform: translate(-1px, -1px);
+  }
+}
+
+@keyframes pat-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pat-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain::after,
+  .jewel::before {
+    animation: none;
+  }
+  /* The owl keeps its pose: the lids' resting state is scaleY(0), which is eyes
+     open, so switching the animations off leaves a composed bird rather than a
+     collapsed one. */
+  .pat-float,
+  .pat-breathe,
+  .pat-sway,
+  .pat-tuft-l,
+  .pat-tuft-r,
+  .pat-wing-l,
+  .pat-wing-r,
+  .pat-lid,
+  .pat-pose,
+  .pat-pupil,
+  .pat-orbit,
+  .pat-glow,
+  .mic-ring::after,
+  .enter > *,
+  .ring-progress,
+  .chart-line,
+  .chart-area,
+  .chart-col,
+  .chart-bar,
+  .wave-on span {
+    animation: none;
+  }
+  /* Static poses still show under reduced motion — they just stop arriving with
+     a fade, because a mood you cannot see is a mood that does not exist. */
+  .pat[data-mood='concerned'] .pat-pose-worry,
+  .pat[data-mood='pleased'] .pat-pose-happy {
+    animation: none;
+    opacity: 1;
+  }
+  .chart-line {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --- Shell --------------------------------------------------------------- */
+
+/* Respect the notch and home indicator so the shell feels native. */
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+.safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Visible focus for keyboard users, invisible for touch. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-700);
+  outline-offset: 2px;
+}

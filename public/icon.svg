@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SeePat">
+  <!--
+    The mark is the Philippine sun around an eye.
+
+    Two meanings have to survive at 32px: *sipat* (to observe) — which is why the
+    centre is an eye and not a balance scale — and the flag, which is why the rays
+    are gold on navy. Eight rays, as on the flag's sun. The iris carries a warm
+    gold ring so the eye reads as lit from inside rather than punched out.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1b45a6" />
+      <stop offset="48%" stop-color="#0c2760" />
+      <stop offset="100%" stop-color="#050f28" />
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#fde38a" />
+      <stop offset="60%" stop-color="#f5c21d" />
+      <stop offset="100%" stop-color="#dda60c" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="122" fill="url(#tile)" />
+  <!-- A hairline of flag red under the top edge, the way the flag's band sits. -->
+  <path d="M0 0h512v18H0z" fill="#ce1126" opacity="0.9" />
+  <rect width="512" height="250" rx="122" fill="#ffffff" fill-opacity="0.06" />
+
+  <!-- Eight rays. -->
+  <g fill="url(#sun)">
+    <path d="M256 40 L275 112 L237 112 Z" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(45 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(90 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(135 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(180 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(225 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(270 256 256)" />
+    <path d="M256 40 L275 112 L237 112 Z" transform="rotate(315 256 256)" />
+  </g>
+
+  <!-- The eye. -->
+  <path
+    d="M172 256 Q256 184 340 256 Q256 328 172 256 Z"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="30"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="256" cy="256" r="56" fill="#f5c21d" fill-opacity="0.4" />
+  <circle cx="256" cy="256" r="34" fill="#ffffff" />
+</svg>
