@@ -212,3 +212,92 @@ describe('resilience warnings', () => {
     expect(checkInvariant(twin).ok).toBe(true)
   })
 })
+
+/**
+ * Where the money is, as opposed to how much of it there is.
+ *
+ * GCash is how a large share of these stores is actually paid, so a till that
+ * counts an e-wallet sale as drawer money is wrong about the one number the
+ * owner can physically verify. The split has to hold without a second account
+ * system, so `cashCentavos` stays money-on-hand and `walletCentavos` says how
+ * much of it is not in the box.
+ */
+describe('cash in the box versus money in an e-wallet', () => {
+  it('puts a GCash sale in the wallet, not in the drawer', () => {
+    const twin = computeTwin(
+      ledgerOf([
+        { id: id(), at: txnAt(1, 8), kind: 'purchase', lines: [{ skuId: 'coke', qty: 20, unitCostCentavos: pesos(20) }], paidCentavos: pesos(400) },
+        { id: id(), at: txnAt(1, 9), kind: 'cash_sale', lines: [{ skuId: 'coke', qty: 10, unitPriceCentavos: pesos(25) }], channel: 'gcash' },
+      ]),
+    )
+    expect(twin.cashCentavos).toBe(pesos(-400) + pesos(250))
+    expect(twin.walletCentavos).toBe(pesos(250))
+    // The drawer count is money on hand minus the float, and it really was
+    // overdrawn here: the stock was bought for cash and sold through GCash.
+    expect(deriveTwin(twin).cashInBoxCentavos).toBe(pesos(-400))
+    // A second account would have changed this identity; it must not.
+    expect(checkInvariant(twin).ok).toBe(true)
+  })
+
+  it('treats an absent channel as the box, so existing records keep their meaning', () => {
+    const twin = computeTwin(
+      ledgerOf([
+        { id: id(), at: txnAt(1, 8), kind: 'capital_injection', amountCentavos: pesos(500) },
+        { id: id(), at: txnAt(1, 9), kind: 'cash_sale', lines: [{ skuId: 'coke', qty: 4, unitPriceCentavos: pesos(25) }] },
+      ]),
+    )
+    expect(twin.walletCentavos).toBe(0)
+    expect(deriveTwin(twin).cashInBoxCentavos).toBe(twin.cashCentavos)
+    expect(deriveTwin(twin).cashInBoxCentavos).toBe(pesos(600))
+  })
+
+  it('routes an utang settled by GCash the same way as a GCash sale', () => {
+    const twin = computeTwin(
+      ledgerOf([
+        { id: id(), at: txnAt(1, 8), kind: 'purchase', lines: [{ skuId: 'coke', qty: 10, unitCostCentavos: pesos(20) }], paidCentavos: pesos(200) },
+        { id: id(), at: txnAt(1, 9), kind: 'credit_sale', lines: [{ skuId: 'coke', qty: 4, unitPriceCentavos: pesos(25) }], customerId: 'nena' },
+        { id: id(), at: txnAt(1, 10), kind: 'payment_received', customerId: 'nena', amountCentavos: pesos(60), channel: 'maya' },
+      ]),
+    )
+    expect(twin.walletCentavos).toBe(pesos(60))
+    expect(twin.receivables.nena).toBe(pesos(40))
+    expect(checkInvariant(twin).ok).toBe(true)
+  })
+
+  it('warns when the drawer is overdrawn with money sitting in a wallet', () => {
+    // Every outflow is taken from the box, so paying a supplier through GCash and
+    // recording it as cash leaves a negative drawer that has no physical meaning.
+    // The amount is not wrong; the channel is missing from the record — so the
+    // warning says that rather than letting a nonsense figure sit on the screen.
+    const twin = computeTwin(
+      ledgerOf([
+        { id: id(), at: txnAt(1, 8), kind: 'cash_sale', lines: [{ skuId: 'coke', qty: 20, unitPriceCentavos: pesos(25) }], channel: 'gcash' },
+        { id: id(), at: txnAt(1, 9), kind: 'expense', amountCentavos: pesos(600), paid: 'cash' },
+      ]),
+    )
+    // ₱500 of sales landed in the wallet and ₱600 of expenses came out of the
+    // box, so the box is ₱600 short on paper — which is the whole point of the
+    // warning: the money exists, it is in the wrong place on the record.
+    expect(twin.walletCentavos).toBe(pesos(500))
+    expect(deriveTwin(twin).cashInBoxCentavos).toBe(pesos(-600))
+    const warning = twin.warnings.find((w) => w.code === 'box_overdrawn')
+    expect(warning).toBeDefined()
+    // Both languages, and both figures, because this one is read aloud as often
+    // as it is read: it has to name the shortfall and the float that explains it.
+    expect(warning?.message).toContain('600')
+    expect(warning?.message).toContain('500')
+    expect(warning?.messageFil).toContain('GCash')
+    // It is a data-entry warning, not a broken ledger: the books still balance.
+    expect(checkInvariant(twin).ok).toBe(true)
+  })
+
+  it('stays quiet when a pure-cash store simply spends what it has', () => {
+    const twin = computeTwin(
+      ledgerOf([
+        { id: id(), at: txnAt(1, 8), kind: 'capital_injection', amountCentavos: pesos(300) },
+        { id: id(), at: txnAt(1, 9), kind: 'expense', amountCentavos: pesos(300), paid: 'cash' },
+      ]),
+    )
+    expect(twin.warnings.some((w) => w.code === 'box_overdrawn')).toBe(false)
+  })
+})

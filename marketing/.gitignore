@@ -1,0 +1,6 @@
+# The marketing site is its own deployable project, so it carries its own
+# ignore rules instead of borrowing the app's.
+node_modules/
+dist/
+.env
+.env.local

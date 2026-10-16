@@ -6,10 +6,14 @@ import { AskScreen } from './Ask.tsx'
 import { ScoreView } from './ScoreView.tsx'
 import { PlanScreen } from './Plan.tsx'
 import { OfflineScreen } from './Offline.tsx'
-import { Button, Chip, SimulatedNote } from './components.tsx'
-import { ToastProvider } from './Toast.tsx'
+import { ItemsScreen } from './Items.tsx'
+import { UtangScreen } from './Utang.tsx'
+import { Button, Chip, ConfirmDialog, SimulatedNote } from './components.tsx'
+import { ToastProvider, useToast } from './Toast.tsx'
 import { useNegosyo } from '../store.ts'
-import { TIERS, formatPlanPrice, tierById, useEntitlement } from '../billing.ts'
+import { formatPHP } from '../engine/index.ts'
+import type { Ledger } from '../engine/index.ts'
+import { formatPlanPrice, tierById, useEntitlement, visibleTiers } from '../billing.ts'
 import type { TierId } from '../billing.ts'
 import { useVoiceModel } from '../asr-offline.ts'
 import { LANGS, pick, useLang, useSetLang, useT } from '../i18n/index.ts'
@@ -19,8 +23,9 @@ import { clearWelcomeSeen, shouldShowWelcome, welcomeSeenVersion } from '../onbo
 import { finishBoot } from '../boot.ts'
 import { useReadingSize, useSetReadingSize } from '../reading.ts'
 import type { ReadingSize } from '../reading.ts'
+import { setSpeakEnabled, useSpeakEnabled } from './useSpeech.ts'
 
-type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline'
+type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline' | 'items' | 'utang'
 
 /**
  * The three reading sizes, in words rather than an A/A+/A++ glyph strip: the
@@ -55,10 +60,30 @@ const PAGE_LABEL: Record<Tab, UIStr> = {
   score: 'tab.score',
   plan: 'app.managePlan',
   offline: 'app.offlineVoice',
+  items: 'app.myItems',
+  utang: 'app.utangList',
 }
 
+/**
+ * The provider is hoisted above the shell so the shell itself can raise a toast.
+ *
+ * The toast used to be out of reach of everything in this file — `useToast`
+ * throws above its provider — which is why the two most destructive actions in
+ * the app (erasing every record, and undoing that erase) had no way to report
+ * themselves here. One wrapper, no other change: the shell below is the same
+ * component it always was.
+ */
 export function App() {
+  return (
+    <ToastProvider>
+      <AppShell />
+    </ToastProvider>
+  )
+}
+
+function AppShell() {
   const negosyo = useNegosyo()
+  const toast = useToast()
   const billing = useEntitlement()
   const voiceModel = useVoiceModel()
   const t = useT()
@@ -66,8 +91,13 @@ export function App() {
   const setLang = useSetLang()
   const reading = useReadingSize()
   const setReading = useSetReadingSize()
+  const speakOn = useSpeakEnabled()
   const [tab, setTab] = useState<Tab>('twin')
   const [menuOpen, setMenuOpen] = useState(false)
+  // Holding the pending erase as the ledger we would restore, not a boolean:
+  // the confirm and the undo are the same value, so there is no window where the
+  // dialog is up and the thing it protects has already changed.
+  const [pendingErase, setPendingErase] = useState<Ledger | null>(null)
   const [welcome, setWelcome] = useState(() => shouldShowWelcome(welcomeSeenVersion()))
 
   // The splash has painted since the first byte (index.html); this is the app
@@ -108,13 +138,33 @@ export function App() {
     setTab(next)
   }
 
+  /*
+   * The owner's own book, reached from where it is needed rather than from the
+   * dock. The dock stays at four destinations plus the mic: the first thing an
+   * older owner learns is the position of the tabs, and a bar that grows a sixth
+   * target every time a screen is built is a bar nobody can use from memory.
+   *
+   * Utang is one tap from the advice that names it ("Collect first — ₱4,158
+   * unpaid") and one tap from the Ledger's Utang mode; items are one tap from
+   * the item picker that needs them.
+   */
+  const goToItems = () => {
+    setTab('items')
+    setMenuOpen(false)
+  }
+
+  const goToUtang = () => {
+    setTab('utang')
+    setMenuOpen(false)
+  }
+
   function setDemoTier(tier: TierId) {
     if (tier === 'free') billing.downgrade()
     else billing.purchase(tier, 'gcash')
   }
 
   return (
-    <ToastProvider>
+    <>
       <div className="relative mx-auto flex h-full max-w-md flex-col">
       {/* The drafting surface under everything: a micro dot grid that dissolves
           by mid-page. Behind the content (z-index -1), never inside a card. */}
@@ -141,7 +191,7 @@ export function App() {
               aria-label="SeePat"
             >
               <img
-                src="/new_logo.png"
+                src="/seepat-logo.png"
                 alt="SeePat"
                 className="h-[56px] w-[56px] object-contain drop-shadow-xs"
               />
@@ -166,12 +216,22 @@ export function App() {
               <span className={`h-1.5 w-1.5 rounded-full ${tierConfig.dot}`} />
               <span>{tierById(billing.tier).short}</span>
             </button>
+            {/*
+             * Labelled, not icon-only.
+             *
+             * Two of the three things behind this button are the ones this
+             * audience actually needs — the language and the text size — and a
+             * gear or a slider glyph is not a word a 55-year-old reads as "my
+             * settings". The word rides beside the glyph from 380px up and the
+             * key collapses back to the icon below that, so nothing is lost on a
+             * very narrow phone.
+             */}
             <button
               type="button"
               aria-label={t('app.settings')}
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 active:translate-y-px ${
+              className={`flex h-10 items-center justify-center gap-1.5 rounded-full border px-3 transition-all duration-200 active:translate-y-px ${
                 menuOpen
                   ? 'border-brand-800 bg-brand-800 text-white shadow-pop'
                   : 'border-line-strong bg-card text-fg-muted shadow-e1 hover:text-fg'
@@ -190,6 +250,9 @@ export function App() {
                 <circle cx="16" cy="7" r="2.4" />
                 <circle cx="8" cy="17" r="2.4" />
               </svg>
+              <span className="hidden text-[0.75rem] font-bold min-[380px]:inline">
+                {t('app.settings')}
+              </span>
             </button>
           </div>
         </div>
@@ -200,9 +263,16 @@ export function App() {
         {/* Keyed by tab so the staggered entrance replays on every screen change. */}
         <div key={tab} className="enter">
           {tab === 'twin' ? (
-            <Dashboard negosyo={negosyo} onOpenScore={() => setTab('score')} onGo={setTab} />
+            <Dashboard
+              negosyo={negosyo}
+              onOpenScore={() => setTab('score')}
+              onOpenUtang={goToUtang}
+              onGo={setTab}
+            />
           ) : null}
-          {tab === 'tala' ? <RecordScreen negosyo={negosyo} /> : null}
+          {tab === 'tala' ? (
+            <RecordScreen negosyo={negosyo} onOpenItems={goToItems} onOpenUtang={goToUtang} />
+          ) : null}
           {tab === 'boses' ? (
             <VoiceScreen
               negosyo={negosyo}
@@ -212,13 +282,20 @@ export function App() {
             />
           ) : null}
           {tab === 'tanong' ? (
-            <AskScreen negosyo={negosyo} billing={billing} onUpgrade={goToPlan} />
+            <AskScreen
+              negosyo={negosyo}
+              billing={billing}
+              onUpgrade={goToPlan}
+              onOpenOffline={goToOffline}
+            />
           ) : null}
-          {tab === 'score' ? (
-            <ScoreView negosyo={negosyo} billing={billing} onUpgrade={goToPlan} />
-          ) : null}
+          {tab === 'score' ? <ScoreView negosyo={negosyo} /> : null}
           {tab === 'plan' ? <PlanScreen billing={billing} /> : null}
           {tab === 'offline' ? <OfflineScreen negosyo={negosyo} goToPlan={goToPlan} /> : null}
+          {tab === 'items' ? <ItemsScreen negosyo={negosyo} /> : null}
+          {tab === 'utang' ? (
+            <UtangScreen negosyo={negosyo} onOpenLedger={() => setTab('tala')} />
+          ) : null}
         </div>
       </main>
 
@@ -369,6 +446,45 @@ export function App() {
                   </span>
                 </button>
 
+                {/* The two screens that hold the owner's own book sit directly
+                    under the plan row, with their counts: "41 items" is also
+                    the answer to "did my items save?". */}
+                <button
+                  type="button"
+                  onClick={goToItems}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card px-3.5 py-3 text-left shadow-e1 transition active:bg-sunken"
+                >
+                  <span>
+                    <span className="block text-[0.9375rem] font-semibold text-fg">
+                      {t('app.myItems')}
+                    </span>
+                    <span className="num block text-[0.8125rem] text-fg-faint">
+                      {t('items.count', { n: negosyo.ledger.skus.length })}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[0.875rem] font-bold text-brand-700">
+                    {t('app.open')}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToUtang}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card px-3.5 py-3 text-left shadow-e1 transition active:bg-sunken"
+                >
+                  <span>
+                    <span className="block text-[0.9375rem] font-semibold text-fg">
+                      {t('app.utangList')}
+                    </span>
+                    <span className="num block text-[0.8125rem] text-fg-faint">
+                      {t('utang.total')} · {formatPHP(negosyo.derived.receivablesCentavos)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[0.875rem] font-bold text-brand-700">
+                    {t('app.open')}
+                  </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={goToOffline}
@@ -388,6 +504,43 @@ export function App() {
                     {t('app.open')}
                   </span>
                 </button>
+
+                {/* SeePat's own voice, right beside the language row: both are
+                    device-level answers to "how does this app talk to me". */}
+                <div className="rounded-2xl border border-line bg-card px-3.5 py-3 shadow-e1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[0.9375rem] font-semibold text-fg">
+                      {t('app.speak')}
+                    </span>
+                    <div
+                      role="group"
+                      aria-label={t('app.speak')}
+                      className="flex shrink-0 gap-1 rounded-full bg-sunken p-1"
+                    >
+                      {[true, false].map((value) => {
+                        const selected = speakOn === value
+                        return (
+                          <button
+                            key={value ? 'on' : 'off'}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => setSpeakEnabled(value)}
+                            className={`min-h-10 rounded-full px-3.5 text-[0.875rem] font-bold transition-all duration-200 ${
+                              selected
+                                ? 'bg-brand-800 text-white shadow-pop'
+                                : 'text-fg-muted hover:text-fg'
+                            }`}
+                          >
+                            {value ? t('app.speakOn') : t('app.speakOff')}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-fg-faint">
+                    {t('app.speakNote')}
+                  </p>
+                </div>
 
                 {/* Language sits with the other device-level settings rather than
                     buried in a submenu: it is the first thing an English-reading
@@ -498,7 +651,14 @@ export function App() {
                     <Button variant="ghost" className="flex-1" onClick={negosyo.resetToDemo}>
                       {t('app.demoData')}
                     </Button>
-                    <Button variant="danger" className="flex-1" onClick={negosyo.clearAll}>
+                    {/* The confirm is the fix for a real defect: this button used
+                        to wipe the whole ledger on a single tap — no dialog, no
+                        toast, no undo — while deleting one row asked twice. */}
+                    <Button
+                      variant="danger"
+                      className="flex-1"
+                      onClick={() => setPendingErase(negosyo.ledger)}
+                    >
                       {t('app.clearAll')}
                     </Button>
                   </div>
@@ -507,7 +667,14 @@ export function App() {
                 <div className="rounded-2xl border border-dashed border-line-strong bg-card/50 p-3.5">
                   <p className="eyebrow text-fg-faint">{t('app.demoOnly')}</p>
                   <div className="mt-2.5 flex gap-2">
-                    {TIERS.map((tier) => (
+                    {/* Every plan in `TIERS` is for sale, and this picker offers
+                        all of them. It once mapped a list that still contained a
+                        withdrawn plan, so NEGOSYO stayed demoable after it had
+                        been pulled from the pricing page. A plan can only be
+                        demoed if it can be bought, and `migrateOffSale`
+                        (billing.ts) handles the other half — an entitlement that
+                        is still sitting on a plan nobody sells any more. */}
+                    {visibleTiers().map((tier) => (
                       <Chip
                         key={tier.id}
                         active={billing.tier === tier.id}
@@ -532,13 +699,42 @@ export function App() {
           already seeded, so "opening" it is instant. */}
       {welcome ? <Welcome negosyo={negosyo} onDone={() => setWelcome(false)} /> : null}
       </div>
-    </ToastProvider>
+
+      {pendingErase ? (
+        <ConfirmDialog
+          title={t('app.clearAllTitle')}
+          body={t('app.clearAllBody', { n: pendingErase.transactions.length })}
+          confirmLabel={t('app.clearAllConfirm')}
+          cancelLabel={t('app.clearAllCancel')}
+          onCancel={() => setPendingErase(null)}
+          onConfirm={() => {
+            const previous = pendingErase
+            negosyo.clearAll()
+            setPendingErase(null)
+            setMenuOpen(false)
+            // The undo restores the whole ledger object, not a re-recorded sale:
+            // voids, stock and customers come back with it, so an owner who
+            // tapped this by mistake loses nothing at all.
+            toast.show({
+              title: t('app.cleared', { n: previous.transactions.length }),
+              tone: 'success',
+              undoLabel: t('backup.undo'),
+              onUndo: () => {
+                negosyo.restore(previous)
+                toast.show({ title: t('app.clearUndone'), tone: 'info' })
+              },
+            })
+          }}
+        />
+      ) : null}
+    </>
   )
 }
 
 /*
  * The old hand-drawn mark (a navy tile with the sun and an eye) used to live
  * here. It is gone: the official wordmark carries the brand in the header now,
- * and the square tile survives only as the home-screen icon in public/icon.svg,
- * where a 3.78:1 lockup would be the wrong shape anyway.
+ * and the square icons survive only as the generated rasters in `public/`
+ * (`node tools/make-assets.mjs`), where the mark is cropped out of the lockup
+ * because lettering is unreadable at 48px.
  */

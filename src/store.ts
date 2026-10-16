@@ -14,9 +14,13 @@ import type {
   BusinessTwin,
   CapitalComposition,
   CapitalProvenance,
+  Customer,
+  CustomerId,
   DerivedTwin,
   Ledger,
   PeriodMetrics,
+  Sku,
+  SkuId,
   Transaction,
   TxnId,
 } from './engine/index.ts'
@@ -47,6 +51,71 @@ export function newTxnId(prefix: string): string {
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10)
   return `${prefix}-${random}-${counter}`
+}
+
+/**
+ * An id an owner never sees: derived from what they typed, made unique.
+ *
+ * Derived rather than random because these ids appear in the LEDGER forever —
+ * a restore from backup, a merge, a debugging session — and `bigas` says what
+ * `sk-7f3a91` does not. Uniqueness is then forced by suffixing, which is safe
+ * because nothing joins on the shape of the id.
+ */
+export function slugId(name: string, taken: Set<string>): string {
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'item'
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}_${n}`)) n += 1
+  return `${base}_${n}`
+}
+
+/**
+ * What an owner types is a name and a unit. Everything else is derived.
+ *
+ * `baseUnit` is the one piece of real machinery in here: quantities are stored
+ * as integers in the base unit, so rice is entered in kilos and kept in grams
+ * (`kg` → `g`). Getting this wrong on a new item would corrupt every quantity
+ * recorded against it, so it is decided here rather than asked as a question.
+ *
+ * Pure and exported on purpose. The id has to be known at the CALL site — a
+ * screen that adds an item and then wants to select it cannot read a value
+ * produced inside a `setState` updater, which React may run later, and twice.
+ */
+export function deriveSku(name: string, unit: string, taken: Set<string>): Sku {
+  const cleanUnit = unit.trim() || 'pc'
+  const words = name.toLowerCase().split(/\s+/).filter(Boolean)
+  return {
+    id: slugId(name, taken),
+    name: name.trim(),
+    unit: cleanUnit,
+    baseUnit: cleanUnit === 'kg' || cleanUnit === 'g' ? 'g' : 'pc',
+    // The whole name, then its words: the voice matcher looks for aliases, and
+    // a new item that voice can never match would be a silent second-class one.
+    aliases: [...new Set([name.toLowerCase().trim(), ...words])],
+  }
+}
+
+/**
+ * The same contract for the people who owe the owner money.
+ *
+ * A customer id is not decoration either: `twin.receivables` is keyed by it, so
+ * this is what makes a typed name collectable instead of an anonymous balance
+ * that the utang book can only report as "walk in".
+ */
+export function deriveCustomer(name: string, taken: Set<string>): Customer {
+  const clean = name.trim()
+  return {
+    id: slugId(clean, taken),
+    name: clean,
+    // Voice matches on aliases, so a customer added by typing is as speakable
+    // as one that shipped with the app.
+    aliases: [...new Set([clean.toLowerCase(), ...clean.toLowerCase().split(/\s+/).filter(Boolean)])],
+  }
 }
 
 function isLedger(value: unknown): value is Ledger {
@@ -97,6 +166,25 @@ export interface Negosyo {
   clearAll(): void
   /** Replace the whole ledger — used only by backup restore. */
   restore(ledger: Ledger): void
+  /*
+   * The owner's own book.
+   *
+   * Until these existed, `ledger.skus` and `ledger.customers` were read-only and
+   * every record could only be written against the ten demo goods — which made
+   * the app unusable for a real store no matter how good the rest of it was. A
+   * sari-sari carries 80–200 items and 10–40 utang customers, so creating both
+   * is the difference between a demo and a product.
+   *
+   * Removal never touches history: transactions keep their `skuId`, the row
+   * falls back to naming a count, and a deleted customer still shows up in the
+   * utang book while they owe money.
+   */
+  addSku(input: { name: string; unit?: string }): SkuId
+  updateSku(id: SkuId, patch: { name?: string; unit?: string }): void
+  removeSku(id: SkuId): void
+  addCustomer(input: { name: string }): CustomerId
+  updateCustomer(id: CustomerId, patch: { name?: string }): void
+  removeCustomer(id: CustomerId): void
 }
 
 export function useNegosyo(): Negosyo {
@@ -198,6 +286,89 @@ export function useNegosyo(): Negosyo {
     [update],
   )
 
+  const addSku = useCallback(
+    (input: { name: string; unit?: string }) => {
+      // Derived from the ledger as it stands, not inside the updater, so the id
+      // is real at the call site: see `deriveSku`.
+      const sku = deriveSku(input.name, input.unit ?? 'pc', new Set(ledger.skus.map((s) => s.id)))
+      update({ ...ledger, skus: [...ledger.skus, sku] })
+      return sku.id
+    },
+    [ledger, update],
+  )
+
+  const updateSku = useCallback(
+    (id: SkuId, patch: { name?: string; unit?: string }) => {
+      setLedger((current) => {
+        const next: Ledger = {
+          ...current,
+          skus: current.skus.map((sku) => {
+            if (sku.id !== id) return sku
+            const unit = patch.unit ?? sku.unit
+            const name = patch.name === undefined ? sku.name : patch.name.trim() || sku.name
+            return {
+              ...sku,
+              name,
+              unit,
+              // Renaming an item re-teaches the voice matcher: an owner who
+              // renames "Coke" to "Coke Mismo" would otherwise be stuck with an
+              // alias that only matches the old word.
+              baseUnit: unit === 'kg' || unit === 'g' ? 'g' : sku.baseUnit === 'g' ? 'pc' : sku.baseUnit,
+              aliases: patch.name === undefined ? sku.aliases : [...new Set([name.toLowerCase(), ...name.toLowerCase().split(/\s+/).filter(Boolean)])],
+            }
+          }),
+        }
+        persist(next)
+        return next
+      })
+    },
+    [],
+  )
+
+  const removeSku = useCallback((id: SkuId) => {
+    setLedger((current) => {
+      const next: Ledger = { ...current, skus: current.skus.filter((s) => s.id !== id) }
+      persist(next)
+      return next
+    })
+  }, [])
+
+  const addCustomer = useCallback(
+    (input: { name: string }) => {
+      const customer = deriveCustomer(input.name, new Set(ledger.customers.map((c) => c.id)))
+      update({ ...ledger, customers: [...ledger.customers, customer] })
+      return customer.id
+    },
+    [ledger, update],
+  )
+
+  const updateCustomer = useCallback((id: CustomerId, patch: { name?: string }) => {
+    setLedger((current) => {
+      const next: Ledger = {
+        ...current,
+        customers: current.customers.map((customer) => {
+          if (customer.id !== id || patch.name === undefined) return customer
+          const name = patch.name.trim() || customer.name
+          return {
+            ...customer,
+            name,
+            aliases: [...new Set([name.toLowerCase(), ...name.toLowerCase().split(/\s+/).filter(Boolean)])],
+          }
+        }),
+      }
+      persist(next)
+      return next
+    })
+  }, [])
+
+  const removeCustomer = useCallback((id: CustomerId) => {
+    setLedger((current) => {
+      const next: Ledger = { ...current, customers: current.customers.filter((c) => c.id !== id) }
+      persist(next)
+      return next
+    })
+  }, [])
+
   return {
     ledger,
     now,
@@ -216,5 +387,11 @@ export function useNegosyo(): Negosyo {
     resetToDemo,
     clearAll,
     restore,
+    addSku,
+    updateSku,
+    removeSku,
+    addCustomer,
+    updateCustomer,
+    removeCustomer,
   }
 }

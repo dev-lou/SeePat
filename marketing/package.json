@@ -1,0 +1,16 @@
+{
+  "name": "seepat-marketing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SeePat marketing site — two static pages, no framework, no runtime dependencies",
+  "scripts": {
+    "build": "node tools/stamp.mjs",
+    "serve": "node tools/serve.mjs dist 4173",
+    "dev": "node tools/stamp.mjs && node tools/serve.mjs dist 4173",
+    "smoke": "node tools/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

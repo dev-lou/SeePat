@@ -156,6 +156,15 @@ const STOPWORDS = new Set([
   'sachet', 'sachets', 'nag', 'yung', 'iyong',
 ])
 
+/**
+ * Words that join two items in one sentence.
+ *
+ * A quantity after one of these belongs to the item that *follows* it: in "coke
+ * at dalawang skyflakes" the two is Skyflakes', not Coke's, and reading it the
+ * other way invents a Coke sale the owner never said.
+ */
+const CONJUNCTIONS = new Set(['at', 'saka', 'tapos', 'pati', 'then', 'and'])
+
 const KIND_PATTERNS: { kind: DraftKind; patterns: RegExp[] }[] = [
   { kind: 'credit_sale', patterns: [/\bumutang\b/, /\butang\b/, /\bnakautang\b/] },
   { kind: 'purchase', patterns: [/\bbumili\b/, /\bbili\b/, /\bnagrestock\b/, /\border\b/] },
@@ -286,6 +295,41 @@ export function parseSpoken(
       }
     }
 
+    /*
+     * If nothing was said *before* the item, listen just after it.
+     *
+     * "bigas, kalahating kilo" is how a weighing sale is actually spoken — the
+     * item first, then the weight — and this parser only ever looked backwards,
+     * so the quantity was dropped and the draft silently defaulted to one kilo.
+     * That is the worst kind of failure this screen can have: the item is right,
+     * the screen looks right, and only the amount is wrong. The bench in
+     * tools/bench-voice-parse.mjs is what caught it.
+     *
+     * The search stops at a conjunction (see CONJUNCTIONS) and at the next item's
+     * own words, so a number spoken for the next item can never be borrowed.
+     */
+    const aliasWords = hit.alias.split(' ').filter(Boolean).length
+    let qtyEnd = aliasWordIndex
+    if (qty === null) {
+      const forwardStart = aliasWordIndex + aliasWords
+      const nextHit = hits.find((h) => h.index > hit.index)
+      const nextHitWordIndex = nextHit
+        ? normalized.slice(0, Math.max(0, nextHit.index - 1)).split(' ').filter(Boolean).length
+        : Number.POSITIVE_INFINITY
+      const limit = Math.min(words.length, forwardStart + 5, nextHitWordIndex)
+      if (forwardStart < words.length && !CONJUNCTIONS.has(words[forwardStart])) {
+        for (let end = forwardStart + 1; end <= limit; end += 1) {
+          const candidate = parseSpokenNumber(words.slice(forwardStart, end).join(' '))
+          if (candidate !== null && candidate > 0 && candidate < 1000) {
+            qty = candidate
+            qtySource = words.slice(forwardStart, end).join(' ')
+            qtyEnd = end
+            break
+          }
+        }
+      }
+    }
+
     const sku = ledger.skus.find((s) => s.id === hit.skuId)
     // Selling rice by the kilo means the base unit is grams.
     let baseQty = qty ?? 1
@@ -297,6 +341,18 @@ export function parseSpoken(
     }
 
     for (let i = from; i < aliasWordIndex; i += 1) consumed.add(i)
+    /*
+     * The item's own words are consumed too, and that is a fix rather than a
+     * detail: nothing was ever marking them, so "nakabenta ako ng bigas" came
+     * back from this function with a correct Bigas line *and* `bigas` in
+     * `unresolved` — the confirmation sheet telling the owner, in amber, that it
+     * did not understand the one word it had understood perfectly.
+     *
+     * The same goes for the words a forward-spoken quantity used.
+     */
+    for (let i = aliasWordIndex; i < Math.max(aliasWordIndex + aliasWords, qtyEnd); i += 1) {
+      consumed.add(i)
+    }
 
     lines.push({
       skuId: hit.skuId,
@@ -305,6 +361,29 @@ export function parseSpoken(
       unitPriceCentavos:
         kind === 'purchase' ? suggestedCost(ledger, hit.skuId) : suggestedPrice(ledger, hit.skuId),
       qtySource,
+    })
+  }
+
+  /*
+   * A customer the parser matched is a word it understood, so it must not come
+   * back as "not understood" either.
+   *
+   * This one reached the screen: "umutang ng dalawang bigas si nena" produced a
+   * correct utang line against Aling Nena *and* flagged `nena` as unplaced,
+   * because the screen's own filter only knew how to exclude item names. A
+   * warning that fires on a correct parse teaches the owner to ignore the line
+   * that exists to catch a real mishearing.
+   */
+  const customerId = kind === 'credit_sale' ? findCustomer(transcript, ledger) : undefined
+  if (customerId) {
+    const customer = ledger.customers.find((c) => c.id === customerId)
+    const spoken = new Set(
+      [customer?.name ?? '', ...(customer?.aliases ?? [])]
+        .flatMap((label) => normalize(label).split(' '))
+        .filter(Boolean),
+    )
+    words.forEach((word, i) => {
+      if (spoken.has(word)) consumed.add(i)
     })
   }
 
@@ -333,7 +412,7 @@ export function parseSpoken(
   return {
     kind,
     transcript,
-    customerId: kind === 'credit_sale' ? findCustomer(transcript, ledger) : undefined,
+    customerId,
     lines,
     unresolved,
     needsConfirmation: true,

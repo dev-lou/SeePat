@@ -1,0 +1,777 @@
+<!doctype html>
+<!--
+  SeePat — marketing site, English.
+
+  One hand-written page. No framework, no JavaScript, no bundler — the only
+  build step is the token substitution in tools/stamp.mjs, which is why every
+  asset reference here can be read and followed by hand.
+
+  THE HEAD IS THE PRODUCT'S FRONT DOOR FOR SEARCH, so it is worth reading before
+  editing:
+   - `lang="en"` is for screen readers and browsers. The hreflang tag is `en-PH`,
+     because that is the audience this page is written for.
+   - copy in the FAQ is duplicated in the JSON-LD below on purpose. Google
+     requires marked-up answers to be visible on the page, and a test asserts the
+     two copies stay identical — an invisible FAQ is a structured-data violation,
+     not a shortcut.
+   - there is no aggregateRating and no review markup anywhere: the product has
+     no published ratings, and inventing them is how a rich result becomes a
+     manual action.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SeePat — know your real profit, not just your sales</title>
+    <meta
+      name="description"
+      content="A voice-first, offline business copilot for Filipino sari-sari stores, karinderyas and market vendors. Speak a sale; see profit, capital and utang."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0d1136" />
+
+    <!-- The canonical is this page's own URL, never the other language's. -->
+    <link rel="canonical" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="en-PH" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="tl-PH" href="%SITE_URL%/fil" />
+    <link rel="alternate" hreflang="x-default" href="%SITE_URL%/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SeePat" />
+    <meta property="og:locale" content="en_PH" />
+    <meta property="og:locale:alternate" content="tl_PH" />
+    <meta property="og:title" content="SeePat — know your real profit, not just your sales" />
+    <meta
+      property="og:description"
+      content="Speak a sale in Taglish and SeePat writes the ledger, then answers “kumikita ba ako?” with arithmetic — offline, on your phone."
+    />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:image" content="%SITE_URL%/assets/brand/og-cover.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The SeePat lockup — the owl mark, the SeePat wordmark and the line “Ang Financial Copilot ng Negosyo”."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SeePat — know your real profit, not just your sales" />
+    <meta
+      name="twitter:description"
+      content="A voice-first, offline business copilot for Filipino micro-entrepreneurs. Free."
+    />
+    <meta name="twitter:image" content="%SITE_URL%/assets/brand/og-cover.png" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/assets/brand/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+
+    <!--if:GOOGLE_SITE_VERIFICATION-->
+    <meta name="google-site-verification" content="%GOOGLE_SITE_VERIFICATION%" />
+    <!--endif-->
+
+    <!-- Both subsets are 60KB together, so they are preloaded rather than left
+         to be discovered: a headline that re-renders late is a layout shift. -->
+    <link
+      rel="preload"
+      href="/assets/fonts/sora-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/plus-jakarta.latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "%SITE_URL%/#organization",
+            "name": "SIPAT LABS",
+            "url": "%SITE_URL%/",
+            "logo": "%SITE_URL%/assets/brand/lockup.png",
+            "description": "The team building SeePat, a financial decision copilot for Filipino micro-entrepreneurs.",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Dingle",
+              "addressRegion": "Iloilo",
+              "addressCountry": "PH"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "%SITE_URL%/#app",
+            "name": "SeePat",
+            "alternateName": "SeePat — Ang Financial Copilot ng Negosyo",
+            "url": "%APP_URL%",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Small business bookkeeping and decision support",
+            "operatingSystem": "Android, iOS, Web browser",
+            "inLanguage": ["en-PH", "tl-PH"],
+            "isAccessibleForFree": true,
+            "publisher": { "@id": "%SITE_URL%/#organization" },
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "SeePat FREE",
+                "price": "0",
+                "priceCurrency": "PHP",
+                "description": "The whole local product, free for life: sales ledger, inventory, utang, capital breakdown, deterministic answers, voice capture and the Sipat Score."
+              },
+              {
+                "@type": "Offer",
+                "name": "SeePat PRO",
+                "price": "99",
+                "priceCurrency": "PHP",
+                "description": "99 pesos a month for the features that need a server, starting with AI narration of the same numbers."
+              }
+            ],
+            "featureList": [
+              "Record a sale by speaking Taglish",
+              "Profit that is not the cash in the box",
+              "Where the capital actually sits",
+              "Utang ledger with partial payments",
+              "GCash, Maya and bank recorded as channels, not cash",
+              "Works with no internet",
+              "Deterministic answers with their evidence",
+              "Sipat Score with the weights shown"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "%SITE_URL%/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Does SeePat work without internet?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, that is the point. Recording sales, the ledger, utang, the capital breakdown, the answers and the score are all computed on the phone. The voice model downloads once on Wi-Fi and then keeps working with no signal at all. Nothing you record is uploaded."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need to be good at accounting, or at English?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Neither. You can speak to it in Taglish — the way a sale is actually said — and the app answers in Filipino or English, whichever you choose."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How much does SeePat cost?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The whole local product is free: the ledger, inventory, utang, the capital view, the answers, voice capture and the Sipat Score. SeePat PRO is ₱99 a month for the parts that need a server, beginning with AI narration. Payments are not switched on yet, so nothing is being sold today."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Where does my data go?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Nowhere by default. Your records live in the phone's own storage and you can export a backup file you control. There is no account and no server in the free product."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the Sipat Score a credit score?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. It is a measure of how the shop is doing — profit, cash discipline, utang and stock — scored out of 100 from your own records. It is not a credit bureau score and it is never used to decide a loan."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What about GCash, Maya and utang?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "They are recorded as what they are: channels money arrives through, kept apart from cash in the box and from utang. That is why a busy day stops looking like a rich one, and why the cash figure stops going negative."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-head">
+      <div class="wrap site-head__inner">
+        <a class="brand" href="/">
+          <img src="/assets/brand/lockup.png" width="512" height="515" alt="" />
+          <span>
+            <span class="brand__name">SeePat</span>
+            <span class="brand__tag">Ang Financial Copilot ng Negosyo</span>
+          </span>
+        </a>
+
+        <nav class="site-nav" aria-label="Sections">
+          <a href="#why">Why SeePat</a>
+          <a href="#voice">Voice</a>
+          <a href="#how">How it works</a>
+          <a href="#price">Price</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+
+        <p class="lang">
+          <span aria-current="true">EN</span>
+          <a hreflang="tl-PH" lang="tl" href="/fil" aria-label="Filipino version of this page">FIL</a>
+        </p>
+
+        <a class="btn btn--sm" href="%APP_URL%">Open the app</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ─── Hero ──────────────────────────────────────────────────────── -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero__grid">
+          <div>
+            <p class="eyebrow">Sari-sari · Karinderya · Palengke</p>
+            <h1 id="hero-title">
+              You know today's sales. SeePat knows today's <span class="swipe">profit</span>.
+            </h1>
+            <p class="hero__sub">
+              A voice-first business copilot for Filipino micro-entrepreneurs. Say the sale out
+              loud, and the ledger writes itself — then SeePat answers “kumikita ba ako?” with
+              arithmetic from your own records, on your own phone.
+            </p>
+
+            <ul class="hero__list">
+              <li>Speak a sale in Taglish; it lands in the ledger, not in a draft folder</li>
+              <li>Profit, capital, utang and stock — separated, because they are not the same money</li>
+              <li>No internet, no account, nothing uploaded</li>
+            </ul>
+
+            <div class="btn-row" style="margin-top: 1.75rem">
+              <a class="btn btn--gold" href="%APP_URL%">Open SeePat — it is free</a>
+              <a class="btn btn--ghost" href="#why">See what it answers</a>
+            </div>
+
+            <p class="note" style="margin-top: 0.9rem">
+              Free for life for everything that runs on the phone. No card, no sign-up.
+            </p>
+
+            <ul class="hero__badges">
+              <li class="pill">Works offline</li>
+              <li class="pill">Filipino at English</li>
+              <li class="pill">Android · iOS · Web</li>
+            </ul>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-money.webp"
+                width="780"
+                height="1688"
+                fetchpriority="high"
+                decoding="async"
+                alt="The SeePat home screen on a phone: real profit today of ₱440.64, described as already minus what was paid for the goods and today's expenses, a sales trend line, and a note that ₱140.00 of today's sales is utang — counted in profit, but not yet cash."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="tear" aria-hidden="true"></div>
+
+      <!-- ─── The five gaps ─────────────────────────────────────────────── -->
+      <section class="band ledger" id="why" aria-labelledby="why-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">The five gaps</p>
+            <h2 class="h2" id="why-title">
+              Five questions a store owner should be able to answer on the spot
+            </h2>
+            <p class="lede">
+              ₱8,000 in sales is not ₱8,000 in profit. Some of it is the goods, some is the day's
+              expenses, some is utang that has not arrived, and some is money already taken home.
+              SeePat closes the gap between money moving and money earned.
+            </p>
+          </div>
+
+          <table class="gaps">
+            <caption class="visually-hidden">
+              The five questions, in the owner's own words, and what SeePat answers instead
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <em>The owner asks</em>
+                  Magkano talaga ang kinita ko?
+                </th>
+                <td>
+                  <b>Profit, not the drawer</b>
+                  Revenue minus the cost of the goods, minus the day's expenses, recomputed after
+                  every record — with utang still counted as profit and explicitly flagged as not
+                  yet cash.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>The owner asks</em>
+                  Nasaan ngayon ang puhunan ko?
+                </th>
+                <td>
+                  <b>Where the capital actually sits</b>
+                  Cash in the box, stock at what you paid for it, utang owed to you, equipment —
+                  and what you still owe suppliers, subtracted. It adds up, on one screen.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>The owner asks</em>
+                  Bakit malakas ang benta pero kulang ang cash?
+                </th>
+                <td>
+                  <b>Cash is not sales</b>
+                  GCash, Maya, bank transfers and utang are recorded as the channels they are, so a
+                  busy day stops looking like a rich one.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>The owner asks</em>
+                  Ano ang mabilis maubos?
+                </th>
+                <td>
+                  <b>Restock advice from your own history</b>
+                  What actually moves, what is sitting still, and what to buy again — ranked from
+                  the ledger rather than from a feeling.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>The owner asks</em>
+                  Ano ang dapat kong gawin bukas?
+                </th>
+                <td>
+                  <b>One priority, in words</b>
+                  “Collect first.” “Reorder this.” “Watch that.” Every score dimension carries its
+                  weight and the reason it moved.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── Capital ───────────────────────────────────────────────────── -->
+      <section class="band" id="capital" aria-labelledby="capital-title">
+        <div class="wrap capital">
+          <div>
+            <p class="eyebrow">Nasaan ang puhunan?</p>
+            <h2 class="h2" id="capital-title">The question the notebook never answers</h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                Ask it — typed or spoken — and SeePat answers from the same figures the rest of the
+                app uses, and shows the breakdown that produced the answer. No guessing, no
+                chatbot, no invented number.
+              </p>
+              <p>
+                Every figure comes with its evidence, and the accounting identity underneath it
+                holds exactly: assets minus liabilities equals capital, minus what you took out,
+                plus everything you have earned.
+              </p>
+            </div>
+
+            <div class="bars" style="margin-top: 1.75rem">
+              <div class="bar">
+                <p class="bar__top"><span>Cash in the box</span><span class="num">₱38,998.95</span></p>
+                <div class="bar__track"><div class="bar__fill" style="width: 75%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Stock, at what you paid</span><span class="num">₱6,543.60</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--light" style="width: 13%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Utang owed to you</span><span class="num">₱4,158.65</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--gold" style="width: 8%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Equipment and tools</span><span class="num">₱2,000.00</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--light" style="width: 4%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Owed to suppliers</span><span class="num">− ₱15,307.90</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--gold" style="width: 30%"></div></div>
+              </div>
+            </div>
+            <p class="figure-note">
+              From the app's own demo shop, after twenty-one days of trading: ₱36,393.30 in total
+              capital. The last row is why the number surprises people — the stock on the shelf is
+              not all yours yet.
+            </p>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-ask.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The Ask My Negosyo screen: the question “Nasaan ang puhunan ko?” answered with ₱36,393.30 as the total capital right now, followed by a bar breakdown — cash in the box, stock, owed to you, equipment and tools."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Voice ─────────────────────────────────────────────────────── -->
+      <section class="band band--dark" id="voice" aria-labelledby="voice-title">
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Boses</p>
+            <h2 class="h2" id="voice-title">Say the sale. Confirm the numbers.</h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                “Sipat, nakabenta ako ng sampung Coke at limang Lucky Me.” SeePat drafts the
+                record, shows every line, and waits.
+              </p>
+              <p>
+                Nothing is saved until you agree. That is deliberate: a misheard item is visible on
+                the screen, but a misheard quantity or price quietly corrupts every insight that
+                comes after it. So the numbers are always yours to confirm.
+              </p>
+              <p>
+                The speech model runs on the phone. It downloads once, keeps working with no signal
+                afterwards, and costs you nothing per sentence — which is why voice is in the free
+                plan rather than behind it.
+              </p>
+            </div>
+
+            <ul class="hero__badges">
+              <li class="pill">Taglish, as spoken</li>
+              <li class="pill">On-device model</li>
+              <li class="pill">Free, including the download</li>
+            </ul>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-voice.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The Sipat Voice screen: an owl holding a microphone button, with the prompt “Press and say the transaction” and a one-tap switch to type it instead."
+              />
+            </div>
+            <div class="phone phone--second">
+              <img
+                src="/assets/shots/en-voice-draft.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The confirmation sheet after a spoken sale: Coke Mismo at ₱25 each, quantity 10, and Lucky Me Pancit Canton at ₱17, quantity 5 — each line editable, with a note that nothing is saved until the tap that confirms it."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Money is not only cash ────────────────────────────────────── -->
+      <section class="band ledger" id="money" aria-labelledby="money-title">
+        <div class="wrap split split--flip">
+          <div>
+            <p class="eyebrow">Cash, GCash, Maya, utang</p>
+            <h2 class="h2" id="money-title">Money arrives in four ways. The drawer only sees one.</h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                Utang is the part nobody keeps properly: a sale that is counted today and paid in
+                three weeks, if at all. SeePat tracks who owes what, accepts partial payments, and
+                keeps the unpaid balance visible instead of letting it quietly become profit that
+                never arrived.
+              </p>
+              <p>
+                Taking money out for the house is not an expense either. A withdrawal reduces what
+                you have; it does not reduce what you earned. The two lines stay apart, which is
+                what makes the profit figure mean something.
+              </p>
+            </div>
+
+            <div class="cards cards--3" style="margin-top: 1.75rem">
+              <article class="card">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7" /></svg>
+                </div>
+                <h3>Utang with a balance</h3>
+                <p>Partial payments, overpayments flagged, and a list of who to collect from first.</p>
+              </article>
+              <article class="card">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 12h4" /></svg>
+                </div>
+                <h3>Channels, not cash</h3>
+                <p>GCash, Maya and bank transfers recorded as themselves, reconciled in one ledger.</p>
+              </article>
+              <article class="card card--gold">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H7" /></svg>
+                </div>
+                <h3>Take-home stays separate</h3>
+                <p>A withdrawal reduces the pocket, not the profit — so the profit stops lying.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-ledger.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The ledger screen: record types sale, utang, expense and more, a row asking where the money went in with cash in the box, GCash, Maya and bank transfer as choices, and one-tap chips for the items that sell most."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── How it works ──────────────────────────────────────────────── -->
+      <section class="band" id="how" aria-labelledby="how-title">
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Three steps</p>
+            <h2 class="h2" id="how-title">Recording is the cost. The answer is the product.</h2>
+
+            <div class="steps" style="margin-top: 1.75rem">
+              <div class="step">
+                <h3>Say it or type it</h3>
+                <p>
+                  One sentence per sale — the way you would tell someone, not a form. Items you
+                  sell most are one tap away for the rest.
+                </p>
+              </div>
+              <div class="step">
+                <h3>Check the draft</h3>
+                <p>
+                  SeePat shows what it understood, line by line, and waits for your tap. Correct
+                  anything before it is saved.
+                </p>
+              </div>
+              <div class="step">
+                <h3>See what changed</h3>
+                <p>
+                  Profit, cash, stock and utang update together, with the reason in words: what is
+                  strong, what to watch, and the one thing to do first.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-score.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The Sipat Score screen: 79 out of 100 marked good, with a “do first” note to collect the ₱4,158.65 of utang still unpaid, and the weighted dimensions — profit, and cash you can spend — shown with how much each one counts."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Price ─────────────────────────────────────────────────────── -->
+      <section class="band ledger" id="price" aria-labelledby="price-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">Price</p>
+            <h2 class="h2" id="price-title">The rule: on-device is free, server is paid</h2>
+            <p class="lede">
+              Everything that runs on your phone has no cost to serve, so it is free and it stays
+              free. What is sold is only what needs a server to be worth anything.
+            </p>
+          </div>
+
+          <div class="plans">
+            <article class="plan">
+              <div class="plan__head">
+                <h3 class="plan__name">SeePat FREE</h3>
+                <p class="plan__price">₱0 <span>for life</span></p>
+              </div>
+              <p class="plan__for">For the owner who is just starting to keep records.</p>
+              <ul>
+                <li>Sales, expenses and purchases, with void instead of delete</li>
+                <li>Utang ledger with partial payments and balances</li>
+                <li>Capital breakdown — nasaan ang puhunan</li>
+                <li>Voice capture with the on-device model, download included</li>
+                <li>Deterministic answers with their evidence</li>
+                <li>Sipat Score, its history and restock advice</li>
+                <li>Backup file you export and control</li>
+              </ul>
+              <a class="btn" href="%APP_URL%">Open the app</a>
+            </article>
+
+            <article class="plan plan--pro">
+              <div class="plan__head">
+                <h3 class="plan__name">SeePat PRO</h3>
+                <p class="plan__price">₱99 <span>per month</span></p>
+              </div>
+              <p class="plan__for">For a shop with steady sales that wants a copy off the phone.</p>
+              <ul>
+                <li>AI narration — the same figures, said in longer sentences<span class="tag">Not yet live</span></li>
+                <li>Cloud copy of the records that survives a lost phone<span class="tag">Not yet live</span></li>
+                <li>Receipt photos read into the ledger<span class="tag">Not yet live</span></li>
+                <li>Forecasting, supplier intelligence and benchmarking<span class="tag">Not yet live</span></li>
+              </ul>
+              <a class="btn" href="%APP_URL%">Try the free plan first</a>
+            </article>
+          </div>
+
+          <p class="note" style="margin-top: 1.25rem; max-width: 62ch">
+            Plainly: SeePat is at prototype stage. Payments are not switched on, no card is taken
+            anywhere on this site, and every PRO row above is marked “not yet live” because the
+            server that would deliver it does not exist yet. There is also a bulk licence for
+            cooperatives and livelihood programs, in the works.
+          </p>
+        </div>
+      </section>
+
+      <!-- ─── FAQ ───────────────────────────────────────────────────────── -->
+      <section class="band" id="faq" aria-labelledby="faq-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">FAQ</p>
+            <h2 class="h2" id="faq-title">The questions owners ask first</h2>
+          </div>
+
+          <div class="faq">
+            <details open>
+              <summary>Does SeePat work without internet?</summary>
+              <p>
+                Yes, that is the point. Recording sales, the ledger, utang, the capital breakdown,
+                the answers and the score are all computed on the phone. The voice model downloads
+                once on Wi-Fi and then keeps working with no signal at all. Nothing you record is
+                uploaded.
+              </p>
+            </details>
+            <details>
+              <summary>Do I need to be good at accounting, or at English?</summary>
+              <p>
+                Neither. You can speak to it in Taglish — the way a sale is actually said — and the
+                app answers in Filipino or English, whichever you choose.
+              </p>
+            </details>
+            <details>
+              <summary>How much does SeePat cost?</summary>
+              <p>
+                The whole local product is free: the ledger, inventory, utang, the capital view,
+                the answers, voice capture and the Sipat Score. SeePat PRO is ₱99 a month for the
+                parts that need a server, beginning with AI narration. Payments are not switched on
+                yet, so nothing is being sold today.
+              </p>
+            </details>
+            <details>
+              <summary>Where does my data go?</summary>
+              <p>
+                Nowhere by default. Your records live in the phone's own storage and you can export
+                a backup file you control. There is no account and no server in the free product.
+              </p>
+            </details>
+            <details>
+              <summary>Is the Sipat Score a credit score?</summary>
+              <p>
+                No. It is a measure of how the shop is doing — profit, cash discipline, utang and
+                stock — scored out of 100 from your own records. It is not a credit bureau score
+                and it is never used to decide a loan.
+              </p>
+            </details>
+            <details>
+              <summary>What about GCash, Maya and utang?</summary>
+              <p>
+                They are recorded as what they are: channels money arrives through, kept apart from
+                cash in the box and from utang. That is why a busy day stops looking like a rich
+                one, and why the cash figure stops going negative.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Closing ───────────────────────────────────────────────────── -->
+      <section class="band band--dark" id="get" aria-labelledby="get-title">
+        <div class="wrap closing">
+          <img src="/assets/brand/lockup.png" width="512" height="515" alt="SeePat" />
+          <h2 class="h2" id="get-title" style="max-width: 24ch">
+            See your business clearly. Maliit na negosyo, malaking bukas.
+          </h2>
+          <p class="lede" style="text-align: center">
+            Open SeePat on the phone that is already in your pocket. It is free, it needs no
+            account, and it keeps working when the signal does not.
+          </p>
+          <div class="btn-row" style="justify-content: center">
+            <a class="btn btn--gold" href="%APP_URL%">Open SeePat</a>
+            <a class="btn btn--ghost" href="/fil" hreflang="tl-PH" lang="tl">Basahin sa Filipino</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="wrap">
+        <div class="site-foot__grid">
+          <div>
+            <h2>SeePat</h2>
+            <p>
+              A voice-enabled, offline-first business copilot built for Filipino
+              micro-entrepreneurs — the sari-sari store, the karinderya, the palengke vendor.
+            </p>
+            <p class="status">
+              Prototype stage. Subscriptions, cloud features and payments are not live. The local
+              product is complete and free.
+            </p>
+          </div>
+          <div>
+            <h2>On this page</h2>
+            <ul>
+              <li><a href="#why">Why SeePat</a></li>
+              <li><a href="#voice">Voice</a></li>
+              <li><a href="#how">How it works</a></li>
+              <li><a href="#price">Price</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>Wika</h2>
+            <ul>
+              <li><a href="/" hreflang="en-PH" aria-current="page">English</a></li>
+              <li><a href="/fil" hreflang="tl-PH" lang="tl">Filipino</a></li>
+            </ul>
+            <!--if:CONTACT_EMAIL-->
+            <ul style="margin-top: 0.85rem">
+              <li><a href="mailto:%CONTACT_EMAIL%">%CONTACT_EMAIL%</a></li>
+            </ul>
+            <!--endif-->
+          </div>
+        </div>
+
+        <div class="site-foot__legal">
+          <p>© %YEAR% SIPAT LABS · Built at ISUFST Dingle Campus, Iloilo</p>
+          <p>Free for every negosyo that needs it.</p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

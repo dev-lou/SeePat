@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Both pages, absolute URLs, nothing else.
+
+  No lastmod: Google only uses it when it is accurate, and a build-time date is
+  not an update date — a sitemap that claims a page changed every deploy teaches
+  the crawler to stop believing the field. No priority and no changefreq
+  elements either: Google states it ignores both.
+
+  The hreflang annotations live in the pages themselves (which Google treats as
+  equivalent to listing them here), so they are not repeated, and cannot drift
+  out of step with what the page actually renders.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>%SITE_URL%/</loc>
+  </url>
+  <url>
+    <loc>%SITE_URL%/fil</loc>
+  </url>
+</urlset>

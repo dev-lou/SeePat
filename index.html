@@ -12,14 +12,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f3ea" />
     <meta name="description" content="SeePat — ang financial copilot ng bawat Filipino negosyo." />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <!--
+      The tab icon. Three PNG sizes and an .ico, all generated from the same
+      master by `node tools/make-assets.mjs`.
+
+      PNG rather than an SVG here for the same reason the manifest ships PNGs:
+      the artwork is a raster, and the browser is free to pick the size it wants
+      — the 16px entry exists because downscaling a 32 to 16 in the tab strip is
+      what turns a face into a smudge. `/favicon.ico` is still written, because
+      some clients ask for it without ever reading this document.
+    -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <!-- iOS takes the icon from here, not from the manifest, and it will not
          accept an SVG: it wants an opaque raster square. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!--
-      Social card. The image (public/og-image.png, generated from the wordmark by
-      node tools/make-assets.mjs) carries the lockup, so these lines only have to
+      Social card. The image (public/og-image.png, generated from the brand lockup
+      by node tools/make-assets.mjs) carries the logo, so these lines only have to
       carry the words.
 
       %VITE_SITE_URL% is Vite's HTML environment substitution. Crawlers —
@@ -56,9 +69,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>SeePat</title>
 
-    <!-- The mark and the display face are both needed by the splash itself, so
-         they start downloading before the bundle is even parsed. -->
-    <link rel="preload" as="image" href="/new_logo.png" />
+    <!-- The lockup and the display face are both needed by the splash itself, so
+         they start downloading before the bundle is even parsed. The lockup is
+         the trimmed, quantised derivative (52 KB against the master's 1 MB): the
+         one that is actually displayed, and the one the offline precache pays
+         for. -->
+    <link rel="preload" as="image" href="/seepat-logo.png" />
     <link
       rel="preload"
       as="font"
@@ -166,8 +182,8 @@
         gap: 0;
       }
 
-      /* The lockup and its shine. The wordmark is the official artwork, never
-         type we set ourselves, so the letterforms cannot drift from the brand. */
+      /* The lockup and its shine. The logo is the official artwork, never type we
+         set ourselves, so the letterforms cannot drift from the brand. */
       .boot-lockup {
         position: relative;
         display: inline-block;
@@ -193,8 +209,8 @@
         overflow: hidden;
         pointer-events: none;
         mix-blend-mode: overlay;
-        -webkit-mask-image: url('/new_logo.png');
-        mask-image: url('/new_logo.png');
+        -webkit-mask-image: url('/seepat-logo.png');
+        mask-image: url('/seepat-logo.png');
         -webkit-mask-size: contain;
         mask-size: contain;
         -webkit-mask-repeat: no-repeat;
@@ -291,7 +307,7 @@
     <div id="boot" role="status" aria-label="Loading SeePat">
       <div class="boot-inner">
         <div class="boot-lockup">
-          <img src="/new_logo.png" alt="SeePat" width="512" height="512" />
+          <img src="/seepat-logo.png" alt="SeePat" width="512" height="515" />
           <span class="boot-sheen" aria-hidden="true"></span>
         </div>
         <span class="boot-bar" aria-hidden="true"><i></i></span>

@@ -8,6 +8,7 @@ import {
   HeroShell,
   LockedCard,
   SectionTitle,
+  Sheet,
   inputClass,
 } from './components.tsx'
 import { useToast } from './Toast.tsx'
@@ -15,12 +16,19 @@ import { Pat, moodForVoice } from './Pat.tsx'
 import { SAMPLE_UTTERANCES, getEngines } from '../asr.ts'
 import type { AsrErrorCode, AsrStatus } from '../asr.ts'
 import { OFFLINE_ENGINE_ID, RUNTIME_APPROX_MB, WHISPER_MODEL, useVoiceModel } from '../asr-offline.ts'
-import { formatPHP, parseSpoken, pesos } from '../engine/index.ts'
+import {
+  formatPHP,
+  parseSpoken,
+  pesos,
+  pricePerBaseUnit,
+  pricePerDisplayUnit,
+} from '../engine/index.ts'
 import type { Sku, Transaction } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
 import type { Negosyo } from '../store.ts'
 import type { Billing } from '../billing.ts'
 import { pick, useLang, useT } from '../i18n/index.ts'
+import type { UIStr } from '../i18n/index.ts'
 
 /**
  * A fixed waveform silhouette. Deterministic on purpose: a random one would
@@ -38,6 +46,31 @@ interface EditedLine {
   qtyDisplay: string
   priceDisplay: string
 }
+
+type DraftKindLocal = 'cash_sale' | 'credit_sale' | 'purchase' | 'expense'
+
+/**
+ * The kinds a spoken sentence can become, in the order an owner thinks of them.
+ *
+ * The order is deliberate: the two things that happen all day lead, the two that
+ * happen occasionally follow. Labels come from `record.mode.*`, so the words on
+ * this sheet are the words on the Ledger.
+ */
+const DRAFT_KINDS: { id: DraftKindLocal; labelKey: UIStr }[] = [
+  { id: 'cash_sale', labelKey: 'record.mode.cash_sale' },
+  { id: 'credit_sale', labelKey: 'record.mode.credit_sale' },
+  { id: 'purchase', labelKey: 'record.mode.purchase' },
+  { id: 'expense', labelKey: 'record.mode.expense' },
+]
+
+/**
+ * Three lines a page.
+ *
+ * Three is where the sheet still fits above the confirm button on a 640px-tall
+ * phone without scrolling — and a confirmation the owner has to scroll is a
+ * confirmation that gets skimmed, which is the one thing this step cannot be.
+ */
+const DRAFT_PAGE = 3
 
 function toBaseQty(sku: Sku | undefined, displayQty: number): number {
   if (sku?.baseUnit === 'g') return Math.round(displayQty * 1000)
@@ -78,11 +111,14 @@ export function VoiceScreen({
   const [error, setError] = useState('')
   const [errorCode, setErrorCode] = useState<AsrErrorCode | null>(null)
   const [edited, setEdited] = useState<EditedLine[] | null>(null)
-  const [draftKind, setDraftKind] = useState<'cash_sale' | 'credit_sale' | 'purchase' | 'expense'>(
-    'cash_sale',
-  )
+  const [draftKind, setDraftKind] = useState<DraftKindLocal>('cash_sale')
   const [draftCustomer, setDraftCustomer] = useState<string | undefined>(undefined)
   const [posted, setPosted] = useState('')
+  /** Words the parser could not place — the only sign part of a sentence was lost. */
+  const [draftUnresolved, setDraftUnresolved] = useState<string[]>([])
+  /** The amount for a spoken expense, which has no items at all. */
+  const [draftAmount, setDraftAmount] = useState('')
+  const [page, setPage] = useState(0)
   const engineRef = useRef<ReturnType<typeof getEngines>[number] | null>(null)
   /*
    * What the current session produced, held in a ref rather than in state on
@@ -107,6 +143,13 @@ export function VoiceScreen({
     const draft = parseSpoken(text, ledger, lang)
     setDraftKind(draft.kind)
     setDraftCustomer(draft.customerId)
+    setDraftUnresolved(draft.unresolved ?? [])
+    // A spoken expense is an amount, not a basket: "nagbayad ako ng kuryente 500"
+    // has no line to edit, so its figure is kept separately from the line total.
+    setDraftAmount(draft.amountCentavos ? String(draft.amountCentavos / 100) : '')
+    // Every new draft opens on its first page: the owner is looking at a fresh
+    // sentence, and leaving the pager on page 3 would hide its first items.
+    setPage(0)
     setEdited(
       draft.lines.map((line, index) => {
         const sku = ledger.skus.find((s) => s.id === line.skuId)
@@ -115,7 +158,10 @@ export function VoiceScreen({
           skuId: line.skuId,
           skuName: line.skuName,
           qtyDisplay: String(fromBaseQty(sku, line.qty)),
-          priceDisplay: String(line.unitPriceCentavos / 100),
+          // Back into the unit the owner prices in: a line stores the price of
+          // one base unit, and asking about rice in grams is asking the wrong
+          // question (see pricePerDisplayUnit).
+          priceDisplay: String(pricePerDisplayUnit(sku?.baseUnit ?? 'pc', line.unitPriceCentavos) / 100),
         }
       }),
     )
@@ -192,15 +238,62 @@ export function VoiceScreen({
     if (transcript) setDraftText(transcript)
   }
 
+  function cancelDraft() {
+    setEdited(null)
+    setPage(0)
+    setDraftUnresolved([])
+  }
+
   function confirm() {
-    if (!edited || edited.length === 0) return
     const at = new Date().toISOString()
+
+    /*
+     * An expense is its own record, and until this branch existed a sentence the
+     * engine classified as a gastos was posted as a cash SALE — revenue that
+     * never happened and cash that never came in. It was the worst bug on this
+     * screen, and it is fixed here rather than in the engine because the engine
+     * was already right.
+     */
+    if (draftKind === 'expense') {
+      const value = pesos(Number(draftAmount))
+      if (value <= 0) {
+        setError(t('record.flash.needAmount'))
+        return
+      }
+      const txn: Transaction = {
+        id: newTxnId('exp'),
+        at,
+        kind: 'expense',
+        amountCentavos: value,
+        paid: 'cash',
+        note: draftText,
+        source: 'voice',
+      }
+      add(txn)
+      const msg = t('record.flash.expense', { amount: formatPHP(value) })
+      setPosted(msg)
+      setError('')
+      toast.show({
+        title: msg,
+        tone: 'success',
+        undoLabel,
+        onUndo: () => {
+          removeTransaction(txn.id)
+          toast.show({ title: t('record.deleteUndone'), tone: 'info' })
+        },
+      })
+      cancelDraft()
+      setTranscript('')
+      return
+    }
+
+    if (!edited || edited.length === 0) return
     const lines = edited.map((l) => {
       const sku = ledger.skus.find((s) => s.id === l.skuId)
       return {
         skuId: l.skuId,
         qty: toBaseQty(sku, Number(l.qtyDisplay)),
-        unitPriceCentavos: pesos(Number(l.priceDisplay)),
+        unitPriceCentavos: pricePerBaseUnit(sku?.baseUnit ?? 'pc', pesos(Number(l.priceDisplay))),
       }
     })
 
@@ -319,10 +412,41 @@ export function VoiceScreen({
     return { label: t('voice.downloadModel'), action: onOpenOffline }
   })()
 
+  /*
+   * The words the parser could not place — minus any that are already sitting
+   * in a line above it.
+   *
+   * The engine reports every word that matched no item and no number, and it
+   * reports them even when the sentence was understood: "limang Lucky Me" lists
+   * "lucky, me" as unresolved while the sheet shows a correct Lucky Me line. A
+   * warning that fires on a correct parse is worse than no warning, because the
+   * owner learns to skip the line that is supposed to catch a real mishearing.
+   */
+  const unplaced = draftUnresolved.filter(
+    (word) => !(edited ?? []).some((line) => line.skuName.toLowerCase().includes(word.toLowerCase())),
+  )
+
   const draftTotal = (edited ?? []).reduce((sum, l) => {
     const sku = ledger.skus.find((s) => s.id === l.skuId)
-    return sum + toBaseQty(sku, Number(l.qtyDisplay)) * pesos(Number(l.priceDisplay))
+    return (
+      sum +
+      toBaseQty(sku, Number(l.qtyDisplay)) *
+        pricePerBaseUnit(sku?.baseUnit ?? 'pc', pesos(Number(l.priceDisplay)))
+    )
   }, 0)
+
+  // Paging is clamped rather than asserted: removing a line while the owner is
+  // on the last page would otherwise leave `page` past the end and render an
+  // empty table with a pager that cannot go back.
+  const lineCount = edited?.length ?? 0
+  const pageCount = Math.max(1, Math.ceil(lineCount / DRAFT_PAGE))
+  const safePage = Math.min(page, pageCount - 1)
+  const pageLines = (edited ?? []).slice(safePage * DRAFT_PAGE, safePage * DRAFT_PAGE + DRAFT_PAGE)
+  const rangeStart = safePage * DRAFT_PAGE + 1
+  const rangeEnd = Math.min(lineCount, (safePage + 1) * DRAFT_PAGE)
+  const hasDraft = edited !== null
+  // An expense draft has an amount and no lines, so the sheet shows one field.
+  const expenseMode = draftKind === 'expense'
 
   /*
    * The type-it surface, rendered above or below the mic hero depending on the
@@ -513,25 +637,82 @@ export function VoiceScreen({
 
       {typedMode ? null : typeCard}
 
-      {edited && edited.length > 0 ? (
-        <Card flat className="border-brand-500/40 bg-gradient-to-br from-brand-50/90 to-white/90 backdrop-blur-md shadow-e2">
+      {/*
+       * The draft arrives as a SHEET, not as a card in the page.
+       *
+       * This is the one moment the app asks the owner to check its work, and an
+       * inline card fails that job in three ways: it is below the mic hero on a
+       * long screen, so it can be missed entirely; it pushes the page around as
+       * it appears; and it reads as more of the same screen rather than as a step
+       * that is waiting on an answer. A sheet comes up over everything at the
+       * bottom, where the thumb already is.
+       */}
+      {hasDraft ? (
+        <Sheet
+          title={t('voice.draftSheetTitle')}
+          hint={t('voice.draftSheetHint')}
+          closeLabel={t('voice.cancel')}
+          onClose={cancelDraft}
+        >
           {/*
-           * Wraps, and the stamp may take its own line: at 280px in the largest
-           * reading size the title and a stamp cannot share a row, and a stamp
-           * squeezed narrow reads as a smudge rather than as a label.
+           * What kind of record this is.
+           *
+           * The engine reads the sentence and guesses, but a guess is not a
+           * decision: "umutang" misheard as a sale puts money in cash that never
+           * came in, and a gastos misheard as a sale invents revenue. So the
+           * owner gets the last word, before anything is saved.
            */}
-          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-            <h2 className="headline min-w-0 text-[1.0625rem] leading-snug text-fg">
-              {t('voice.draftTitle')}
-            </h2>
-            <span className="stamp text-amber-700">{t('voice.draftUnposted')}</span>
+          <div>
+            <div className="eyebrow text-fg-subtle">{t('voice.fieldKind')}</div>
+            <div
+              role="group"
+              aria-label={t('voice.fieldKind')}
+              className="mt-2 flex flex-wrap gap-1.5"
+            >
+              {DRAFT_KINDS.map((kind) => (
+                <Chip
+                  key={kind.id}
+                  active={draftKind === kind.id}
+                  onClick={() => setDraftKind(kind.id)}
+                >
+                  {kind.id === 'credit_sale' ? t('voice.kindUtang') : t(kind.labelKey)}
+                </Chip>
+              ))}
+            </div>
           </div>
-          <p className="mb-3.5 text-[0.8125rem] leading-relaxed text-fg-subtle">
+
+          <p className="mt-3 text-[0.8125rem] leading-relaxed text-fg-subtle">
             {t('voice.confirmIntro')}
           </p>
 
-          <div className="space-y-3.5">
-            {edited.map((line) => {
+          {/* A word the parser could not place is the only sign that part of the
+              sentence was lost — so it is shown before the numbers, not after. */}
+          {unplaced.length > 0 ? (
+            <p className="mt-2.5 rounded-xl border border-amber-300/70 bg-amber-50 px-3.5 py-2.5 text-[0.8125rem] leading-relaxed text-amber-800">
+              {t('voice.unresolved', { what: unplaced.join(', ') })}
+            </p>
+          ) : null}
+
+          {expenseMode ? (
+            <div className="mt-3.5">
+              <Field label={t('record.field.amount')}>
+                <input
+                  className={`${inputClass} ring-1 ring-brand-600/40`}
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  value={draftAmount}
+                  onChange={(e) => setDraftAmount(e.target.value)}
+                />
+              </Field>
+            </div>
+          ) : lineCount === 0 ? (
+            <p className="mt-3.5 rounded-xl border border-dashed border-line-strong px-3.5 py-3 text-[0.875rem] leading-relaxed text-fg-subtle">
+              {t('voice.noLines')}
+            </p>
+          ) : (
+          <div className="mt-3.5 space-y-3.5">
+            {pageLines.map((line) => {
               const sku = ledger.skus.find((s) => s.id === line.skuId)
               return (
                 <div
@@ -588,7 +769,13 @@ export function VoiceScreen({
                         }
                       />
                     </Field>
-                    <Field label={t('record.field.unitPrice')}>
+                    <Field
+                      label={
+                        sku?.baseUnit === 'g'
+                          ? t('record.field.pricePerKilo')
+                          : t('record.field.unitPrice')
+                      }
+                    >
                       <input
                         className={`${inputClass} ring-1 ring-brand-600/40`}
                         type="number"
@@ -608,18 +795,59 @@ export function VoiceScreen({
                 </div>
               )
             })}
+
+            {/* The pager only exists when there is something to page through: a
+                control that never has a second page is a control the owner has to
+                learn for nothing. */}
+            {lineCount > DRAFT_PAGE ? (
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-sunken px-2.5 py-2">
+                <Button
+                  variant="ghost"
+                  className="min-h-10 px-3.5 text-[0.8125rem]"
+                  disabled={safePage === 0}
+                  onClick={() => setPage(Math.max(0, safePage - 1))}
+                >
+                  {t('voice.pagePrev')}
+                </Button>
+                <span className="num text-[0.8125rem] font-bold text-fg-subtle">
+                  {t('voice.page', { n: `${rangeStart}–${rangeEnd}`, total: lineCount })}
+                </span>
+                <Button
+                  variant="ghost"
+                  className="min-h-10 px-3.5 text-[0.8125rem]"
+                  disabled={safePage >= pageCount - 1}
+                  onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
+                >
+                  {t('voice.pageNext')}
+                </Button>
+              </div>
+            ) : null}
           </div>
+          )}
 
           {draftKind === 'credit_sale' ? (
-            <div className="mt-3">
+            <div className="mt-3.5">
               <Field label={t('voice.field.customerUtang')}>
                 <CustomSelect
                   value={draftCustomer ?? ''}
                   onChange={(val) => setDraftCustomer(val || undefined)}
-                  placeholder={t('record.walkIn')}
-                  options={ledger.customers.map((c) => ({ value: c.id, label: c.name }))}
+                  /* Walk-in is an explicit choice rather than the silent default:
+                     utang with no name cannot be collected, so it has to be
+                     something the owner picked, not something that happened —
+                     which is why the field opens empty and Walk-in is one of the
+                     options rather than the placeholder. */
+                  placeholder={t('record.select')}
+                  options={[
+                    ...ledger.customers.map((c) => ({ value: c.id, label: c.name })),
+                    { value: 'walk_in', label: t('utang.walkInName') },
+                  ]}
                 />
               </Field>
+              {draftCustomer ? null : (
+                <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-subtle">
+                  {t('voice.utangNeedsName')}
+                </p>
+              )}
             </div>
           ) : null}
 
@@ -640,14 +868,18 @@ export function VoiceScreen({
               "Confirm and record" no room, and this is the button that saves the
               money. */}
           <div className="mt-3.5 flex flex-col gap-2.5">
-            <Button variant="ghost" className="min-h-12 flex-1" onClick={() => setEdited(null)}>
+            <Button variant="ghost" className="min-h-12 flex-1" onClick={cancelDraft}>
               {t('voice.cancel')}
             </Button>
-            <Button className="min-h-12 flex-1" onClick={confirm}>
+            <Button
+              className="min-h-12 flex-1"
+              disabled={!expenseMode && lineCount === 0}
+              onClick={confirm}
+            >
               {t('voice.confirmAndRecord')}
             </Button>
           </div>
-        </Card>
+        </Sheet>
       ) : null}
 
       {posted ? (

@@ -5,7 +5,6 @@ import {
   CollapsibleSection,
   HeroLabel,
   HeroShell,
-  LockedCard,
   MiniBars,
   Pill,
   ProgressRing,
@@ -15,18 +14,9 @@ import {
 } from './components.tsx'
 import { bandLabel, formatPHP, scoreHistory } from '../engine/index.ts'
 import type { Negosyo } from '../store.ts'
-import type { Billing } from '../billing.ts'
 import { pick, useLang, useT } from '../i18n/index.ts'
 
-export function ScoreView({
-  negosyo,
-  billing,
-  onUpgrade,
-}: {
-  negosyo: Negosyo
-  billing: Billing
-  onUpgrade: () => void
-}) {
+export function ScoreView({ negosyo }: { negosyo: Negosyo }) {
   const { score, derived, week, ledger, now } = negosyo
   const lang = useLang()
   const t = useT()
@@ -65,40 +55,6 @@ export function ScoreView({
         />
       </div>
     )
-
-  // For the locked PRO preview: show a complete, rich 8-week trend curve
-  // with zero empty gaps, rendered in the dark jewel skin to match LockedCard.
-  const previewScores = useMemo(() => {
-    const known = trend.weeks.filter((w) => w.hasData).map((w) => w.value)
-    const currentScore = score.value
-    const base = known[0] ?? currentScore
-    const full: number[] = []
-    for (let i = 0; i < 8; i++) {
-      const idxFromEnd = 7 - i
-      const weekFromEnd = trend.weeks[trend.weeks.length - 1 - idxFromEnd]
-      if (weekFromEnd && weekFromEnd.hasData) {
-        full.push(weekFromEnd.value)
-      } else {
-        // Realistic progression leading up to the known data
-        const delta = idxFromEnd * 2.2 + ((i % 2 === 0 ? 1 : -1) * 1.5)
-        const factor = Math.min(95, Math.max(45, Math.round(base - delta)))
-        full.push(factor)
-      }
-    }
-    return full
-  }, [trend.weeks, score.value])
-
-  const previewChart = (
-    <div className="rounded-xl bg-white/[0.04] p-3 border border-white/10 shadow-inner">
-      <AreaChart
-        values={previewScores}
-        labels={trend.weeks.map((w) => w.label)}
-        surface="dark"
-        tone="gold"
-        height={96}
-      />
-    </div>
-  )
 
   const ringScore = useCountUp(score.value, 1400)
 
@@ -339,57 +295,57 @@ export function ScoreView({
       </CollapsibleSection>
       </div>
 
-      {billing.can('score_history') ? (
-        <Card>
-          <div className="flex items-center justify-between gap-2">
-            <SectionTitle hint={t('score.weeks8')}>{t('score.historyTitle')}</SectionTitle>
-            <Pill tone={trend.direction === 'up' ? 'good' : trend.direction === 'down' ? 'bad' : 'neutral'}>
-              {trend.delta === null
-                ? '—'
-                : `${trend.delta > 0 ? '+' : ''}${trend.delta} ${trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '→'}`}
-            </Pill>
-          </div>
+      {/*
+       * History is free, and it is not a courtesy — it is the screen.
+       *
+       * It used to sit behind PRO with a locked preview above it, and the preview
+       * was the problem: to show an eight-week curve to someone who had not
+       * recorded eight weeks, it *invented* one (a synthetic ramp around the true
+       * values). That is the one thing this product promises not to do. The curve
+       * here is `scoreHistory(ledger, 8)` — the same fixed rules applied to the
+       * owner's own log, with blank weeks left blank.
+       */}
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle hint={t('score.weeks8')}>{t('score.historyTitle')}</SectionTitle>
+          <Pill tone={trend.direction === 'up' ? 'good' : trend.direction === 'down' ? 'bad' : 'neutral'}>
+            {trend.delta === null
+              ? '—'
+              : `${trend.delta > 0 ? '+' : ''}${trend.delta} ${trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '→'}`}
+          </Pill>
+        </div>
 
-          {unlockedTrendChart}
+        {unlockedTrendChart}
 
-          {/* `fit-grid-3`: three figures need roughly 95px each, so below 380px
-              this becomes two-up with the last figure spanning the full width. */}
-          <div className="fit-grid-3 mt-3 grid grid-cols-3 gap-x-3 gap-y-4 border-t border-line pt-3">
-            <Stat
-              label={t('score.thisWeek')}
-              value={String(latestWeek?.value ?? score.value)}
-              sub={latestWeek ? bandLabel(latestWeek.band, lang) : undefined}
-              tone={(latestWeek?.value ?? 0) >= 70 ? 'good' : 'bad'}
-            />
-            <Stat
-              label={t('score.best')}
-              value={String(bestWeek.value)}
-              sub={bestWeek.label}
-            />
-            <Stat
-              label={t('score.sparse')}
-              value={String(sparse)}
-              sub={t('score.noSales')}
-            />
-          </div>
+        {/* `fit-grid-3`: three figures need roughly 95px each, so below 380px
+            this becomes two-up with the last figure spanning the full width. */}
+        <div className="fit-grid-3 mt-3 grid grid-cols-3 gap-x-3 gap-y-4 border-t border-line pt-3">
+          <Stat
+            label={t('score.thisWeek')}
+            value={String(latestWeek?.value ?? score.value)}
+            sub={latestWeek ? bandLabel(latestWeek.band, lang) : undefined}
+            tone={(latestWeek?.value ?? 0) >= 70 ? 'good' : 'bad'}
+          />
+          <Stat
+            label={t('score.best')}
+            value={String(bestWeek.value)}
+            sub={bestWeek.label}
+          />
+          <Stat
+            label={t('score.sparse')}
+            value={String(sparse)}
+            sub={t('score.noSales')}
+          />
+        </div>
 
-          {/* The footnote is the app's second voice (`.aside`): lighter weight,
-              secondary ink — the one line on the scorecard that addresses the
-              reader rather than measuring her. */}
-          <div className="rule-set mt-3.5" aria-hidden />
-          <p className="aside mt-3 text-[0.875rem] leading-relaxed text-fg-faint">
-            {t('score.recomputed')}
-          </p>
-        </Card>
-      ) : (
-        <LockedCard
-          title={t('score.historyTitle')}
-          body={t('score.lockedBody')}
-          tierLabel="PRO"
-          onUpgrade={onUpgrade}
-          preview={previewChart}
-        />
-      )}
+        {/* The footnote is the app's second voice (`.aside`): lighter weight,
+            secondary ink — the one line on the scorecard that addresses the
+            reader rather than measuring her. */}
+        <div className="rule-set mt-3.5" aria-hidden />
+        <p className="aside mt-3 text-[0.875rem] leading-relaxed text-fg-faint">
+          {t('score.recomputed')}
+        </p>
+      </Card>
 
       <div className="px-3.5">
       <CollapsibleSection id="score-basis" title={t('score.basisTitle')} hint={t('dash.days7')}>

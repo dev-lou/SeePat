@@ -749,31 +749,156 @@ body {
   }
 }
 
-/* The weekly report prints alone: on screen the pre is hidden, on paper the
-   app is. One page a coop manager can file — the printable half of PRO. */
-.print-only {
+/*
+ * Printing.
+ *
+ * This app has two things worth printing — the week's report, and an utang
+ * statement — and they take one route between them. A sheet is portalled onto
+ * `<body>` (see `StatementSheet` in `Utang.tsx`), hidden on screen, and marked
+ * by `body[data-print-sheet]`. In print the marker hides every *other* child of
+ * `<body>`, so the sheet is the only thing in flow and it starts at the top of
+ * the page.
+ *
+ * Why not the older `body * { visibility: hidden }` trick, which is what this
+ * replaced: visibility is inherited, so a second sheet printed from a different
+ * screen came out blank. It also left the app occupying the page it was
+ * supposedly hiding, which is how a phone-sized layout ends up sliced across
+ * three sheets of A4.
+ *
+ * The sheet is `display: none` rather than off-screen because a hidden element
+ * cannot be printed at all; `@media print` is what turns it back on.
+ */
+.print-sheet {
   display: none;
 }
+
 @media print {
-  body * {
-    visibility: hidden;
+  /*
+   * Paper, not screen. The atmosphere — the dot grid, the glow at the top of
+   * the page, the gradient the cards catch the light from — is painted by the
+   * `body` itself, so hiding the app is not enough to hide it: those layers are
+   * not children of anything, and they would come out as greys and diagonal
+   * shapes behind the statement.
+   */
+  html,
+  body {
+    background: #ffffff !important;
   }
-  #seepat-weekly-report,
-  #seepat-weekly-report * {
-    visibility: visible;
+  body::before,
+  body::after {
+    display: none !important;
   }
-  #seepat-weekly-report {
+  body[data-print-sheet] > :not(.print-sheet) {
+    display: none !important;
+  }
+  .print-sheet {
+    display: block !important;
+    color: #101828;
+    background-color: #ffffff;
+  }
+  /* A row that breaks across two sheets splits a name from an amount, and an
+     amount cut in half is a misread. */
+  .print-sheet tr {
+    break-inside: avoid;
+  }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  /*
+   * A gutter between the number and the name, and none after the last column.
+   * Without it the sheet reads "1Mang Tonyo" — the row number and the customer
+   * running into each other — which is how a list of names gets misread on a
+   * page someone is holding at arm's length.
+   */
+  .print-table th,
+  .print-table td {
+    padding-right: 4mm;
+  }
+  .print-table th:last-child,
+  .print-table td:last-child {
+    padding-right: 0;
+  }
+  .print-table th {
+    padding-bottom: 1.5mm;
+    border-bottom: 0.6pt solid #101828;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+    color: #475467;
+  }
+  .print-table td {
+    padding-top: 1.8mm;
+    padding-bottom: 1.8mm;
+    border-bottom: 0.4pt solid #d0d5dd;
+    vertical-align: top;
+  }
+  .print-table tfoot td {
+    padding-top: 1.8mm;
+    border-top: 0.6pt solid #101828;
+    border-bottom: none;
+    font-weight: 700;
+  }
+  .print-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .print-amount {
+    font-weight: 700;
+  }
+  .print-name {
     display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 24px;
-    font-size: 14px;
-    line-height: 1.7;
-    white-space: pre-wrap;
+    font-weight: 600;
+  }
+  .print-age {
+    display: block;
+    font-size: 9pt;
+    color: #475467;
+  }
+  .print-note {
+    margin: 8mm 0 0;
+    padding-top: 2mm;
+    border-top: 0.4pt solid #d0d5dd;
+    font-size: 9pt;
+    color: #475467;
   }
 }
+
+/* The statement's own voice: the app's sans, at a size a counter can read. */
+.print-shop {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15pt;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.print-meta {
+  margin: 1mm 0 4mm;
+  font-size: 9.5pt;
+  color: #475467;
+}
+.print-sheet-body {
+  font-family: var(--font-sans);
+  font-size: 11.5pt;
+  line-height: 1.45;
+}
+
+/* The week's report is plain text, so it keeps its own line breaks. */
+.print-report {
+  margin: 0;
+  padding: 0;
+  font-size: 11.5pt;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+@page {
+  margin: 14mm;
+}
+
 
 @keyframes ring-in {
   from {
@@ -1711,3 +1836,4 @@ body {
 }
 
 } /* @layer components */
+

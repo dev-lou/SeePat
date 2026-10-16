@@ -1,4 +1,4 @@
-import { formatPHP, formatPercent, safeDiv } from './money.ts'
+import { formatPHP, formatPHPShort, formatPercent, safeDiv } from './money.ts'
 import { addDays } from './period.ts'
 import { openingInventoryValueCentavos, periodMetrics } from './metrics.ts'
 import { capitalComposition, capitalProvenance } from './capital.ts'
@@ -7,6 +7,8 @@ import { deriveTwin } from './twin.ts'
 import type { BusinessTwin, CustomerId, Ledger, SkuId } from './types.ts'
 import { pick as pickCopy } from '../i18n/index.ts'
 import type { Lang } from '../i18n/index.ts'
+import { weekdayLabels } from './askchart.ts'
+import type { AnswerChart } from './askchart.ts'
 
 /**
  * "Ask My Negosyo" without an LLM.
@@ -43,6 +45,14 @@ export interface Answer {
   detail: string[]
   evidence: EvidenceItem[]
   actions: string[]
+  /**
+   * The same figures as a picture, when the intent has one worth drawing.
+   *
+   * It is built here, out of the arrays each case already computed, rather than
+   * derived a second time by the screen — see `askchart.ts` for why that is the
+   * only version of this that cannot drift from the headline.
+   */
+  chart?: AnswerChart
 }
 
 export interface AskContext {
@@ -182,6 +192,24 @@ export function answerIntent(
       return {
         intent,
         question,
+        chart: {
+          shape: 'area',
+          title: pickCopy(lang, {
+            en: `Sales each day, last ${days} days`,
+            fil: `Benta kada araw, huling ${days} araw`,
+          }),
+          // The one sentence that stops the line lying: an owner who reads this
+          // as profit has understood the chart, not the answer.
+          caption: pickCopy(lang, {
+            en: 'This line is money coming in, not profit. Profit is what is left after you pay for the goods.',
+            fil: 'Ang linyang ito ay perang pumasok, hindi kita. Ang kita ang natitira pagkatapos mong bayaran ang paninda.',
+          }),
+          values: metrics.dailySales.map((d) => d.amountCentavos),
+          labels: weekdayLabels(days, now, lang),
+          unit: 'money',
+          tone: 'brand',
+          valueLabel: formatPHPShort(metrics.revenueCentavos),
+        },
         headline: pickCopy(lang, {
           en: `${formatPHP(metrics.netProfitCentavos)} is what you really earned in the last ${days} days, after paying for stock and expenses.`,
           fil: `${formatPHP(metrics.netProfitCentavos)} ang tunay na kinita mo sa huling ${days} araw, pagkatapos ibawas ang puhunan at gastos.`,
@@ -237,6 +265,10 @@ export function answerIntent(
 
     case 'capital_where': {
       const comp = capitalComposition(twin, lang)
+      // Only the positives are drawn: an offset (money owed to a supplier) is not
+      // a place capital *sits*, and a stacked bar that mixed the two would show a
+      // part of the capital twice.
+      const held = comp.components.filter((c) => c.amountCentavos > 0)
       return {
         intent,
         question,
@@ -244,6 +276,24 @@ export function answerIntent(
           en: `${formatPHP(comp.netAssetsCentavos)} is your total capital right now.`,
           fil: `${formatPHP(comp.netAssetsCentavos)} ang kabuuang puhunan mo ngayon.`,
         }),
+        chart:
+          held.length === 0
+            ? undefined
+            : {
+                shape: 'split',
+                title: pickCopy(lang, {
+                  en: 'Your capital, by where it sits',
+                  fil: 'Ang puhunan mo, ayon sa kinaroroonan',
+                }),
+                caption: pickCopy(lang, {
+                  en: 'Each part is money you already have — in stock, in cash, or owed to you.',
+                  fil: 'Ang bawat bahagi ay perang nasa iyo na — nasa paninda, nasa cash, o utang sa iyo.',
+                }),
+                values: held.map((c) => c.amountCentavos),
+                labels: held.map((c) => pickCopy(lang, c.label)),
+                unit: 'money',
+                tone: 'gold',
+              },
         detail: comp.components
           .filter((c) => c.amountCentavos !== 0)
           .map(
@@ -327,6 +377,29 @@ export function answerIntent(
           fil: `${formatPHP(derived.inventoryValueCentavos)} ng pera mo ay nasa paninda ngayon — ${formatPercent(inventoryShare)} ng puhunan mo.`,
         }),
       ]
+      const nowParts = [twin.cashCentavos, metrics.uncollectedCentavos, derived.inventoryValueCentavos]
+      const chart: AnswerChart | undefined =
+        nowParts.some((amount) => amount > 0)
+          ? {
+              shape: 'split',
+              title: pickCopy(lang, {
+                en: 'Where your money is right now',
+                fil: 'Nasaan ang pera mo ngayon',
+              }),
+              caption: pickCopy(lang, {
+                en: 'Only the first part is cash you can spend today.',
+                fil: 'Ang unang bahagi lang ang cash na magagamit mo ngayon.',
+              }),
+              values: nowParts,
+              labels: [
+                pickCopy(lang, { en: 'Cash on hand', fil: 'Cash sa kamay' }),
+                pickCopy(lang, { en: 'Utang, not collected', fil: 'Utang, hindi pa nakolekta' }),
+                pickCopy(lang, { en: 'Sitting in stock', fil: 'Nasa paninda' }),
+              ],
+              unit: 'money',
+              tone: 'sky',
+            }
+          : undefined
       const actions: string[] = []
       if (uncollectedShare >= 0.2) {
         actions.push(
@@ -351,6 +424,7 @@ export function answerIntent(
           en: 'Cash is short even though sales are strong, because not every sale turned into cash.',
           fil: 'Kulang ang cash kahit malakas ang benta dahil hindi lahat ng benta ay naging cash.',
         }),
+        chart,
         detail: lines,
         evidence: [
           { label: pickCopy(lang, { en: 'Sales', fil: 'Benta' }), value: formatPHP(metrics.revenueCentavos) },
@@ -383,6 +457,7 @@ export function answerIntent(
         )
       }
       const top = ranked[0]
+      const shown = ranked.slice(0, 5)
       return {
         intent,
         question,
@@ -390,6 +465,20 @@ export function answerIntent(
           en: `${skuName(ledger, top[0])} is your best seller: you kept ${formatPHP(top[1].marginCentavos)} from it in the last ${days} days.`,
           fil: `${skuName(ledger, top[0])} ang pinakamalakas mong paninda: ${formatPHP(top[1].marginCentavos)} ang natira sa iyo mula dito sa huling ${days} araw.`,
         }),
+        chart: {
+          shape: 'bars',
+          title: pickCopy(lang, { en: 'Money you kept, per item', fil: 'Natira sa iyo, kada paninda' }),
+          // "Best seller" means two different things — most pieces, most profit —
+          // and this ranking is the second one, so the chart says which it is.
+          caption: pickCopy(lang, {
+            en: 'Ranked by the profit you kept, not by how many were sold.',
+            fil: 'Nakahanay ayon sa kitang natira sa iyo, hindi sa dami ng nabenta.',
+          }),
+          values: shown.map(([, s]) => s.marginCentavos),
+          labels: shown.map(([id]) => skuName(ledger, id)),
+          unit: 'money',
+          tone: 'brand',
+        },
         detail: ranked.slice(0, 5).map(([id, s]) =>
           pickCopy(lang, {
             en: `${skuName(ledger, id)}: ${s.qtySold} pieces · sold for ${formatPHP(s.revenueCentavos)} · you kept ${formatPHP(s.marginCentavos)}`,
@@ -425,6 +514,7 @@ export function answerIntent(
         )
       }
       const trapped = slow.reduce((sum, [, s]) => sum + s.valueCentavos, 0)
+      const shown = slow.slice(0, 5)
       return {
         intent,
         question,
@@ -432,6 +522,18 @@ export function answerIntent(
           en: `${formatPHP(trapped)} of your money is tied up in stock that has not sold for two weeks.`,
           fil: `${formatPHP(trapped)} ng pera mo ang nakatali sa panindang dalawang linggo nang walang benta.`,
         }),
+        chart: {
+          shape: 'bars',
+          title: pickCopy(lang, { en: 'Your money, stuck on the shelf', fil: 'Pera mo, nakatali sa paninda' }),
+          caption: pickCopy(lang, {
+            en: 'Each bar is money you already spent, on something that has not moved in 14 days.',
+            fil: 'Ang bawat bar ay perang nagastos mo na, sa panindang 14 araw nang hindi gumagalaw.',
+          }),
+          values: shown.map(([, s]) => s.valueCentavos),
+          labels: shown.map(([id]) => skuName(ledger, id)),
+          unit: 'money',
+          tone: 'gold',
+        },
         detail: slow.slice(0, 5).map(([id, s]) =>
           pickCopy(lang, {
             en: `${skuName(ledger, id)}: ${s.qty} left · ${formatPHP(s.valueCentavos)} of your money in it · no sale for 14 days`,
@@ -471,6 +573,7 @@ export function answerIntent(
       }
       const [topId, topAmt] = ranked[0]
       const total = ranked.reduce((sum, [, amt]) => sum + amt, 0)
+      const shown = ranked.slice(0, 5)
       return {
         intent,
         question,
@@ -478,6 +581,18 @@ export function answerIntent(
           en: `${customerName(ledger, topId)} owes you the most: ${formatPHP(topAmt)}.`,
           fil: `${customerName(ledger, topId)} ang may pinakamalaking utang: ${formatPHP(topAmt)}.`,
         }),
+        chart: {
+          shape: 'bars',
+          title: pickCopy(lang, { en: 'Who owes you, biggest first', fil: 'Utang sa iyo, pinakamalaki muna' }),
+          caption: pickCopy(lang, {
+            en: 'This is money already earned, still waiting to be collected.',
+            fil: 'Kita na ang perang ito, hinihintay lang makolekta.',
+          }),
+          values: shown.map(([, amt]) => amt),
+          labels: shown.map(([id]) => customerName(ledger, id)),
+          unit: 'money',
+          tone: 'gold',
+        },
         detail: [
           pickCopy(lang, {
             en: `Total owed to you: ${formatPHP(total)} across ${ranked.length} customers.`,
@@ -514,6 +629,27 @@ export function answerIntent(
           }),
         )
       }
+      const chart: AnswerChart = {
+        shape: 'bars',
+        title: pickCopy(lang, {
+          en: 'Profit, this week against the week before',
+          fil: 'Kita, ngayong linggo laban sa nakaraang linggo',
+        }),
+        // A comparison of two numbers is exactly where a bar chart can mislead,
+        // because "down" reads as "bad week" when it can also mean "no sales were
+        // recorded yet". The caption names the second case.
+        caption: pickCopy(lang, {
+          en: 'A week with no records shows as a small bar — it is missing data, not a bad week.',
+          fil: 'Ang linggong walang naitala ay maliit na bar — kulang na datos iyon, hindi mahinang linggo.',
+        }),
+        values: [previous.netProfitCentavos, metrics.netProfitCentavos],
+        labels: [
+          pickCopy(lang, { en: 'Week before', fil: 'Nakaraang linggo' }),
+          pickCopy(lang, { en: 'This week', fil: 'Ngayong linggo' }),
+        ],
+        unit: 'money',
+        tone: 'brand',
+      }
       const detail: string[] = [
         pickCopy(lang, {
           en: `Previous ${days} days: profit ${formatPHP(previous.netProfitCentavos)} · sales ${formatPHP(previous.revenueCentavos)}`,
@@ -549,6 +685,7 @@ export function answerIntent(
           en: `Your profit is ${delta >= 0 ? 'up' : 'down'} by ${formatPHP(Math.abs(delta))} compared with the previous week.`,
           fil: `${delta >= 0 ? 'Tumaas' : 'Bumaba'} ng ${formatPHP(Math.abs(delta))} ang kita mo kumpara sa nakaraang linggo.`,
         }),
+        chart,
         detail,
         evidence: [
           { label: pickCopy(lang, { en: 'Sales now', fil: 'Benta ngayon' }), value: formatPHP(metrics.revenueCentavos) },
@@ -588,6 +725,21 @@ export function answerIntent(
         if (cover < 3) need.push({ name: skuName(ledger, id), cover, qty: stock.qty })
       }
       need.sort((a, b) => a.cover - b.cover)
+      const shown = need.slice(0, 5)
+      const chart: AnswerChart = {
+        shape: 'bars',
+        // Days of cover, not pesos: the question is "how long until it is gone",
+        // and the answer is a length of time.
+        title: pickCopy(lang, { en: 'Days of stock left', fil: 'Araw na natitira sa stock' }),
+        caption: pickCopy(lang, {
+          en: 'Shorter means more urgent. Under three days is where an order should start.',
+          fil: 'Kapag mas maikli, mas apurahan. Sa ilalim ng tatlong araw dapat magsimula ang order.',
+        }),
+        values: shown.map((n) => n.cover),
+        labels: shown.map((n) => n.name),
+        unit: 'days',
+        tone: 'sky',
+      }
       if (need.length === 0) {
         return emptyAnswer(
           intent,
@@ -605,6 +757,7 @@ export function answerIntent(
           en: `${need.length} will run out soon. Start with ${need[0].name}.`,
           fil: `${need.length} ang malapit nang maubos. Unahin ang ${need[0].name}.`,
         }),
+        chart,
         detail: need.slice(0, 5).map((n) =>
           pickCopy(lang, {
             en: `${n.name}: ${n.qty} left · about ${n.cover.toFixed(1)} days at the current pace`,
@@ -641,6 +794,22 @@ export function answerIntent(
       const sd = Math.sqrt(variance)
       const low = Math.max(0, Math.round((mean - sd) * 7))
       const high = Math.round((mean + sd) * 7)
+      const latest = sales[sales.length - 1] ?? 0
+      const chart: AnswerChart = {
+        shape: 'area',
+        title: pickCopy(lang, { en: 'Sales each day, last 7 days', fil: 'Benta kada araw, huling 7 araw' }),
+        // A forecast sits next to a chart of what actually happened, and the
+        // caption is what keeps the two from blurring into one claim.
+        caption: pickCopy(lang, {
+          en: `These are recorded days. The guess of a week ahead averages ${formatPHP(Math.round(mean))} a day.`,
+          fil: `Mga naitalang araw ito. Ang tantya sa susunod na linggo ay ${formatPHP(Math.round(mean))} kada araw.`,
+        }),
+        values: sales,
+        labels: weekdayLabels(days, now, lang),
+        unit: 'money',
+        tone: 'brand',
+        valueLabel: formatPHPShort(latest),
+      }
       return {
         intent,
         question,
@@ -648,6 +817,7 @@ export function answerIntent(
           en: `Around ${formatPHP(Math.round(mean * 7))} in sales is expected over the next 7 days.`,
           fil: `Mga ${formatPHP(Math.round(mean * 7))} ang inaasahang benta sa susunod na 7 araw.`,
         }),
+        chart,
         detail: [
           pickCopy(lang, {
             en: `Based on ${days} days of data, and not a guarantee.`,
@@ -697,6 +867,20 @@ export function answerIntent(
         // The version already names the product ("Sipat-Score v1"), so prefixing
         // "Sipat Score" as well printed the name twice on the card.
         headline: `${score.value} out of 100 — ${bandLabel(score.band, lang)} (${score.version})`,
+        // The parts of the score, so an owner can see WHICH part moved when the
+        // number does. A single total is not actionable; a short bar is.
+        chart: {
+          shape: 'bars',
+          title: pickCopy(lang, { en: 'Your score, part by part', fil: 'Ang marka mo, bahagi-bahagi' }),
+          caption: pickCopy(lang, {
+            en: 'Out of 100 each. The lowest bar is the one worth working on this week.',
+            fil: 'Bawat isa ay mula 100. Ang pinakamababang bar ang dapat pagtuunan ngayong linggo.',
+          }),
+          values: score.dimensions.map((d) => d.score),
+          labels: score.dimensions.map((d) => pickCopy(lang, d.label)),
+          unit: 'score',
+          tone: 'brand',
+        },
         detail: score.dimensions.map(
           (d) => `${pickCopy(lang, d.label)}: ${Math.round(d.score)}/100 · ${d.rawValue}`,
         ),

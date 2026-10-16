@@ -37,7 +37,8 @@ rather than implying more than the code does.
 16. [Accessibility](#16-accessibility)
 17. [Limitations & roadmap](#17-limitations--roadmap)
 18. [Documentation](#18-documentation)
-19. [Licensing](#19-licensing)
+19. [The marketing site](#19-the-marketing-site)
+20. [Licensing](#20-licensing)
 
 ---
 
@@ -104,9 +105,9 @@ Five destinations, plus two secondary screens.
 | **Twin** | `twin` | "Kumusta ang negosyo ko ngayon?" — net profit, cash, utang, inventory value, warnings |
 | **Tala** (Ledger) | `tala` | Recording: cash sale, credit sale, purchase, expense, payment, capital, withdrawal, stock adjustment, void |
 | **Boses** (Voice) | `boses` | Speak the sale; the ledger writes itself |
-| **Tanong** (Ask) | `tanong` | "Nasaan ang puhunan ko?" — deterministic answers with evidence |
+| **Tanong** (Ask) | `tanong` | "Nasaan ang puhunan ko?" — typed or spoken; deterministic answers with a chart, read back out loud |
 | **Score** | `score` | Sipat Score, decomposed into weighted dimensions |
-| **Plano** (Plan) | `plan` | FREE / PRO / NEGOSYO, simulated checkout |
+| **Plano** (Plan) | `plan` | FREE / PRO, simulated checkout |
 | **Offline** | `offline` | Voice model download, engine selection, what works without signal |
 
 **Twin.** A dashboard over the Business Twin: net profit for the window, cash on hand, receivables
@@ -119,6 +120,17 @@ profit for a period, where capital sits, where money went since inception, why c
 product, slow movers, biggest utang, profit change, what to restock, the score, and a sales
 forecast. Each answer returns the figures that produced it as evidence. There is **no LLM call**,
 which is why it works offline, costs nothing per question, and cannot hallucinate a number.
+
+The question can be **spoken** instead of typed — one mic button, the browser recognizer first and
+the on-device Whisper model as the fallback, with the words appearing as they are recognized — and
+the answer is **read back out loud** by the phone's own voice (`src/speech.ts`), which is also free
+and also offline. On the intents that have a shape, the answer arrives as a chart: the seven-day
+sales line, the capital split, ranked bars for items and debtors, days of cover for restocking. The
+chart is built in `engine/narrator.ts` out of the same arrays the sentences use, so a figure on a
+bar can never disagree with the headline above it — `engine/askchart.test.ts` holds the two side by
+side and compares them. `speakableText` is what turns `₱4,183.65` into "4,183 pesos and 65
+centavos" before it is spoken, and `src/speech.test.ts` asserts it, because a figure read out
+wrongly sounds like a bug the owner cannot name.
 
 **Voice.** Two engines behind one interface — the browser's own recognizer (accurate, needs
 signal) and an on-device Whisper model (offline, less accurate, explicitly downloaded). Both feed
@@ -195,7 +207,7 @@ src/
 │   └── charts.tsx (241)          AreaChart, sparkline, SVG geometry
 ├── i18n/index.ts (803)           two languages, copy-as-data, date/number formatting
 ├── store.ts (179)                ledger state + persistence
-├── billing.ts (585)              tiers, 18 features, quota, mock invoices
+├── billing.ts (585)              tiers, 19 features, quota, mock invoices
 ├── asr.ts (217)                  ASR boundary + browser engine
 ├── asr-offline.ts (552)          on-device Whisper engine + model catalogue
 ├── audio.ts (239)                microphone capture
@@ -418,14 +430,14 @@ thing; `npm run dev:offline` turns the worker on in dev for testing.
 and cached by the browser, so voice keeps working with no signal afterwards. SeePat pays no
 bandwidth for it and the owner pays nothing for it, which is why it sits in the free tier.
 
-**What is precached (15 entries, 577.82 KiB — verified against the generated `sw.js`):**
+**What is precached (14 entries, 782.65 KiB — verified against the generated `sw.js`):**
 
 | Asset | Precached? | Why |
 |---|---|---|
-| App JS, CSS, HTML, fonts, wordmark | yes | it is the interface |
+| App JS, CSS, HTML, fonts, `seepat-logo.png` | yes | it is the interface |
 | `pwa-192`, `pwa-512`, `pwa-maskable-512` | yes, once each | the platform re-reads the icon when launched from the home screen — where "no signal" is the normal condition |
-| `og-image.png` (72 KB) | **no** | fetched by crawlers, never by the interface |
-| `apple-touch-icon.png` | **no** | captured once when the app is added to the home screen |
+| `og-image.png` (75 KB) | **no** | fetched by crawlers, never by the interface |
+| `apple-touch-icon.png`, `favicon-*` | **no** | captured or drawn by the browser chrome, which is never offline; ~7 KB of icon a tab would be charged to every install |
 | `offline-voice-*.js` (843 KB) | **no** | lazy-loaded only by an owner who chooses the offline engine; charged to nobody else |
 
 Runtime caches: `wasm-runtime` (ONNX Runtime `.wasm`, CacheFirst), `onnx-runtime-cdn` (a safety
@@ -443,9 +455,20 @@ correct in devtools and never installs. That was the bug; the manifest now ships
 512, plus a separate **maskable** 512 (a rounded tile declared maskable has its corners shaved by
 Android, so the safe-zone padding is baked into its own file).
 
-All icons, the Apple touch icon, the 1200×630 social card, and the header wordmark are generated
-from a single source image by `node tools/make-assets.mjs` (sharp) — reproducible, nothing
-hand-exported.
+**One master, one command.** `new_logo.png` at the repo root — the owl, the SeePat lockup and the
+tagline, stacked on transparency — is the official artwork, and every raster the platform needs is
+derived from it by `node tools/make-assets.mjs` (sharp): the tab icons at 16/32/48 plus a real
+`favicon.ico`, `pwa-192`, `pwa-512`, a full-bleed `pwa-maskable-512`, the opaque 180px
+`apple-touch-icon`, the 1200×630 social card, and `seepat-logo.png` (the trimmed, quantised lockup
+the app itself renders). Nothing is hand-exported, so an icon cannot drift from the logo.
+
+**Two crops, and the difference is not cosmetic.** The square icons are built from the **mark** —
+the owl, above the wordmark — because a home-screen icon is drawn at 48-96px and a favicon at 16px,
+where lettering is a grey smear. The **lockup** is used where there is room to read it: the splash,
+the header, the social card. The band boundary is *found in the image* (the first run of ink in a
+downscaled probe) rather than hard-coded, so re-exporting the master with different spacing cannot
+silently start slicing the owl in half, and `src/shell.test.ts` fails if the generated set is
+missing while `index.html` still points at it.
 
 **Manifest:** `id: '/'` (without it, the installed app's identity is its `start_url`, and changing
 that URL later installs a *second* app beside the first instead of updating it), `display:
@@ -557,28 +580,41 @@ added:
 | Tier | Price | For | Position |
 |---|---|---|---|
 | **SeePat FREE** | ₱0, lifetime | the owner just starting to keep records | the entire local product |
-| **SeePat PRO** | ₱99 / month | steady sales, wants to understand profit | AI narration, backup, score history |
-| **SeePat NEGOSYO** | ₱199 / month | growing store with staff and suppliers | forecasting, benchmarking, team |
+| **SeePat PRO** | ₱99 / month | steady sales, wants to understand profit | AI narration, a copy of the records that survives a lost phone |
 | **Institution** | bulk licence | cooperatives, LGUs, livelihood programs | aggregate dashboard |
 
-**18 features** are declared with an `onDevice` flag in a single table. The eight free ones —
-ledger, inventory, utang, capital views, deterministic Ask, voice capture, **the offline voice
-model**, and the current score — are exactly the ones with ₱0 marginal cost. The ten sold ones all
-require a server to be worth anything (narration, history, backup, receipt OCR, restocking,
-multi-user, forecasting, supplier intelligence, benchmarking, report export), so stopping a
-subscription withdraws a service rather than revoking something downloadable.
+**Two plans, and only two.** The ₱199 NEGOSYO plan was withdrawn and is gone from `TIERS`: a plan
+that is not sold may not be shown, demoed, or held. All that survives is a name and a price in
+`RETIRED_PLANS`, so a receipt that says ₱199 keeps saying what was paid, and `migrateOffSale`
+moves an entitlement bought in the demo window onto the nearest plan that was already paid for
+(₱199 → PRO ₱99, never up a price step, never silently down to free). The migration runs inside
+`load()`, the one door stored state comes through, and writes itself back so it happens once.
 
-`billing.test.ts` asserts that **no free feature is cost-bearing** — the unit economics are
-enforced by the suite rather than remembered by a human.
+**19 features** are declared with an `onDevice` flag in a single table, and `onDevice` is what
+decides the tier. The **11 free** ones — ledger, inventory, utang, capital views, deterministic
+Ask, voice capture, spoken answers, the offline voice model, the current score, the score history,
+and restock advice — all run on the owner's phone at ₱0 marginal cost. The **8 sold** ones all
+require a server to be worth anything (narration, cloud backup, receipt OCR, multi-user,
+forecasting, supplier intelligence, benchmarking, report export), so stopping a subscription
+withdrawals a service rather than revoking something downloadable. Six of those eight are
+`status: 'planned'` — no server exists yet, so they have no code, so they are not listed on the
+pricing page at all and `can()` refuses them at every tier.
+
+`billing.test.ts` asserts the rule in **both** directions: no free feature is cost-bearing, and no
+paid feature is cost-free (which is how the score history and restock advice — pure arithmetic over
+the local ledger — were caught being sold). The unit economics are enforced by the suite rather
+than remembered by a human.
 
 **AI narration is metered**, not unlimited: `AI_QUESTION_LIMIT = 300` questions per month, with
 `aiQuestionsRemaining` surfaced in the UI. The simulation covers checkout as well: a chosen
 payment method produces a mock invoice with a generated reference number, and grants the
 entitlement through the same `can(tier, feature)` gate the UI reads.
 
-**Paid features that exist as UI are gated honestly.** Ask shows its lock over a *preview of real
-evidence* and reports remaining quota; Score gates the trend chart the same way. The prototype
-never fakes a finished paid feature.
+**The one paid feature that exists as UI is gated honestly.** Ask shows its lock over a *preview of
+real evidence* and reports the remaining quota, because AI narration is the only door PRO actually
+opens today. The Score's trend chart used to sit behind the same lock; it is now free, because the
+history is arithmetic over records already on the phone (`history.ts`). Anything with no code
+behind it is not merely ungated — it is unlisted, and `can()` refuses it at every tier.
 
 ## 12. Tech stack
 
@@ -632,6 +668,7 @@ differentiators exist on day one.
 | `npm test` | Vitest, single run |
 | `npm run test:watch` | Vitest, watch mode |
 | `npm run check:contrast` | audits every token pair against WCAG |
+| `npm run assets:shots` | captures the marketing site's phone screenshots from the running app (`-- en` / `-- fil`) |
 
 ### Testing offline behaviour
 
@@ -645,22 +682,30 @@ shell renders.
 
 ### Environment
 
-`VITE_SITE_URL` is the only variable. It is committed **empty on purpose**: the OG/Twitter card
-URLs are built as `%VITE_SITE_URL%/og-image.png`, and a wrong hardcoded domain is worse than a
-relative path because it points at somebody else's server.
+**`.env.example` is the list, and tests keep it the list.** Every variable this repository reads —
+one for the app, four optional ones for the promo-video pipeline — is documented there with the
+reason it exists, and `src/env.test.ts` fails if the code reads a name that is not in the file. So
+the answer to "what do I need to set?" is never a search through the source:
 
 ```bash
-# .env
-VITE_SITE_URL=https://seepat.ph     # no trailing slash
+cp .env.example .env     # committed defaults, no secrets in either file
+# .env.local            # git-ignored; wins over .env, for anything machine-specific
 ```
 
-With it empty the tags fall back to root-relative paths, which Twitter, Slack and WhatsApp resolve
+`VITE_SITE_URL` is the only variable the app itself reads, and it is committed **empty on
+purpose**: the OG/Twitter card URLs are built as `%VITE_SITE_URL%/og-image.png`, and a wrong
+hardcoded domain is worse than a relative path because it points at somebody else's server. With
+it empty the tags fall back to root-relative paths, which Twitter, Slack and WhatsApp resolve
 correctly; Facebook does not.
+
+The marketing site is a separate deploy with its own environment (`SITE_URL`, `APP_URL`,
+`CONTACT_EMAIL`, `GOOGLE_SITE_VERIFICATION`) — see [`marketing/README.md`](marketing/README.md).
 
 ## 14. Testing & verification
 
-**169 tests across 12 files**, all in a `node` environment — no jsdom, which is the practical
-consequence of keeping the engine pure.
+**351 tests across 24 files**, all in a `node` environment — no jsdom, which is the practical
+consequence of keeping the engine pure. The table below is the suites that guard something a
+reader would not otherwise guess; `npm test` is the full list.
 
 | Suite | Lines | What it guards |
 |---|---|---|
@@ -676,6 +721,8 @@ consequence of keeping the engine pure.
 | `asr.test.ts` | 276 | speech failures are *diagnosed* rather than printed; the `fil-PH` → `en-PH` retry; a final transcript arrives with its final flag; every engine reports its session ending, including when starting throws |
 | `audio.test.ts` | 125 | the take-ending rule (1.8s of silence, a mid-sentence pause survives, a throttled timer cannot cut one short) and the speech-presence measure that keeps silence away from the model |
 | `asr-offline.test.ts` | 88 | a stored install record is only trusted for the model the runtime actually loads |
+| `marketing.test.ts` | 297 | the two landing pages: every asset resolves, no JavaScript, the FAQ marked up is the FAQ on the page, each language canonicalises to itself and shows its own screenshots, the sitemap lists exactly the canonicals |
+| `env.test.ts` | 133 | every `process.env` / `import.meta.env` read in the repository appears in an `.env.example`, with a comment above it |
 
 `shell.test.ts` is the one that keeps the *shell* honest — the splash timing and social metadata
 are not reachable from TypeScript, so they are asserted by reading `index.html`. The three voice
@@ -684,7 +731,7 @@ transcript and a stale model record all look the same from the outside — like 
 
 ```bash
 npm run typecheck      # tsc --noEmit
-npm test               # 169 passing
+npm test               # 351 passing
 npm run check:contrast # all token pairs, WCAG AA
 npm run build          # typecheck + production build
 ```
@@ -711,8 +758,12 @@ Measured from `npm run build` (uncompressed / gzip):
 
 That precache number is treated as a product constraint, not a build statistic: it is what an
 owner pays in mobile data for the app to work with no signal. The social card is excluded from it,
-the ML runtime is lazy and runtime-cached instead, and a 491 KB wordmark was once trimmed to 16 KB
-for the same reason. The 843 KB ML chunk is split by `manualChunks` so it is never on the startup
+the ML runtime is lazy and runtime-cached instead, and the brand master (1 MB) ships only as a
+trimmed, quantised 52 KB lockup for the same reason. The `favicon-*` set is excluded from the
+precache entirely: the tab is chrome, not interface. The **marketing site** has its own, much
+smaller budget and is measured separately: roughly 250 KB for the first screen on mobile data, no
+JavaScript to run, and `npm run smoke` in `marketing/` fails if a page or a screenshot grows past
+the limit stated in that script. The 843 KB ML chunk is split by `manualChunks` so it is never on the startup
 path.
 
 ## 16. Accessibility
@@ -756,12 +807,15 @@ Honest status, because a prototype that overstates itself is a liability.
 
 **Not built (declared and priced, but unimplemented):**
 
-- **LLM narration.** Metered and gated in `billing.ts`; no model call exists. The deterministic
-  narrator is what actually answers.
-- **Cloud backup, score history sync, benchmarking, multi-user.** All require a server that does
-  not exist in this repository.
-- **Receipt OCR, supplier intelligence, report export.** Declared in the feature table only.
-- **Real payments.** The checkout is simulated end to end; no gateway, no webhook, no idempotency.
+- **LLM narration.** Metered and gated in `billing.ts`, with the seam a real call plugs into
+  (`ai.ts`); no model call exists, so `explainAnswer` throws and the UI shows what *would* be sent
+  rather than a faked paragraph. The deterministic narrator is what actually answers, and it is
+  free.
+- **Cloud backup, benchmarking, multi-user.** All require a server that does not exist in this
+  repository. The *local* half of the same idea is built and free: `backup.ts` exports and
+  restores a versioned envelope on the owner's own phone (`Offline.tsx`).
+- **Receipt OCR, supplier intelligence, report export.** Declared with `status: 'planned'`, which
+  is what keeps them off the pricing page at every tier.
 
 **Deliberate prototype shortcuts:**
 
@@ -792,6 +846,7 @@ Honest status, because a prototype that overstates itself is a liability.
 | `SeePat_Final_Startup_Concept.md` | The full concept: problem, market, modules, positioning, pillars |
 | `CONCEPT_NOTE_CORRECTIONS.md` | Change log of **14 numbered corrections** to the original note — with the reasoning for each |
 | `PSCXI_Concept_Note_SeePat_CORRECTED.md` | Submission-formatted note |
+| `marketing/README.md` | The marketing site: how it builds, how it deploys on Vercel, and the SEO checklist after the first deploy |
 
 The corrections log is worth reading before the concept note. It records the substantive fixes
 this implementation is based on: *puhunan* meaning two different things, a COGS formula that
@@ -800,7 +855,35 @@ reproducible despite claiming to be), unit economics that were never modelled, a
 voice pipeline, an undesigned cold start, ambiguous void semantics, and the brand rename from
 TimbangAI to SeePat.
 
-## 19. Licensing
+## 19. The marketing site
+
+`marketing/` is a separate static site — two pages, two languages, deployed on its own — and it is
+deliberately **not** part of this build.
+
+| | |
+|---|---|
+| Pages | `index.html` (English) and `fil.html` (Filipino), plus a bilingual `404.html` |
+| JavaScript | none, in either page |
+| Build | one file, `marketing/tools/stamp.mjs`, which substitutes `%SITE_URL%` and four other tokens |
+| Check | `npm run smoke` inside the folder: links, JSON-LD, hreflang, sitemap, page weight |
+| Deploy | Vercel with Root Directory `marketing` — the steps are in [`marketing/README.md`](marketing/README.md) |
+
+**Why a folder and not a monorepo.** The site shares no code with the app: no component, no tokens
+file it does not deliberately copy, no build step in common. A workspace would add a tool sitting
+between the two for the sake of shared code that does not exist, and would put the app's toolchain in
+the path of a deploy that only has to serve HTML. The one real dependency runs the other way —
+screenshots, which are generated once from the running app by `tools/capture-marketing-shots.mjs`,
+in both languages, and committed as images.
+
+**The search claims are tested rather than asserted.** `src/marketing.test.ts` reads the pages back
+and fails the suite if an asset reference does not resolve, if a marked-up FAQ answer is not visible
+on the page, if the two languages disagree about their hreflang set, if a canonical points at the
+sibling page, if one language shows the other's screenshots, if the pages ship any JavaScript at
+all, or if a title or description falls outside the length search actually shows. `src/env.test.ts`
+does the same for `.env.example`: a variable that is read but not documented is a failure, not a
+surprise three weeks later.
+
+## 20. Licensing
 
 **This repository currently has no licence file.** Absent one, the default is all rights reserved
 — the code is public to read, not to reuse. That is a decision to make deliberately (in particular
@@ -814,5 +897,5 @@ apply regardless:
 | Sora, Plus Jakarta Sans | SIL Open Font License (licence texts in `public/fonts/`) |
 | React, Vite, Tailwind, Vitest, Workbox | MIT |
 
-Brand assets (`seepat_logo.png`, `public/*`) are the project's own and are not covered by any
-permissive grant.
+Brand assets (`new_logo.png` and everything generated from it into `public/`) are the project's own
+and are not covered by any permissive grant.

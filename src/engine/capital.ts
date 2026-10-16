@@ -47,12 +47,37 @@ export function capitalComposition(twin: BusinessTwin, lang: Lang): CapitalCompo
   const total = Math.abs(netAssets)
 
   const components: CapitalComponent[] = [
+    /*
+     * Cash is two places, not one.
+     *
+     * A sale paid by GCash is money the business has, but it is not in the drawer
+     * — and "Nasaan ang puhunan ko?" is a question about *where* money is. Packworks'
+     * own store survey puts GCash use at 85% of the owners it surveyed and e-wallet
+     * acceptance at 40%, so a single undivided cash line was wrong for a large part
+     * of the market. The two components still sum to the same money as before, which
+     * is why every total and identity in this module is unchanged.
+     */
     {
       key: 'cash',
       label: { en: 'Cash in the box', fil: 'Cash sa kahon' },
-      amountCentavos: twin.cashCentavos,
-      share: safeDiv(twin.cashCentavos, total),
+      amountCentavos: d.cashInBoxCentavos,
+      share: safeDiv(d.cashInBoxCentavos, total),
       kind: 'asset',
+      note: {
+        en: 'The money you can count in the drawer tonight.',
+        fil: 'Ang perang mabibilang mo sa kahon mamayang gabi.',
+      },
+    },
+    {
+      key: 'wallet',
+      label: { en: 'In GCash / Maya', fil: 'Nasa GCash / Maya' },
+      amountCentavos: d.walletCentavos,
+      share: safeDiv(d.walletCentavos, total),
+      kind: 'asset',
+      note: {
+        en: 'Money you have already been paid, sitting in an e-wallet rather than in the box.',
+        fil: 'Pera na bayad na sa iyo, nasa e-wallet lang at wala sa kahon.',
+      },
     },
     {
       key: 'inventory',

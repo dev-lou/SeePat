@@ -1,4 +1,8 @@
 import { useId } from 'react'
+import { Bar } from './components.tsx'
+import { formatChartValue } from '../engine/askchart.ts'
+import type { AnswerChart, ChartTone } from '../engine/askchart.ts'
+import type { Lang } from '../i18n/index.ts'
 
 /**
  * Catmull-Rom → cubic bezier. A polyline of 7 points reads as a jagged zigzag;
@@ -227,6 +231,158 @@ export function AreaChart({
         </div>
       ) : null}
     </div>
+  )
+}
+
+/*
+ * Fill colours for bar lists, taken from the same audited stops the area charts
+ * use on a light surface — 3:1 against white, checked in tools/contrast-check.mjs
+ * rather than picked by eye. A bar that fails that floor is a data mark that
+ * disappears in sunlight, which is where this app is used.
+ */
+const BAR_COLORS: Record<ChartTone, string> = {
+  brand: '#2a3ad6',
+  gold: '#b0830a',
+  sky: '#0284c7',
+}
+
+/*
+ * Segment colours for a stacked bar: brand blue, gold, flag red, sky, violet.
+ * The order is the palette's, so two different split charts put their largest
+ * part in the same colour and an owner who learns one chart can read the next.
+ */
+const SPLIT_COLORS = ['#2a3ad6', '#b0830a', '#ce1126', '#0284c7', '#7c3aed']
+
+/**
+ * A stacked bar: the parts of one whole, as one line.
+ *
+ * It is the right shape for capital and for "where is my money" because those
+ * questions are about *a whole* — the sum of the parts IS the total, and a bar
+ * that visibly fills to 100% proves it. Bars for the same numbers would invite
+ * adding them up to more than the capital, which is the misreading this avoids.
+ *
+ * The 3px gutter between segments is deliberate: without it the eye sees one
+ * gradient, and the boundary between "cash" and "stock" is exactly the
+ * information the chart exists to carry.
+ */
+export function SplitBar({
+  segments,
+}: {
+  /**
+   * `share` is the fraction of the whole, computed by the caller from the
+   * numbers rather than parsed back out of the formatted string: "₱1,234.00"
+   * parses differently in two locales, and a bar drawn from a re-parsed label is
+   * a bar that can disagree with the figure printed beside it.
+   */
+  segments: { label: string; amount: string; share: number; color: string }[]
+}) {
+  if (segments.length === 0) return null
+
+  return (
+    <div className="w-full">
+      <div className="flex h-3.5 w-full gap-[3px] overflow-hidden rounded-full bg-sunken" aria-hidden="true">
+        {segments.map((segment, index) => (
+          <span
+            key={`${segment.label}-${index}`}
+            className="chart-bar h-full"
+            style={{
+              // A sliver is still a real amount, so it keeps a visible minimum
+              // rather than vanishing into a 2px gap.
+              width: `${Math.max(2, Math.abs(segment.share) * 100)}%`,
+              backgroundColor: segment.color,
+            }}
+          />
+        ))}
+      </div>
+      <ul className="mt-2.5 space-y-1.5">
+        {segments.map((segment, index) => (
+          <li key={`${segment.label}-${index}`} className="flex items-baseline justify-between gap-3">
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: segment.color }}
+              />
+              <span className="min-w-0 text-[0.875rem] leading-snug text-fg-muted">{segment.label}</span>
+            </span>
+            <span className="num shrink-0 text-[0.875rem] font-semibold text-fg">{segment.amount}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/**
+ * An answer's figures, drawn.
+ *
+ * One component for three shapes, because the *decision* of which picture suits
+ * which question was already made where the numbers were computed
+ * (`engine/narrator.ts`); this file only draws what it is handed. That split is
+ * what keeps the Ask screen from growing its own arithmetic.
+ */
+export function AnswerChartView({ chart, lang }: { chart: AnswerChart; lang: Lang }) {
+  const magnitudes = chart.values.map((value) => Math.abs(value))
+  const max = Math.max(1, ...magnitudes)
+  const sum = magnitudes.reduce((total, value) => total + value, 0)
+
+  return (
+    <figure className="mt-3.5 rounded-2xl border border-line bg-card p-3.5">
+      <figcaption className="eyebrow text-brand-700">{chart.title}</figcaption>
+
+      {chart.shape === 'area' && chart.values.length >= 2 ? (
+        <div className="mt-2.5">
+          <AreaChart
+            values={chart.values}
+            labels={chart.labels}
+            tone={chart.tone}
+            valueLabel={chart.valueLabel}
+            height={104}
+          />
+        </div>
+      ) : null}
+
+      {chart.shape === 'bars' ? (
+        <div className="mt-1 divide-y divide-line/70">
+          {chart.labels.map((label, index) => {
+            const value = chart.values[index] ?? 0
+            return (
+              <Bar
+                key={`${label}-${index}`}
+                label={label}
+                amount={formatChartValue(value, chart.unit, lang)}
+                share={Math.abs(value) / max}
+                // A negative bar is a loss, and it is drawn in the one colour the
+                // app uses for money going out — never in the series colour.
+                tone={value < 0 ? 'offset' : 'muted'}
+                color={value < 0 ? undefined : BAR_COLORS[chart.tone]}
+                // Bars are ranked against each other, not measured against a
+                // whole, so a percentage here would be a figure nobody asked for.
+                showPercent={false}
+              />
+            )
+          })}
+        </div>
+      ) : null}
+
+      {chart.shape === 'split' ? (
+        <div className="mt-3">
+          <SplitBar
+            segments={chart.labels.map((label, index) => ({
+              label,
+              amount: formatChartValue(chart.values[index] ?? 0, chart.unit, lang),
+              share: sum > 0 ? Math.abs(chart.values[index] ?? 0) / sum : 0,
+              color: SPLIT_COLORS[index % SPLIT_COLORS.length],
+            }))}
+          />
+        </div>
+      ) : null}
+
+      {chart.caption ? (
+        <p className="mt-2.5 border-t border-line pt-2.5 text-[0.8125rem] leading-relaxed text-fg-subtle">
+          {chart.caption}
+        </p>
+      ) : null}
+    </figure>
   )
 }
 

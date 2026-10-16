@@ -12,6 +12,7 @@
     "offline": "vite build && vite preview",
     "typecheck": "tsc --noEmit",
     "check:contrast": "node tools/contrast-check.mjs",
+    "assets:shots": "node tools/capture-marketing-shots.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

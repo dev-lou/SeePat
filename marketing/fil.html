@@ -1,0 +1,786 @@
+<!doctype html>
+<!--
+  SeePat — marketing site, Filipino.
+
+  A translation of index.html, not a machine pass over it: the copy follows the
+  app's own voice (src/i18n/index.ts), because the product was written in
+  Tagalog first and the English is the translation in this house, not the other
+  way round.
+
+  TWO THINGS TO KNOW BEFORE EDITING:
+
+  1. `lang="tl"` and `hreflang="tl-PH"`, while the app calls this language
+     `fil`. Both values are real BCP 47 tags; `tl` (Tagalog) is the one Google
+     documents for localized versions, because its guidance asks for an ISO
+     639-1 language subtag and Filipino has no two-letter code. Changing these
+     to `fil-PH` would be defensible in HTML and risky in search, so they stay.
+
+  2. The FAQ copy is duplicated in the JSON-LD below on purpose — Google
+     requires marked-up answers to be visible — and a test asserts the two
+     copies stay identical.
+-->
+<html lang="tl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SeePat — alamin ang tunay na kita, hindi lang ang benta</title>
+    <meta
+      name="description"
+      content="Voice-first at offline na kasama sa negosyo para sa sari-sari, karinderya at palengke. Sabihin ang benta, at makita ang kita, puhunan at utang."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0d1136" />
+
+    <link rel="canonical" href="%SITE_URL%/fil" />
+    <link rel="alternate" hreflang="en-PH" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="tl-PH" href="%SITE_URL%/fil" />
+    <link rel="alternate" hreflang="x-default" href="%SITE_URL%/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SeePat" />
+    <meta property="og:locale" content="tl_PH" />
+    <meta property="og:locale:alternate" content="en_PH" />
+    <meta property="og:title" content="SeePat — alamin ang tunay na kita, hindi lang ang benta" />
+    <meta
+      property="og:description"
+      content="Sabihin ang benta sa Taglish at isusulat ng SeePat ang tala, tapos sasagutin ang “kumikita ba ako?” gamit ang numero — offline, sa phone mo."
+    />
+    <meta property="og:url" content="%SITE_URL%/fil" />
+    <meta property="og:image" content="%SITE_URL%/assets/brand/og-cover.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Ang SeePat lockup — ang kuwago, ang SeePat wordmark at ang linyang “Ang Financial Copilot ng Negosyo”."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SeePat — alamin ang tunay na kita, hindi lang ang benta" />
+    <meta
+      name="twitter:description"
+      content="Voice-first at offline na kasama sa negosyo para sa maliliit na negosyanteng Pilipino. Libre."
+    />
+    <meta name="twitter:image" content="%SITE_URL%/assets/brand/og-cover.png" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/assets/brand/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+
+    <!--if:GOOGLE_SITE_VERIFICATION-->
+    <meta name="google-site-verification" content="%GOOGLE_SITE_VERIFICATION%" />
+    <!--endif-->
+
+    <link
+      rel="preload"
+      href="/assets/fonts/sora-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/plus-jakarta.latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "%SITE_URL%/#organization",
+            "name": "SIPAT LABS",
+            "url": "%SITE_URL%/",
+            "logo": "%SITE_URL%/assets/brand/lockup.png",
+            "description": "Ang team na gumagawa ng SeePat, isang kasama sa pagpapasya sa pera para sa maliliit na negosyanteng Pilipino.",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Dingle",
+              "addressRegion": "Iloilo",
+              "addressCountry": "PH"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "%SITE_URL%/#app",
+            "name": "SeePat",
+            "alternateName": "SeePat — Ang Financial Copilot ng Negosyo",
+            "url": "%APP_URL%",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Talaan at pagpapasya para sa maliit na negosyo",
+            "operatingSystem": "Android, iOS, Web browser",
+            "inLanguage": ["tl-PH", "en-PH"],
+            "isAccessibleForFree": true,
+            "publisher": { "@id": "%SITE_URL%/#organization" },
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "SeePat FREE",
+                "price": "0",
+                "priceCurrency": "PHP",
+                "description": "Ang buong lokal na produkto, libre habang-buhay: tala ng benta, imbentaryo, utang, detalye ng puhunan, deterministikong sagot, boses at ang Sipat Score."
+              },
+              {
+                "@type": "Offer",
+                "name": "SeePat PRO",
+                "price": "99",
+                "priceCurrency": "PHP",
+                "description": "₱99 kada buwan para sa mga bahaging kailangan ng server, simula sa AI narration ng parehong numero."
+              }
+            ],
+            "featureList": [
+              "Itala ang benta sa pagsasalita ng Taglish",
+              "Kita na hindi ang laman ng kahon",
+              "Kung saan talaga nakaupo ang puhunan",
+              "Utang na may hulugan at balanse",
+              "GCash, Maya at bangko bilang channel, hindi cash",
+              "Gumagana kahit walang internet",
+              "Deterministikong sagot na may ebidensya",
+              "Sipat Score na may nakikitang bigat"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "%SITE_URL%/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Gumagana ba ang SeePat kahit walang internet?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Oo, iyon ang punto. Ang pagtala ng benta, ang ledger, utang, ang detalye ng puhunan, ang mga sagot at ang score ay kinakalkula sa phone. Isang download lang ang voice model sa Wi-Fi at tuloy pa rin ito kahit walang signal. Walang ipinapadala kahit saan."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Kailangan ko bang magaling sa accounting, o sa English?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Hindi. Puwede kang magsalita sa Taglish — kung paano talaga sinasabi ang benta — at sasagot ang app sa Filipino o English, kahit alin ang piliin mo."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Magkano ang SeePat?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Libre ang buong lokal na produkto: ledger, imbentaryo, utang, ang puhunan, ang mga sagot, boses at ang Sipat Score. Ang SeePat PRO ay ₱99 kada buwan para sa mga bahaging nangangailangan ng server, simula sa AI narration. Hindi pa nakabukas ang bayaran, kaya wala pang ibinebenta ngayon."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Saan napupunta ang datos ko?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Wala, sa simula. Nasa storage ng phone mo ang mga tala at puwede kang mag-export ng backup na ikaw ang may hawak. Walang account at walang server sa libreng produkto."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Credit score ba ang Sipat Score?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Hindi. Sukat ito ng kalagayan ng tindahan — kita, disiplina sa cash, utang at paninda — mula 100, base sa sarili mong tala. Hindi ito credit bureau score at hindi ito ginagamit sa pagpapasya ng pautang."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Paano ang GCash, Maya at utang?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Naitatala sila kung ano talaga sila: mga channel na dinaraanan ng pera, hiwalay sa cash sa kahon at sa utang. Kaya hindi na mukhang mayaman ang isang abalang araw, at hindi na bumababa sa negatibo ang cash."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <a class="skip" href="#main">Lumaktaw sa nilalaman</a>
+
+    <header class="site-head">
+      <div class="wrap site-head__inner">
+        <a class="brand" href="/fil">
+          <img src="/assets/brand/lockup.png" width="512" height="515" alt="" />
+          <span>
+            <span class="brand__name">SeePat</span>
+            <span class="brand__tag">Ang Financial Copilot ng Negosyo</span>
+          </span>
+        </a>
+
+        <nav class="site-nav" aria-label="Mga bahagi">
+          <a href="#bakit">Bakit SeePat</a>
+          <a href="#boses">Boses</a>
+          <a href="#paano">Paano gumagana</a>
+          <a href="#presyo">Presyo</a>
+          <a href="#tanong">Mga tanong</a>
+        </nav>
+
+        <p class="lang">
+          <a hreflang="en-PH" lang="en" href="/" aria-label="English version of this page">EN</a>
+          <span aria-current="true">FIL</span>
+        </p>
+
+        <a class="btn btn--sm" href="%APP_URL%">Buksan ang app</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ─── Hero ──────────────────────────────────────────────────────── -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero__grid">
+          <div>
+            <p class="eyebrow">Sari-sari · Karinderya · Palengke</p>
+            <h1 id="hero-title">
+              Alam mo ang benta ngayong araw. Alam din ni SeePat ang
+              <span class="swipe">tunay na kita</span>.
+            </h1>
+            <p class="hero__sub">
+              Isang voice-first na kasama sa negosyo para sa maliliit na negosyanteng Pilipino.
+              Sabihin ang benta, at kusang mabubuo ang tala — tapos sasagutin ng SeePat ang
+              “kumikita ba ako?” gamit ang numero mula sa sarili mong tala, sa sarili mong phone.
+            </p>
+
+            <ul class="hero__list">
+              <li>Sabihin ang benta sa Taglish; pumapasok ito sa tala, hindi sa draft</li>
+              <li>Kita, puhunan, utang at paninda — hiwalay, dahil hindi sila iisang pera</li>
+              <li>Walang internet, walang account, walang ipinapadala kahit saan</li>
+            </ul>
+
+            <div class="btn-row" style="margin-top: 1.75rem">
+              <a class="btn btn--gold" href="%APP_URL%">Buksan ang SeePat — libre</a>
+              <a class="btn btn--ghost" href="#bakit">Tingnan ang sinasagot nito</a>
+            </div>
+
+            <p class="note" style="margin-top: 0.9rem">
+              Libre habang-buhay ang lahat ng tumatakbo sa phone. Walang card, walang sign-up.
+            </p>
+
+            <ul class="hero__badges">
+              <li class="pill">Gumagana offline</li>
+              <li class="pill">Filipino at English</li>
+              <li class="pill">Android · iOS · Web</li>
+            </ul>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/fil-money.webp"
+                width="780"
+                height="1688"
+                fetchpriority="high"
+                decoding="async"
+                alt="Ang home screen ng SeePat sa phone: tunay na kita ngayon na ₱440.64, nabawsan na ang puhunan ng paninda at ang gastos ng araw, isang linya ng benta, at ang paalala na ₱140.00 ng benta ngayong araw ay utang — kasama sa kita, pero hindi pa cash."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="tear" aria-hidden="true"></div>
+
+      <!-- ─── Limang tanong ─────────────────────────────────────────────── -->
+      <section class="band ledger" id="bakit" aria-labelledby="bakit-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">Limang tanong</p>
+            <h2 class="h2" id="bakit-title">
+              Limang tanong na dapat masagot agad ng may tindahan
+            </h2>
+            <p class="lede">
+              Ang ₱8,000 na benta ay hindi ₱8,000 na kita. Bahagi nito ay ang paninda, bahagi ang
+              gastos ng araw, bahagi ang utang na hindi pa dumarating, at bahagi ang perang
+              naiuwi na. Sinasara ng SeePat ang agwat sa pagitan ng perang gumagalaw at perang
+              kinita.
+            </p>
+          </div>
+
+          <table class="gaps">
+            <caption class="visually-hidden">
+              Ang limang tanong, sa salita ng may-ari, at ang isinasagot ng SeePat
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <em>Itanong ng may-ari</em>
+                  Magkano talaga ang kinita ko?
+                </th>
+                <td>
+                  <b>Kita, hindi ang laman ng kahon</b>
+                  Benta na bawas ang puhunan ng paninda at ang gastos ng araw, muling kinakalkula
+                  sa bawat tala — kasama pa rin ang utang sa kita, at malinaw na sinasabing hindi
+                  pa cash.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>Itanong ng may-ari</em>
+                  Nasaan ngayon ang puhunan ko?
+                </th>
+                <td>
+                  <b>Kung saan talaga nakaupo ang puhunan</b>
+                  Cash sa kahon, paninda sa presyong binili mo, utang na babayaran sa iyo,
+                  kagamitan — at bawas ang utang mo sa supplier. Nagtutugma, sa isang screen.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>Itanong ng may-ari</em>
+                  Bakit malakas ang benta pero kulang ang cash?
+                </th>
+                <td>
+                  <b>Ang benta ay hindi cash</b>
+                  Ang GCash, Maya, bank transfer at utang ay naitatala kung ano talaga sila, kaya
+                  hindi na mukhang mayaman ang isang abalang araw.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>Itanong ng may-ari</em>
+                  Ano ang mabilis maubos?
+                </th>
+                <td>
+                  <b>Payo sa paninda mula sa sarili mong kasaysayan</b>
+                  Ang mabilis maubos, ang hindi gumagalaw, at ang dapat bilhin muli — galing sa
+                  tala, hindi sa hula.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <em>Itanong ng may-ari</em>
+                  Ano ang dapat kong gawin bukas?
+                </th>
+                <td>
+                  <b>Isang dapat unahin, sa salita</b>
+                  “I-collect muna.” “Order na nito.” “Bantayan ito.” Bawat sukat ng score ay may
+                  bigat at may paliwanag kung bakit gumalaw.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── Puhunan ───────────────────────────────────────────────────── -->
+      <section class="band" id="puhunan" aria-labelledby="puhunan-title">
+        <div class="wrap capital">
+          <div>
+            <p class="eyebrow">Nasaan ang puhunan?</p>
+            <h2 class="h2" id="puhunan-title">Ang tanong na hindi kayang sagutin ng notebook</h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                Itanong mo — naka-type o pasalita — at sasagutin ito ng SeePat mula sa parehong
+                numero na ginagamit ng buong app, kasama ang paliwanag kung paano nakuha. Walang
+                hula, walang chatbot, walang imbentong numero.
+              </p>
+              <p>
+                Bawat numero ay may dalang ebidensya, at eksakto ang identidad sa ilalim nito:
+                assets minus liabilities, katumbas ng puhunan — bawas ang kinuha mo, dagdag ang
+                lahat ng kinita mo.
+              </p>
+            </div>
+
+            <div class="bars" style="margin-top: 1.75rem">
+              <div class="bar">
+                <p class="bar__top"><span>Cash sa kahon</span><span class="num">₱38,998.95</span></p>
+                <div class="bar__track"><div class="bar__fill" style="width: 75%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Paninda, sa presyong binili</span><span class="num">₱6,543.60</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--light" style="width: 13%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Utang na babayaran sa iyo</span><span class="num">₱4,158.65</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--gold" style="width: 8%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Kagamitan at gamit</span><span class="num">₱2,000.00</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--light" style="width: 4%"></div></div>
+              </div>
+              <div class="bar">
+                <p class="bar__top"><span>Utang sa supplier</span><span class="num">− ₱15,307.90</span></p>
+                <div class="bar__track"><div class="bar__fill bar__fill--gold" style="width: 30%"></div></div>
+              </div>
+            </div>
+            <p class="figure-note">
+              Mula sa demo shop ng app, pagkatapos ng dalawampu't isang araw ng benta:
+              ₱36,393.30 ang kabuuang puhunan. Ang huling linya ang dahilan kung bakit nagugulat
+              ang iba — hindi pa sa iyo lahat ng nakaupo sa shelf.
+            </p>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/fil-ask.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="Ang Ask My Negosyo screen: ang tanong na “Nasaan ang puhunan ko?” na sinagot ng ₱36,393.30 bilang kabuuang puhunan ngayon, kasunod ang bar na naghahati nito — cash sa kahon, paninda, utang sa iyo, kagamitan."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Boses ─────────────────────────────────────────────────────── -->
+      <section class="band band--dark" id="boses" aria-labelledby="boses-title">
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Boses</p>
+            <h2 class="h2" id="boses-title">Sabihin ang benta. Kumpirmahin ang numero.</h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                “Sipat, nakabenta ako ng sampung Coke at limang Lucky Me.” Babuuin ng SeePat ang
+                tala, ipapakita ang bawat linya, at maghihintay.
+              </p>
+              <p>
+                Walang naitatala hangga't hindi ka pumapayag. Sinasadya iyon: kitang-kita sa screen
+                kung mali ang narinig na item, pero ang maling dami o presyo ay tahimik na
+                sumisira sa lahat ng susunod na sagot. Kaya sa iyo pa rin ang numero.
+              </p>
+              <p>
+                Sa phone tumatakbo ang speech model. Isang download lang, tuloy ang trabaho kahit
+                walang signal pagkatapos, at walang bayad kada pangungusap — kaya nasa libreng
+                plano ang boses.
+              </p>
+            </div>
+
+            <ul class="hero__badges">
+              <li class="pill">Taglish, kung paano ka magsalita</li>
+              <li class="pill">Model sa loob ng phone</li>
+              <li class="pill">Libre, kasama ang download</li>
+            </ul>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/fil-voice.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="Ang Sipat Voice screen: isang kuwagong may hawak na mikropono, may nakasulat na “Pindutin at sabihin ang transaksyon” at switch para i-type na lang."
+              />
+            </div>
+            <div class="phone phone--second">
+              <img
+                src="/assets/shots/fil-voice-draft.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="Ang sheet na kumpirmasyon pagkatapos ng pasalitang benta: Coke Mismo ₱25 bawat isa, dami 10, at Lucky Me Pancit Canton ₱17, dami 5 — puwedeng baguhin ang bawat linya, at may paalala na walang naitatala hangga't hindi kumpirmahin."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Pera: cash, GCash, Maya, utang ────────────────────────────── -->
+      <section class="band ledger" id="pera" aria-labelledby="pera-title">
+        <div class="wrap split split--flip">
+          <div>
+            <p class="eyebrow">Cash, GCash, Maya, utang</p>
+            <h2 class="h2" id="pera-title">
+              Apat ang paraan ng pagdating ng pera. Isa lang ang nakikita ng kahon.
+            </h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                Ang utang ang bahaging walang nagpapanatili ng maayos: bentang binibilang ngayon,
+                babayaran pagkatapos ng tatlong linggo, kung babayaran man. Sinusubaybayan ng
+                SeePat kung sino ang may utang, tumatanggap ng hulugan, at hindi pinapabayaang
+                maging kita ang perang hindi naman dumating.
+              </p>
+              <p>
+                Ang pagkuha ng pera para sa bahay ay hindi gastos. Binabawas nito ang hawak mo;
+                hindi nito binabawas ang kinita mo. Magkaibang linya, at iyon ang dahilan kung
+                bakit may saysay ang kita.
+              </p>
+            </div>
+
+            <div class="cards cards--3" style="margin-top: 1.75rem">
+              <article class="card">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7" /></svg>
+                </div>
+                <h3>Utang na may balanse</h3>
+                <p>Hulugan, babala kapag sobra ang bayad, at listahan kung sino ang unahin.</p>
+              </article>
+              <article class="card">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 12h4" /></svg>
+                </div>
+                <h3>Channel, hindi cash</h3>
+                <p>GCash, Maya at bangko, naitatala kung ano sila, sa isang talaan.</p>
+              </article>
+              <article class="card card--gold">
+                <div class="card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H7" /></svg>
+                </div>
+                <h3>Hiwalay ang naiuwi</h3>
+                <p>Ang pag-withdraw ay bawas sa bulsa, hindi sa kita — kaya hindi nagsisinungaling ang kita.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/fil-ledger.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="Ang ledger screen: uri ng tala — benta, utang, gastos at iba pa — isang tanong kung saan pumasok ang pera na may cash, GCash, Maya at bank transfer, at mga chip para sa madalas na tinda."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Paano gumagana ────────────────────────────────────────────── -->
+      <section class="band" id="paano" aria-labelledby="paano-title">
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Tatlong hakbang</p>
+            <h2 class="h2" id="paano-title">
+              Ang pagtala ang ginagastos. Ang sagot ang produkto.
+            </h2>
+
+            <div class="steps" style="margin-top: 1.75rem">
+              <div class="step">
+                <h3>Sabihin o i-type</h3>
+                <p>
+                  Isang pangungusap kada benta — kung paano mo ito sasabihin sa kapwa, hindi isang
+                  form. Ang madalas mong tinda ay isang tap lang.
+                </p>
+              </div>
+              <div class="step">
+                <h3>Tingnan ang draft</h3>
+                <p>
+                  Ipinapakita ng SeePat ang narinig nito, linya kada linya, at naghihintay ng tap
+                  mo. Itama ang anuman bago ito maitala.
+                </p>
+              </div>
+              <div class="step">
+                <h3>Tingnan ang nabago</h3>
+                <p>
+                  Sabay na nagbabago ang kita, cash, paninda at utang, may paliwanag sa salita:
+                  ano ang malakas, ano ang bantayan, at ano ang unahin.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/fil-score.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="Ang Sipat Score screen: 79 mula 100 na may markang maayos, paalala na unahin ang pangongolekta ng ₱4,158.65 na utang, at ang mga sukat na may bigat — kita, at cash na magagamit — kasama kung gaano kabigat ang bawat isa."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Presyo ────────────────────────────────────────────────────── -->
+      <section class="band ledger" id="presyo" aria-labelledby="presyo-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">Presyo</p>
+            <h2 class="h2" id="presyo-title">Ang tuntunin: sa phone, libre. Server, bayad.</h2>
+            <p class="lede">
+              Walang gastos sa pagpapatakbo ang bawat bagay na tumatakbo sa phone mo, kaya libre
+              ito at mananatiling libre. Ang ibinebenta lang ay ang kailangan ng server para maging
+              kapaki-pakinabang.
+            </p>
+          </div>
+
+          <div class="plans">
+            <article class="plan">
+              <div class="plan__head">
+                <h3 class="plan__name">SeePat FREE</h3>
+                <p class="plan__price">₱0 <span>habang-buhay</span></p>
+              </div>
+              <p class="plan__for">Para sa may tindahan na nagsisimula pa lang magtala.</p>
+              <ul>
+                <li>Benta, gastos at paninda, may void sa halip na delete</li>
+                <li>Utang na may hulugan at balanse</li>
+                <li>Detalye ng puhunan — nasaan ang puhunan</li>
+                <li>Boses gamit ang model sa loob ng phone, kasama ang download</li>
+                <li>Deterministikong sagot na may ebidensya</li>
+                <li>Sipat Score, ang kasaysayan nito at payo sa paninda</li>
+                <li>Backup na file na ikaw mismo ang may hawak</li>
+              </ul>
+              <a class="btn" href="%APP_URL%">Buksan ang app</a>
+            </article>
+
+            <article class="plan plan--pro">
+              <div class="plan__head">
+                <h3 class="plan__name">SeePat PRO</h3>
+                <p class="plan__price">₱99 <span>kada buwan</span></p>
+              </div>
+              <p class="plan__for">
+                Para sa tindahang tuloy-tuloy ang benta at gustong may kopya sa labas ng phone.
+              </p>
+              <ul>
+                <li>AI narration — parehong numero, mas mahabang paliwanag<span class="tag">Hindi pa live</span></li>
+                <li>Kopya sa cloud na hindi mawawala kahit mawala ang phone<span class="tag">Hindi pa live</span></li>
+                <li>Resibo na kinukunan ng litrato at pumapasok sa tala<span class="tag">Hindi pa live</span></li>
+                <li>Forecast, impormasyon sa supplier at benchmark<span class="tag">Hindi pa live</span></li>
+              </ul>
+              <a class="btn" href="%APP_URL%">Subukan muna ang libre</a>
+            </article>
+          </div>
+
+          <p class="note" style="margin-top: 1.25rem; max-width: 62ch">
+            Maliwanag: prototype pa ang SeePat. Hindi pa nakabukas ang bayaran, walang card na
+            kinukuha sa site na ito, at may “hindi pa live” ang bawat PRO na linya dahil wala pa
+            ang server na maghahatid nito. May bulk licence din para sa kooperatiba at livelihood
+            program, ginagawa pa.
+          </p>
+        </div>
+      </section>
+
+      <!-- ─── Mga tanong ────────────────────────────────────────────────── -->
+      <section class="band" id="tanong" aria-labelledby="tanong-title">
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">Mga tanong</p>
+            <h2 class="h2" id="tanong-title">Ang mga unang itinatanong ng may tindahan</h2>
+          </div>
+
+          <div class="faq">
+            <details open>
+              <summary>Gumagana ba ang SeePat kahit walang internet?</summary>
+              <p>
+                Oo, iyon ang punto. Ang pagtala ng benta, ang ledger, utang, ang detalye ng
+                puhunan, ang mga sagot at ang score ay kinakalkula sa phone. Isang download lang
+                ang voice model sa Wi-Fi at tuloy pa rin ito kahit walang signal. Walang
+                ipinapadala kahit saan.
+              </p>
+            </details>
+            <details>
+              <summary>Kailangan ko bang magaling sa accounting, o sa English?</summary>
+              <p>
+                Hindi. Puwede kang magsalita sa Taglish — kung paano talaga sinasabi ang benta — at
+                sasagot ang app sa Filipino o English, kahit alin ang piliin mo.
+              </p>
+            </details>
+            <details>
+              <summary>Magkano ang SeePat?</summary>
+              <p>
+                Libre ang buong lokal na produkto: ledger, imbentaryo, utang, ang puhunan, ang mga
+                sagot, boses at ang Sipat Score. Ang SeePat PRO ay ₱99 kada buwan para sa mga
+                bahaging nangangailangan ng server, simula sa AI narration. Hindi pa nakabukas ang
+                bayaran, kaya wala pang ibinebenta ngayon.
+              </p>
+            </details>
+            <details>
+              <summary>Saan napupunta ang datos ko?</summary>
+              <p>
+                Wala, sa simula. Nasa storage ng phone mo ang mga tala at puwede kang mag-export ng
+                backup na ikaw ang may hawak. Walang account at walang server sa libreng produkto.
+              </p>
+            </details>
+            <details>
+              <summary>Credit score ba ang Sipat Score?</summary>
+              <p>
+                Hindi. Sukat ito ng kalagayan ng tindahan — kita, disiplina sa cash, utang at
+                paninda — mula 100, base sa sarili mong tala. Hindi ito credit bureau score at
+                hindi ito ginagamit sa pagpapasya ng pautang.
+              </p>
+            </details>
+            <details>
+              <summary>Paano ang GCash, Maya at utang?</summary>
+              <p>
+                Naitatala sila kung ano talaga sila: mga channel na dinaraanan ng pera, hiwalay sa
+                cash sa kahon at sa utang. Kaya hindi na mukhang mayaman ang isang abalang araw, at
+                hindi na bumababa sa negatibo ang cash.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Pangwakas ─────────────────────────────────────────────────── -->
+      <section class="band band--dark" id="simulan" aria-labelledby="simulan-title">
+        <div class="wrap closing">
+          <img src="/assets/brand/lockup.png" width="512" height="515" alt="SeePat" />
+          <h2 class="h2" id="simulan-title" style="max-width: 24ch">
+            See your business clearly. Maliit na negosyo, malaking bukas.
+          </h2>
+          <p class="lede" style="text-align: center">
+            Buksan ang SeePat sa phone na nasa bulsa mo na. Libre, walang account, at tuloy ang
+            trabaho kahit mahina ang signal.
+          </p>
+          <div class="btn-row" style="justify-content: center">
+            <a class="btn btn--gold" href="%APP_URL%">Buksan ang SeePat</a>
+            <a class="btn btn--ghost" href="/" hreflang="en-PH" lang="en"
+              >Read this page in English</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="wrap">
+        <div class="site-foot__grid">
+          <div>
+            <h2>SeePat</h2>
+            <p>
+              Isang voice-enabled, offline-first na kasama sa negosyo para sa maliliit na
+              negosyanteng Pilipino — sari-sari store, karinderya, palengke.
+            </p>
+            <p class="status">
+              Prototype pa. Hindi pa buhay ang subscription, cloud at bayaran. Kumpleto at libre
+              ang lokal na produkto.
+            </p>
+          </div>
+          <div>
+            <h2>Sa pahinang ito</h2>
+            <ul>
+              <li><a href="#bakit">Bakit SeePat</a></li>
+              <li><a href="#boses">Boses</a></li>
+              <li><a href="#paano">Paano gumagana</a></li>
+              <li><a href="#presyo">Presyo</a></li>
+              <li><a href="#tanong">Mga tanong</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>Wika</h2>
+            <ul>
+              <li><a href="/" hreflang="en-PH" lang="en">English</a></li>
+              <li><a href="/fil" hreflang="tl-PH" aria-current="page">Filipino</a></li>
+            </ul>
+            <!--if:CONTACT_EMAIL-->
+            <ul style="margin-top: 0.85rem">
+              <li><a href="mailto:%CONTACT_EMAIL%">%CONTACT_EMAIL%</a></li>
+            </ul>
+            <!--endif-->
+          </div>
+        </div>
+
+        <div class="site-foot__legal">
+          <p>© %YEAR% SIPAT LABS · Ginawa sa ISUFST Dingle Campus, Iloilo</p>
+          <p>Libre para sa bawat negosyong nangangailangan.</p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

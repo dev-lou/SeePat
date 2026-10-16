@@ -9,6 +9,7 @@ import {
   Donut,
   HeroShell,
   NoticeBanner,
+  PrintSheet,
   ProgressRing,
   SectionTitle,
   SegmentedControl,
@@ -17,6 +18,7 @@ import {
 import { PatSays } from './PatSays.tsx'
 import { bandLabel, formatPHP, formatPercent } from '../engine/index.ts'
 import { computeRestock } from '../engine/restock.ts'
+import { topSellers } from '../engine/movers.ts'
 import { buildWeeklyReport } from '../report.ts'
 import type { Negosyo } from '../store.ts'
 import { monthShort, pick, useLang, useT, weekdayLong, weekdayShort } from '../i18n/index.ts'
@@ -53,10 +55,13 @@ export type DashTab = 'tala' | 'boses' | 'tanong' | 'score'
 export function Dashboard({
   negosyo,
   onOpenScore,
+  onOpenUtang,
   onGo,
 }: {
   negosyo: Negosyo
   onOpenScore: () => void
+  /** The utang book — offered wherever the screen names money owed. */
+  onOpenUtang?: () => void
   onGo: (tab: DashTab) => void
 }) {
   const { today, week, twin, derived, composition, provenance, score, ledger } = negosyo
@@ -164,8 +169,16 @@ export function Dashboard({
   ]
 
   // Restock advice from data already on the phone: days of stock left per SKU.
-  // Zero serving cost, premium reading — the honest PRO-shaped feature.
+  // Zero serving cost: it reads the owner's own stock and her own week, so it is
+  // free and always was. It used to be sold as a PRO feature, which the pricing
+  // page's own rule ("what needs a server is what you pay for") could not
+  // justify — the numbers never left the phone.
   const restock = computeRestock(ledger, twin, week.salesBySku)
+
+  // The other half of the same idea: what is selling, ranked by what it kept.
+  // `topSellers` is the same comparison the spoken answer uses, and a test holds
+  // the two together so the screen can never contradict the answer.
+  const bestSellers = topSellers(ledger, week.salesBySku, 5)
 
   function printWeek() {
     if (typeof window === 'undefined') return
@@ -187,10 +200,17 @@ export function Dashboard({
   const warnings = twin.warnings.slice(0, 3)
   const bannerLines = warnings.slice(0, 2).map((w) => pick(lang, { en: w.message, fil: w.messageFil }))
 
+  const bannerVisible = warnings.length > 0 && !bannerDismissed
+
   // Where Pat reads from: the ledger's own diagnostics first, then the score's
   // priorities and strengths — every one of them a sentence the engine wrote.
+  //
+  // Pat skips whatever the banner is already showing. The two sit a card apart on
+  // the same screen, and the app was printing one warning twice, word for word —
+  // which reads as an app with nothing else to say, and buries the priority
+  // ("collect first") underneath a technical note about a missing customer.
   const patSources = {
-    warnings: twin.warnings,
+    warnings: bannerVisible ? twin.warnings.slice(bannerLines.length) : twin.warnings,
     priorities: score.priorities,
     strengths: score.strengths,
     sufficientData: score.sufficientData,
@@ -275,9 +295,48 @@ export function Dashboard({
           </div>
           <div className="rounded-2xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-md p-3 border border-gold-300/40 shadow-[0_4px_16px_-4px_rgba(255,213,74,0.3)]">
             <div className="text-[0.7rem] font-black tracking-wider text-gold-300 uppercase">{t('dash.cash')}</div>
-            <div className="figure-lg mt-1 text-[1.0625rem] font-black text-gold-300 leading-none">{formatPHP(twin.cashCentavos)}</div>
+            {/*
+              * The box, and — when there is any — what is sitting in an e-wallet.
+              *
+              * The hero figure used to be money on hand, which quietly included
+              * GCash: an owner counting the drawer at night would find less than
+              * the app claimed and have no way to tell why. So the headline is
+              * now the countable number, and the float is named underneath it in
+              * smaller type. It only appears when it is non-zero, because a zero
+              * row on every screen is noise.
+              */}
+            <div className="figure-lg mt-1 text-[1.0625rem] font-black text-gold-300 leading-none">
+              {formatPHP(derived.cashInBoxCentavos)}
+            </div>
+            {derived.walletCentavos > 0 ? (
+              <div className="mt-1 text-[0.75rem] leading-snug font-bold text-gold-200/90">
+                {t('dash.wallet', { amount: formatPHP(derived.walletCentavos) })}
+              </div>
+            ) : null}
           </div>
         </div>
+
+        {/*
+         * Sales and cash are different numbers, and utang is the only reason
+         * they differ. Without this line the owner sees Sales ₱8,980 next to
+         * Cash ₱3,100 with no explanation — which reads like an error in the
+         * app rather than money sitting in a neighbour's pocket.
+         *
+         * It only appears when there is something to explain, and the button is
+         * the fix, not a link to a report: the person to ask is already known.
+         */}
+        {today.uncollectedCentavos > 0 ? (
+          <div className="mt-3.5 rounded-2xl border border-amber-300/40 bg-amber-400/15 px-3.5 py-3">
+            <p className="text-[0.8125rem] font-semibold leading-relaxed text-amber-100">
+              {t('dash.utangLine', { amount: formatPHP(today.uncollectedCentavos) })}
+            </p>
+            {onOpenUtang ? (
+              <button type="button" onClick={onOpenUtang} className="btn btn-quiet mt-2.5">
+                {t('dash.collectCta')}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </HeroShell>
 
       {/* Dismissible warnings: at most two lines plus a count, right under the
@@ -407,8 +466,22 @@ export function Dashboard({
         >
           {t('report.print')}
         </button>
-        {/* Print-only surface: hidden on screen, the only thing on paper. */}
-        <pre id="seepat-weekly-report" className="print-only" aria-hidden />
+        {/*
+         * The print-only surface: hidden on screen, the only thing on paper.
+         *
+         * `printWeek` fills this element and prints it in the same tick, so the
+         * sheet is permanent and its content is not: a `pre` React owns and the
+         * printer overwrites is exactly what this needs to be. `PrintSheet`
+         * handles the portal and the print marker together — see it for why the
+         * marker cannot be set from here.
+         */}
+        <PrintSheet>
+          <pre
+            id="seepat-weekly-report"
+            className="print-sheet print-sheet-body print-report"
+            aria-hidden
+          />
+        </PrintSheet>
       </Card>
       <div className="px-3.5">
       <CollapsibleSection id="dash-restock" title={t('restock.title')} defaultOpen={restock.length > 0}>
@@ -433,6 +506,35 @@ export function Dashboard({
                 </span>
                 <span className={`num shrink-0 text-[0.8125rem] font-bold ${r.severity === 'out' ? 'text-red-700' : 'text-fg-subtle'}`}>
                   {r.severity === 'out' ? t('restock.out') : t('restock.days', { n: Math.max(0, Math.floor(r.daysLeft)) })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        id="dash-best"
+        title={t('dash.bestTitle')}
+        hint={t('dash.bestHint')}
+        defaultOpen={bestSellers.length > 0}
+      >
+        {bestSellers.length === 0 ? (
+          <p className="text-[0.875rem] leading-relaxed text-fg-faint">{t('dash.bestEmpty')}</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {bestSellers.map((item) => (
+              <li key={item.skuId} className="flex items-baseline gap-3 py-2.5">
+                <span className="min-w-0 flex-1 text-[0.875rem] leading-snug text-fg">
+                  {item.name}
+                </span>
+                <span className="num shrink-0 text-[0.8125rem] text-fg-faint">
+                  {t('dash.bestQty', { n: item.qtyDisplay, unit: item.unit })}
+                </span>
+                {/* Margin, not revenue: the amount this item actually kept is the
+                    number that decides whether to buy more of it. */}
+                <span className="num shrink-0 text-[0.875rem] font-bold text-emerald-700">
+                  {formatPHP(item.marginCentavos)}
                 </span>
               </li>
             ))}

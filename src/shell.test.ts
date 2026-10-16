@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -41,7 +41,7 @@ describe('the boot splash', () => {
   })
 
   it('renders the official lockup, not type we set ourselves', () => {
-    expect(html).toContain('src="/new_logo.png"')
+    expect(html).toContain('src="/seepat-logo.png"')
     // The old hand-set "See"/"Pat" spans must not come back: the brand's
     // letterforms belong to the artwork.
     expect(html).not.toContain('class="boot-word"')
@@ -86,5 +86,36 @@ describe('the social card', () => {
 
   it('gives iOS a raster icon, because it will not accept the SVG', () => {
     expect(html).toMatch(/rel="apple-touch-icon" href="\/apple-touch-icon\.png"/)
+  })
+})
+
+/**
+ * The generated asset set, checked where it can be checked cheaply.
+ *
+ * Every file below is produced by `node tools/make-assets.mjs`, so a failed or
+ * half-run generation shows up here rather than as a blank tab icon on someone
+ * else's machine. What this cannot check is the manifest itself — that only
+ * exists after `vite build` — so the icon list is asserted there (see the note
+ * in vite.config.ts).
+ */
+describe('the brand assets the shell points at', () => {
+  const pub = (name: string) => new URL(`../public/${name}`, import.meta.url)
+
+  it('ships a favicon at every size the document declares, plus the .ico', () => {
+    for (const name of ['favicon.ico', 'favicon-16.png', 'favicon-32.png', 'favicon-48.png']) {
+      expect(html, `${name} must be linked`).toContain(`/${name}`)
+      expect(() => readFileSync(pub(name))).not.toThrow()
+    }
+    // And they are real rasters, not placeholders the size of a byte.
+    expect(readFileSync(pub('favicon-32.png')).byteLength).toBeGreaterThan(200)
+  })
+
+  it('retires the hand-drawn mark, so the product has one identity', () => {
+    // `icon.svg` was a second, hand-drawn logo drawn before the new artwork
+    // existed. The tab and the launcher must show the same logo as the splash;
+    // leaving the old file in `public/` would also put it back in the offline
+    // precache through the `**/*.svg` glob, which nothing would ever display.
+    expect(html).not.toContain('icon.svg')
+    expect(existsSync(pub('icon.svg')), 'the retired mark must be deleted, not orphaned').toBe(false)
   })
 })

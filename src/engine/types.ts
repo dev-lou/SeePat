@@ -66,9 +66,33 @@ export interface PurchaseTxn extends TxnBase {
   paidCentavos: Centavos
 }
 
+/**
+ * Where money actually went, as opposed to who it came from.
+ *
+ * This exists because "cash sale" had become a lie in the Philippine market:
+ * Packworks' own survey of its store network reports 85% of surveyed owners
+ * using GCash and 40% taking e-wallet payments in store, and a sale paid by
+ * GCash is *received* money that is not in the drawer. Counting it as cash made
+ * the drawer figure wrong for every store that accepts e-wallets — and the
+ * drawer is the one number an owner can check against reality.
+ *
+ * `cash` is the default everywhere, so every record written before this field
+ * existed still reads correctly.
+ *
+ * What it is NOT: a payment integration. SeePay records how the money arrived, as
+ * the owner tells it. No app at this level can confirm a GCash or Maya transfer
+ * (GCash's API is partner-only, and Maya's status APIs belong to payments the
+ * integrator itself created), and a payments acquirer needs BSP authorization
+ * under Circular 1198 — so this stays a bookkeeping fact, never a settlement
+ * claim.
+ */
+export type PaymentChannel = 'cash' | 'gcash' | 'maya' | 'bank'
+
 export interface CashSaleTxn extends TxnBase {
   kind: 'cash_sale'
   lines: SaleLine[]
+  /** Money received now, but where? Absent means the box. */
+  channel?: PaymentChannel
 }
 
 /** Utang: revenue is recognised now, but cash is not received. */
@@ -82,6 +106,8 @@ export interface PaymentReceivedTxn extends TxnBase {
   kind: 'payment_received'
   customerId: CustomerId
   amountCentavos: Centavos
+  /** A customer settling utang by GCash lands in the wallet, not the drawer. */
+  channel?: PaymentChannel
 }
 
 export interface ExpenseTxn extends TxnBase {
@@ -177,6 +203,7 @@ export interface Warning {
     | 'payment_exceeds_payable'
     | 'overpaid_purchase'
     | 'voided_txn_not_found'
+    | 'box_overdrawn'
   message: string
   /**
    * The same diagnostic in Filipino. Carried inline rather than looked up at
@@ -194,7 +221,25 @@ export interface Warning {
  * hand-set, so it can always be rebuilt from the transaction log.
  */
 export interface BusinessTwin {
+  /**
+   * Money on hand — the drawer *and* the e-wallet float, together.
+   *
+   * It stays one number on purpose: it is what the owner can spend, and every
+   * identity in `deriveTwin` is written against it. `walletCentavos` below is
+   * the part of it that is in GCash/Maya, which is what makes the drawer figure
+   * separable without a second account system.
+   */
   cashCentavos: Centavos
+  /**
+   * The part of `cashCentavos` sitting in an e-wallet rather than the box.
+   *
+   * Never larger than `cashCentavos` unless the box has been overdrawn on paper,
+   * which is itself reported as a warning: money recorded as leaving the drawer
+   * can only have come from somewhere else. Outflows are assumed to come from the
+   * box (see `applyTransaction`), so a store that pays a supplier through GCash
+   * understates its float until it records that payment as cash.
+   */
+  walletCentavos: Centavos
   payablesCentavos: Centavos
   fixedAssetsCentavos: Centavos
 
@@ -225,4 +270,8 @@ export interface DerivedTwin {
   totalLiabilitiesCentavos: Centavos
   equityCentavos: Centavos
   workingCapitalCentavos: Centavos
+  /** `cashCentavos` minus `walletCentavos`: the number a drawer count is against. */
+  cashInBoxCentavos: Centavos
+  /** The same figure said plainly: money in e-wallets, GCash/Maya. */
+  walletCentavos: Centavos
 }

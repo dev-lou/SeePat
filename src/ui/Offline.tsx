@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Card, Pill, SectionTitle } from './components.tsx'
+import { Button, Card, ConfirmDialog, Pill, SectionTitle } from './components.tsx'
 import { exportLedger, importLedger } from '../backup.ts'
+import type { Ledger } from '../engine/index.ts'
 import type { Negosyo } from '../store.ts'
+import { useToast } from './Toast.tsx'
 import { Pat } from './Pat.tsx'
 import {
   OFFLINE_MODELS,
@@ -107,6 +109,7 @@ function megabytes(bytes: number): string {
 export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPlan: () => void }) {
   const lang = useLang()
   const t = useT()
+  const toast = useToast()
   const online = useOnline()
   const shell = useShellStatus()
   const { model, installed, megabytes: installedMB } = useVoiceModel()
@@ -122,6 +125,10 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
   const worksOffline = liveFeatures().filter((f) => f.onDevice)
   const needsServer = liveFeatures().filter((f) => !f.onDevice)
   const [backupMsg, setBackupMsg] = useState('')
+  // The parsed file, waiting on the confirm. Read before anything is replaced,
+  // so both numbers in the question are real and the chosen file cannot change
+  // between the question and the answer.
+  const [pendingRestore, setPendingRestore] = useState<Ledger | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   function saveBackup() {
@@ -139,8 +146,11 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
     try {
       const raw = await file.text()
       const { ledger } = importLedger(raw)
-      negosyo.restore(ledger)
-      setBackupMsg(t('backup.restored'))
+      // Replacing the books is the point of the button — but silently replacing
+      // them was a defect: a mis-tapped import overwrote 236 records with 18 and
+      // said nothing. It is asked about first, and undoable after.
+      setPendingRestore(ledger)
+      setBackupMsg('')
     } catch (caught) {
       setBackupMsg(
         caught instanceof Error && caught.message === 'backup.tooNew'
@@ -288,6 +298,37 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
           <p className="mt-2.5 text-[0.875rem] leading-relaxed text-fg-subtle">{backupMsg}</p>
         ) : null}
       </Card>
+
+      {pendingRestore ? (
+        <ConfirmDialog
+          title={t('backup.replaceTitle')}
+          body={t('backup.replaceBody', {
+            file: pendingRestore.transactions.length,
+            now: negosyo.ledger.transactions.length,
+          })}
+          confirmLabel={t('backup.replaceConfirm')}
+          cancelLabel={t('backup.replaceCancel')}
+          tone="brand"
+          onCancel={() => setPendingRestore(null)}
+          onConfirm={() => {
+            const previous = negosyo.ledger
+            const restored = pendingRestore
+            negosyo.restore(restored)
+            setPendingRestore(null)
+            setBackupMsg(t('backup.restored'))
+            toast.show({
+              title: t('backup.restored'),
+              tone: 'success',
+              undoLabel: t('backup.undo'),
+              onUndo: () => {
+                negosyo.restore(previous)
+                setBackupMsg('')
+                toast.show({ title: t('app.clearUndone'), tone: 'info' })
+              },
+            })
+          }}
+        />
+      ) : null}
 
       <Card>
         <SectionTitle hint={t('offline.needsHint')}>{t('offline.needsTitle')}</SectionTitle>

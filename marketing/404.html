@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  The 404.
+
+  Bilingual on purpose, because the visitor who lands here is the one person on
+  the site whose language is not known: the server picked this file, not a page.
+  So both languages are on it, each in its own `lang` span, and the two links out
+  are the two real pages rather than a guess about which one was wanted.
+
+  `noindex` and no canonical: an error page that lets itself be indexed competes
+  with the pages it is supposed to be sending traffic to, and a canonical on a
+  page served for every bad URL would claim all of them are the same document.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wala ito — this page is not here | SeePat</title>
+    <meta name="robots" content="noindex, follow" />
+    <meta name="theme-color" content="#0d1136" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+
+  <body>
+    <header class="site-head">
+      <div class="wrap site-head__inner">
+        <a class="brand" href="/">
+          <img src="/assets/brand/lockup.png" width="512" height="515" alt="" />
+          <span>
+            <span class="brand__name">SeePat</span>
+            <span class="brand__tag">Ang Financial Copilot ng Negosyo</span>
+          </span>
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap notfound">
+      <p class="big" aria-hidden="true">404</p>
+      <h1 class="h2" style="max-width: 30ch">This page is not here.</h1>
+      <p class="lede" style="text-align: center">
+        The link may be old, or mistyped. Both pages of this site are one tap away.
+      </p>
+      <p class="lede" lang="tl" style="text-align: center">
+        Wala ang pahinang ito. Maaaring luma na ang link, o may mali sa pagkakasulat. Nasa
+        ibaba ang dalawang tunay na pahina.
+      </p>
+      <div class="btn-row" style="justify-content: center">
+        <a class="btn" href="/">English home</a>
+        <a class="btn btn--ghost" href="/fil" hreflang="tl-PH" lang="tl">Filipino home</a>
+      </div>
+    </main>
+  </body>
+</html>

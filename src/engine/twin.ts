@@ -5,6 +5,7 @@ import type {
   BusinessTwin,
   DerivedTwin,
   Ledger,
+  PaymentChannel,
   SkuId,
   SkuPeriodStats,
   SkuStock,
@@ -23,6 +24,7 @@ import type {
 function emptyTwin(): BusinessTwin {
   return {
     cashCentavos: 0,
+    walletCentavos: 0,
     payablesCentavos: 0,
     fixedAssetsCentavos: 0,
     capitalInjectedCentavos: 0,
@@ -40,6 +42,19 @@ function emptyTwin(): BusinessTwin {
 
 function stockOf(twin: BusinessTwin, skuId: SkuId): SkuStock {
   return twin.inventory[skuId] ?? emptyStock()
+}
+
+/**
+ * Money arrives, and it arrives in one of two places.
+ *
+ * `cashCentavos` is money on hand either way — that is why it is incremented in
+ * both branches, and why every existing identity in `deriveTwin` is untouched by
+ * this. The e-wallet branch additionally fills `walletCentavos`, so the drawer
+ * can be separated from the float without becoming a second account system.
+ */
+function receiveMoney(twin: BusinessTwin, amountCentavos: Centavos, channel: PaymentChannel | undefined): void {
+  twin.cashCentavos += amountCentavos
+  if (channel && channel !== 'cash') twin.walletCentavos += amountCentavos
 }
 
 function emptyStats(): SkuPeriodStats {
@@ -75,6 +90,25 @@ export function computeTwin(ledger: Ledger): BusinessTwin {
   for (const txn of ordered) {
     if (voided.has(txn.id)) continue
     applyTransaction(twin, warnings, txn, skuNames, customerNames)
+  }
+
+  /*
+   * The box cannot hold less than nothing.
+   *
+   * Every outflow is assumed to be paid from the drawer, so a store that pays a
+   * supplier through GCash — or that records a GCash sale and then spends box
+   * money it never had — ends up with a negative drawer while the total is still
+   * right. That is the signature of missing channel information rather than of a
+   * wrong amount, and the fix is to record which place the money moved in, so the
+   * warning says exactly that instead of letting a nonsense figure sit on screen.
+   */
+  const drawer = twin.cashCentavos - twin.walletCentavos
+  if (drawer < 0 && twin.walletCentavos > 0) {
+    warnings.push({
+      code: 'box_overdrawn',
+      message: `The records say ${formatPHP(-drawer)} more went out of the box than is left in it. Part of your money is in GCash/Maya (${formatPHP(twin.walletCentavos)}), so a payment made from there was probably recorded as cash.`,
+      messageFil: `Ayon sa tala, ${formatPHP(-drawer)} ang sobrang lumabas sa kahon kaysa laman nito. May pera kang nasa GCash/Maya (${formatPHP(twin.walletCentavos)}), kaya malamang may bayad na galing doon ang naitala bilang cash.`,
+    })
   }
 
   twin.warnings = warnings
@@ -189,7 +223,7 @@ function applyTransaction(
     case 'cash_sale': {
       let total = 0
       for (const line of txn.lines) total += line.qty * line.unitPriceCentavos
-      twin.cashCentavos += total
+      receiveMoney(twin, total, txn.channel)
       recordSale(twin, txn.lines, warnings, txn.id, skuNames)
       return
     }
@@ -211,7 +245,7 @@ function applyTransaction(
     }
 
     case 'payment_received': {
-      twin.cashCentavos += txn.amountCentavos
+      receiveMoney(twin, txn.amountCentavos, txn.channel)
       const owed = twin.receivables[txn.customerId] ?? 0
       if (txn.amountCentavos > owed) {
         warnings.push({
@@ -304,6 +338,11 @@ export function deriveTwin(twin: BusinessTwin): DerivedTwin {
     receivablesCentavos,
     totalAssetsCentavos,
     totalLiabilitiesCentavos: twin.payablesCentavos,
+    // Money on hand, split by where it is. The box figure is what a real drawer
+    // count is compared against; the wallet figure is money that is spendable
+    // but not countable.
+    cashInBoxCentavos: twin.cashCentavos - twin.walletCentavos,
+    walletCentavos: twin.walletCentavos,
     equityCentavos:
       twin.capitalInjectedCentavos - twin.withdrawalsCentavos + netProfitCentavos,
     workingCapitalCentavos:

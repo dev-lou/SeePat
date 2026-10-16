@@ -263,6 +263,22 @@ export const UI = {
   },
   'app.demoData': { en: 'Demo data', fil: 'Demo data' },
   'app.clearAll': { en: 'Erase everything', fil: 'Burahin lahat' },
+  // The erase gate. Both strings name the figure that is about to be lost: an
+  // owner deciding whether to tap this needs to know it is 236 records, not
+  // "all data". The body points at the backup file because there is no undo for
+  // a phone that is handed to someone else, or a browser that is cleared.
+  'app.clearAllTitle': { en: 'Erase everything?', fil: 'Burahin lahat?' },
+  'app.clearAllBody': {
+    en: 'This deletes the {n} records saved on this phone — the sales, the utang, the stock, all of it. It cannot be brought back, so save a backup file first if you are not sure.',
+    fil: 'Buburahin nito ang {n} rekord na naka-save sa phone na ito — ang benta, ang utang, ang paninda, lahat. Hindi na ito maibabalik, kaya mag-save muna ng backup file kung hindi ka sigurado.',
+  },
+  'app.clearAllConfirm': { en: 'Yes, erase everything', fil: 'Oo, burahin lahat' },
+  'app.clearAllCancel': { en: 'Keep my records', fil: 'Itago ang rekord ko' },
+  'app.cleared': { en: 'Erased {n} records.', fil: 'Nabura ang {n} rekord.' },
+  'app.clearUndone': {
+    en: 'Your records are back.',
+    fil: 'Bumalik ang rekord mo.',
+  },
   'app.demoOnly': { en: 'Demo only — pick a plan', fil: 'Demo lamang — pumili ng plano' },
   'app.simulatedPayments': {
     en: 'Every payment here is simulated — no real money is involved.',
@@ -277,6 +293,18 @@ export const UI = {
     en: 'Not downloaded yet — needs internet',
     fil: 'Hindi pa naka-download — kailangan pa ng internet',
   },
+  // The owner's own book, two screens. Names are the shop's words, not ours:
+  // "paninda" is what is on the shelf, "lista ng utang" is what is in the
+  // notebook under the counter.
+  'app.speak': { en: 'SeePat speaks', fil: 'Nagsasalita si SeePat' },
+  'app.speakNote': {
+    en: "A question you ask out loud gets an answer you can hear. It uses your phone's own voice — free, and nothing is sent anywhere.",
+    fil: 'Ang tanong na sinabi mo nang malakas ay sinasagot ng boses na maririnig mo. Boses ng phone mo mismo ang gamit — libre, at walang ipinapadala kahit saan.',
+  },
+  'app.speakOn': { en: 'On', fil: 'Bukas' },
+  'app.speakOff': { en: 'Off', fil: 'Sarado' },
+  'app.myItems': { en: 'My items', fil: 'Mga paninda ko' },
+  'app.utangList': { en: 'Utang list', fil: 'Listahan ng utang' },
 
   // --- Tabs ---------------------------------------------------------------
   //
@@ -302,7 +330,8 @@ export const UI = {
   },
   'dash.revenue': { en: 'Sales', fil: 'Benta' },
   'dash.expenses': { en: 'Expenses', fil: 'Gastos' },
-  'dash.cash': { en: 'Cash', fil: 'Cash' },
+  'dash.cash': { en: 'Cash in the box', fil: 'Cash sa kahon' },
+  'dash.wallet': { en: '{amount} in GCash/Maya', fil: '{amount} sa GCash/Maya' },
   'dash.scoreTitle': { en: 'Sipat Score', fil: 'Sipat Score' },
   'dash.scoreEmpty': {
     en: 'Not enough data yet for a full reading.',
@@ -357,6 +386,14 @@ export const UI = {
   'dash.checklist.voice': { en: 'Try saying a sale out loud', fil: 'Subukang sabihin ang benta' },
   'dash.checklist.score': { en: 'Open your Score', fil: 'Buksan ang Score mo' },
   'dash.checklist.dismiss': { en: 'Hide the guide', fil: 'Itago ang gabay' },
+  // Utang is a sale that already happened, so it is counted in Sales and in
+  // profit — what it is not is cash. This line is the whole explanation, and it
+  // appears only when there is something to explain.
+  'dash.utangLine': {
+    en: '{amount} of today’s sales is utang — counted in your profit, but not cash yet.',
+    fil: '{amount} ng benta ngayong araw ay utang — kasama sa kita, pero hindi pa cash.',
+  },
+  'dash.collectCta': { en: 'See who owes you', fil: 'Tingnan kung sino ang may utang' },
   'dash.seeWeek': { en: 'See the full week', fil: 'Tingnan ang buong linggo' },
   'dash.seeCapital': { en: 'See where the capital sits', fil: 'Tingnan kung nasaan ang puhunan' },
   // --- Record: grouped entry + history filters -----------------------------
@@ -381,7 +418,18 @@ export const UI = {
   'record.detail.status': { en: 'Status', fil: 'Kalagayan' },
   'record.detail.posted': { en: 'Recorded', fil: 'Naitala' },
   'record.detail.voided': { en: 'Voided', fil: 'Na-void' },
+  // Kept off the row and named for who it is actually for: an owner checking a
+  // sale wants the goods, not a number that only a support call needs.
+  'record.detail.support': { en: 'Reference (for support)', fil: 'Reference (para sa support)' },
   'record.detail.ref': { en: 'Reference', fil: 'Reference' },
+  'record.quickTitle': { en: 'Quick record', fil: 'Mabilisang tala' },
+  'record.quickHint': { en: 'the items you sell most', fil: 'pinakamadalas mong tinda' },
+  'record.utangNeedName': {
+    en: 'Who took it on utang? A name is what makes it collectable.',
+    fil: 'Sino ang umutang? Ang pangalan ang dahilan kaya makokolekta ito.',
+  },
+  'record.detail.each': { en: '{amount} each', fil: '{amount} bawat isa' },
+  'record.detail.total': { en: 'Total', fil: 'Kabuuan' },
 
   // --- Score --------------------------------------------------------------
   'score.dimensions': { en: 'What makes up the Score', fil: 'Ano ang Bumubuo sa Score' },
@@ -414,10 +462,6 @@ export const UI = {
   'score.recomputed': {
     en: 'Every week is worked out again from the same fixed rules and your own records. A week with no sales stays blank instead of showing zero.',
     fil: 'Ang bawat linggo ay kinukwenta muli mula sa parehong panuntunan at sa rekord mo. Ang linggong walang benta ay bakante, hindi zero.',
-  },
-  'score.lockedBody': {
-    en: 'The current Score is free. Its history — how the business has moved from week to week — is part of PRO, together with comparing your store with other stores once that arrives.',
-    fil: 'Ang kasalukuyang Score ay libre. Ang kasaysayan nito — kung paano gumalaw ang negosyo linggo-linggo — ay kasama sa PRO, kasama ng paghahambing ng tindahan mo sa ibang tindahan pagdating niyon.',
   },
   'score.basisTitle': { en: 'What it is based on', fil: 'Pinagbatayan' },
   'score.basisSales': { en: 'Sales', fil: 'Benta' },
@@ -475,6 +519,36 @@ export const UI = {
   'ask.evidence': { en: 'Evidence', fil: 'Ebidensya' },
   'ask.actions': { en: 'What you could do', fil: 'Maaaring gawin' },
 
+  // --- Ask: by voice, and answered out loud --------------------------------
+  //
+  // The two halves of the same loop, so they are named the same way: `ask.voice*`
+  // is the owner speaking, `ask.speak*` is SeePat answering.
+  'ask.voiceAsk': { en: 'Ask by voice', fil: 'Itanong sa boses' },
+  'ask.voiceListening': { en: 'Listening — tap to stop', fil: 'Nakikinig — pindutin para itigil' },
+  'ask.voiceTranscribing': { en: 'Writing it down…', fil: 'Isinusulat…' },
+  'ask.voiceHint': {
+    en: 'Say it the way you would say it to a person — “How much did I earn this week?”',
+    fil: 'Sabihin ito sa paraang sasabihin mo sa tao — “Magkano ang kita ko ngayong linggo?”',
+  },
+  'ask.voiceNoEngine': {
+    en: 'This browser cannot listen to speech. Type the question — the answer is the same.',
+    fil: 'Hindi nakikinig sa pagsasalita ang browser na ito. I-type ang tanong — pareho ang sagot.',
+  },
+  'ask.askedOutLoud': { en: 'You asked out loud', fil: 'Itinanong mo nang malakas' },
+  'ask.speak': { en: 'Hear the answer', fil: 'Pakinggan ang sagot' },
+  'ask.speakStop': { en: 'Stop reading', fil: 'Itigil ang pagbasa' },
+  'ask.speaking': { en: 'SeePat is reading it…', fil: 'Binabasa ni SeePat…' },
+  'ask.speakAuto': { en: 'SeePat reads answers', fil: 'Binabasa ni SeePat ang sagot' },
+  'ask.speakAccented': {
+    en: 'This phone has no Tagalog voice, so the answer is read in an English voice.',
+    fil: 'Walang boses Tagalog ang phone na ito, kaya binabasa ang sagot sa boses na English.',
+  },
+  'ask.speakNoVoice': {
+    en: 'This phone has no voice for reading answers out loud. Everything is written on the screen.',
+    fil: 'Walang boses na pambasa ng sagot sa phone na ito. Nasa screen ang lahat.',
+  },
+  'ask.didYouMean': { en: 'Did you mean one of these?', fil: 'Ito ba ang ibig mong sabihin?' },
+
   // --- Ask: starter questions --------------------------------------------
   //
   // These are shown as things the owner can *tap*, so they are copy rather than
@@ -514,7 +588,33 @@ export const UI = {
   'record.field.item': { en: 'Item', fil: 'Paninda' },
   'record.field.qty': { en: 'Quantity', fil: 'Dami' },
   'record.field.unitCost': { en: 'Cost each', fil: 'Puhunan bawat isa' },
+  'record.field.channel': { en: 'Where did the money go in?', fil: 'Saan pumasok ang pera?' },
+  'record.channel.cash': { en: 'Cash in the box', fil: 'Cash sa kahon' },
+  'record.channel.gcash': { en: 'GCash', fil: 'GCash' },
+  'record.channel.maya': { en: 'Maya', fil: 'Maya' },
+  'record.channel.bank': { en: 'Bank transfer', fil: 'Bank transfer' },
+  'record.channelNote': {
+    en: 'This sale is counted as money you already have, but not as cash in the box — so your drawer count at the end of the day still comes out right.',
+    fil: 'Bilang perang nasa iyo na ang bentang ito, pero hindi bilang cash sa kahon — para tumama pa rin ang bilang ng kahon mo sa gabi.',
+  },
+  // The one sentence that keeps business capital and household money apart.
+  // A withdrawal is a *use of capital*, not a cost of trading: entered as
+  // "gastos" it would make a profitable week look like a losing one, and the
+  // owner would have no way to see that she was paying herself, not the shop.
+  'record.withdrawalNote': {
+    en: 'This is money you took home for yourself — not a business expense. It comes out of your capital, so it never makes your profit look smaller than it is.',
+    fil: 'Ito ang perang inuwi mo para sa sarili mo — hindi gastos ng negosyo. Kabawas ito sa puhunan mo, kaya hindi nito pinapaliit ang kita mo.',
+  },
   'record.field.unitPrice': { en: 'Price each', fil: 'Presyo bawat isa' },
+  // For anything sold by weight the price is per kilo, and the label says so:
+  // "Price each" on a sack of rice is what invited a per-gram price, and a
+  // per-gram price is a thousand-fold mistake.
+  'record.field.pricePerKilo': { en: 'Price per kilo', fil: 'Presyo kada kilo' },
+  'record.field.costPerKilo': { en: 'Cost per kilo', fil: 'Puhunan kada kilo' },
+  'record.priceRecording': {
+    en: 'Will be recorded as {amount} per kilo.',
+    fil: 'Itatala bilang {amount} kada kilo.',
+  },
   'record.field.customer': { en: 'Customer', fil: 'Customer' },
   'record.field.amount': { en: 'Amount (₱)', fil: 'Halaga (₱)' },
   'record.field.notNeeded': { en: 'not needed', fil: 'Hindi kailangan' },
@@ -585,17 +685,171 @@ export const UI = {
   // there is no plural machinery in the table — a unit that does not change
   // shape removes the question instead of adding a rule. `{n}` is the total
   // quantity, so the number and the word always agree.
+  // A row that names the goods. "Sale — 4 pieces" was true and useless: an
+  // owner scrolling their own ledger could not tell a Coke run from a rice run
+  // without opening every row, and searching for "coke" matched nothing. The
+  // count phrasing below survives as the fallback for the one case where the
+  // item genuinely cannot be named — a record whose SKU is not in the book.
+  'record.row.item': { en: '{n} × {item}', fil: '{n} × {item}' },
+  'record.row.itemWeighed': { en: '{item} — {qty} {unit}', fil: '{item} — {qty} {unit}' },
+  'record.row.items': { en: '{item} +{n} more', fil: '{item} +{n} pa' },
   'record.row.sale': { en: 'Sale — {n} pieces', fil: 'Benta — {n} piraso' },
   // For fractional quantities (rice, sugar, anything sold by weight) there is no
   // "pieces" count that would be true, so the row says what it is and the amount
   // beside it carries the figure.
   'record.row.saleLoose': { en: 'Sale — by weight', fil: 'Benta — binili sa timbang' },
   'record.row.credit': { en: 'Utang — {name}', fil: 'Utang — {name}' },
+  'record.row.payment': { en: 'Paid by {name}', fil: 'Bayad ni {name}' },
   'record.row.purchase': { en: 'Purchase — {n} pieces', fil: 'Bili — {n} piraso' },
   'record.row.purchaseLoose': { en: 'Purchase — by weight', fil: 'Bili — sa timbang' },
   'record.row.stockAdjustment': {
     en: 'Stock correction — {qty}',
     fil: 'Pagwawasto ng paninda — {qty}',
+  },
+
+  // --- My items -----------------------------------------------------------
+  // The screen that turned the app from a demo into a shop's book: before it,
+  // a record could only be written against the ten seeded products.
+  'items.title': { en: 'My items', fil: 'Mga paninda ko' },
+  'items.hint': { en: 'the things you sell', fil: 'ang mga tinda mo' },
+  'items.intro': {
+    en: 'These are the products you sell. Add your own and the ledger, the voice and the Score all work with them — the price is remembered from your last sale, so you only type it once.',
+    fil: 'Ito ang mga paninda mo. Magdagdag ka ng sarili mo at gagana sa kanila ang tala, ang boses at ang Score — natatandaan ang presyo mula sa huling benta mo, kaya minsan mo lang itong isusulat.',
+  },
+  'items.add': { en: '+ Add an item', fil: '+ Magdagdag ng paninda' },
+  'items.addTitle': { en: 'Add an item', fil: 'Magdagdag ng paninda' },
+  'items.editTitle': { en: 'Edit item', fil: 'Baguhin ang paninda' },
+  'items.namePlaceholder': { en: 'E.g. Coke Mismo', fil: 'Hal. Coke Mismo' },
+  'items.fieldName': { en: 'Item name', fil: 'Pangalan ng paninda' },
+  'items.fieldUnit': { en: 'Sold by', fil: 'Ibinebenta sa' },
+  'items.unit.pc': { en: 'Piece', fil: 'Piraso' },
+  'items.unit.pack': { en: 'Pack', fil: 'Pakete' },
+  'items.unit.bottle': { en: 'Bottle', fil: 'Bote' },
+  'items.unit.sachet': { en: 'Sachet', fil: 'Sachet' },
+  'items.unit.kg': { en: 'Kilo', fil: 'Kilo' },
+  'items.unit.tray': { en: 'Tray', fil: 'Tray' },
+  'items.save': { en: 'Save item', fil: 'I-save ang paninda' },
+  'items.count': { en: '{n} items', fil: '{n} paninda' },
+  'items.search': { en: 'Search your items…', fil: 'Hanapin ang paninda mo…' },
+  'items.lastPrice': { en: 'last sold at {amount}', fil: 'huling benta sa {amount}' },
+  'items.noPrice': { en: 'no sale yet', fil: 'wala pang benta' },
+  'items.emptyTitle': { en: 'No items yet', fil: 'Wala pang paninda' },
+  'items.emptyBody': {
+    en: 'Add the products on your shelf — even just the ten you sell most. Then recording a sale is two taps.',
+    fil: 'Idagdag ang mga nasa shelf mo — kahit ang sampung pinakamadalas mong tinda lang. Kapag mayroon na, dalawang pindot na lang ang pagtala ng benta.',
+  },
+  'items.notFound': { en: 'Nothing matches that name.', fil: 'Walang tumugmang pangalan.' },
+  'items.added': { en: 'Added {name}.', fil: 'Naidagdag ang {name}.' },
+  'items.updated': { en: 'Item updated.', fil: 'Na-update ang paninda.' },
+  'items.removed': { en: 'Item deleted.', fil: 'Nabura ang paninda.' },
+  'items.needName': { en: 'Type the name of the item.', fil: 'Isulat ang pangalan ng paninda.' },
+  'items.taken': {
+    en: 'You already have an item called that. Open it and change it instead.',
+    fil: 'May paninda ka nang ganiyan ang pangalan. Buksan na lang iyon at baguhin.',
+  },
+  'items.edit': { en: 'Edit', fil: 'Baguhin' },
+  'items.deleteTitle': { en: 'Delete this item?', fil: 'Burahin ang paninda na ito?' },
+  'items.deleteBody': {
+    en: 'It stops appearing when you record, and it leaves this list. Records you already made keep their name and their amount.',
+    fil: 'Hindi na ito lalabas kapag nagtala ka, at mawawala sa listahang ito. Ang mga naitala mo na ay may pangalan at halaga pa rin.',
+  },
+  'items.deleteConfirm': { en: 'Delete', fil: 'Burahin' },
+  'items.deleteCancel': { en: 'Keep it', fil: 'Huwag burahin' },
+  'items.manage': { en: 'My items', fil: 'Mga paninda ko' },
+
+  // --- Utang (who owes you) ------------------------------------------------
+  'utang.title': { en: 'Utang list', fil: 'Listahan ng utang' },
+  'utang.hint': { en: 'who owes you', fil: 'sino ang may utang' },
+  'utang.semanticsTitle': { en: 'What utang means here', fil: 'Ano ang ibig sabihin ng utang dito' },
+  'utang.semanticsBody': {
+    en: 'Utang is a sale that already happened — the goods left your shelf — so it is counted in Sales and in your profit. What it is not is cash, and that is why it also shows as owed to you. Collect it and the cash arrives.',
+    fil: 'Ang utang ay bentang nangyari na — umalis na ang paninda sa shelf mo — kaya kasama ito sa Benta at sa kita. Ang hindi ito ay cash, at iyon ang dahilan kung bakit nasa utang sa iyo rin ito nakalagay. Kapag nakolekta, darating ang cash.',
+  },
+  'utang.total': { en: 'Owed to you', fil: 'Utang sa iyo' },
+  'utang.people': { en: '{n} people', fil: '{n} tao' },
+  'utang.none': { en: 'Nobody owes you right now.', fil: 'Walang may utang sa iyo ngayon.' },
+  'utang.noneBody': {
+    en: 'When a customer takes goods and pays later, their balance appears here — with their name on it, so it can be collected.',
+    fil: 'Kapag may customer na kumuha ng paninda at mamaya pa magbabayad, lalabas dito ang balanse niya — may pangalan, para makolekta.',
+  },
+  'utang.today': { en: 'today', fil: 'ngayon' },
+  'utang.days': { en: '{n} days', fil: '{n} araw' },
+  'utang.oldest': { en: 'oldest unpaid: {n} days', fil: 'pinakamatagal: {n} araw' },
+  'utang.neverPaid': { en: 'never paid anything yet', fil: 'wala pang nababayaran' },
+  'utang.pay': { en: 'Payment', fil: 'Bayad' },
+  'utang.payTitle': { en: 'Payment from {name}', fil: 'Bayad ni {name}' },
+  'utang.payField': { en: 'Amount received (₱)', fil: 'Halagang natanggap (₱)' },
+  'utang.payFull': { en: 'Full {amount}', fil: 'Buong {amount}' },
+  'utang.payConfirm': { en: 'Record the payment', fil: 'Itala ang bayad' },
+  'utang.paid': { en: 'Recorded: {amount} from {name}.', fil: 'Naitala: {amount} mula kay {name}.' },
+  'utang.payNeedAmount': { en: 'Type the amount received.', fil: 'Isulat ang halagang natanggap.' },
+  'utang.remind': { en: 'Remind', fil: 'Paalala' },
+  'utang.remindTitle': { en: 'Reminder you can send', fil: 'Paalalang puwede mong ipadala' },
+  'utang.remindHint': {
+    en: 'Send it as a message, then mark the payment here once it is paid.',
+    fil: 'Ipadala ito bilang mensahe, tapos itala ang bayad dito kapag nagbayad na.',
+  },
+  'utang.remindBody': {
+    en: 'Good day {name}! ₱{amount} pa po ang utang ninyo sa tindahan. Salamat po!',
+    fil: 'Magandang araw {name}! ₱{amount} pa po ang utang ninyo sa tindahan. Salamat po!',
+  },
+  'utang.remindShare': { en: 'Send it', fil: 'Ipadala' },
+  'utang.remindCopy': { en: 'Copy the message', fil: 'Kopyahin ang mensahe' },
+  'utang.remindCopied': {
+    en: 'Message copied — paste it in your chat.',
+    fil: 'Nakopya ang mensahe — i-paste sa chat mo.',
+  },
+  'utang.newCustomer': { en: '+ New customer', fil: '+ Bagong customer' },
+  'utang.customerField': { en: 'Customer’s name', fil: 'Pangalan ng customer' },
+  'utang.customerPlaceholder': { en: 'E.g. Aling Nena', fil: 'Hal. Aling Nena' },
+  'utang.customerSave': { en: 'Save customer', fil: 'I-save ang customer' },
+  'utang.customerAdded': { en: 'Added {name}.', fil: 'Naidagdag si {name}.' },
+  'utang.customerSaved': { en: 'Customer updated.', fil: 'Na-update ang customer.' },
+  'utang.customerNeedName': { en: 'Type the customer’s name.', fil: 'Isulat ang pangalan ng customer.' },
+  'utang.customerTaken': {
+    en: 'That name is already on the list. Open it instead.',
+    fil: 'Nasa listahan na ang pangalang iyan. Buksan na lang iyon.',
+  },
+  'utang.customerDelete': { en: 'Remove from the list', fil: 'Alisin sa listahan' },
+  'utang.customerOwing': {
+    en: 'They still owe {amount}. Collect it before removing them.',
+    fil: 'May utang pa silang {amount}. Kolektahin muna bago alisin.',
+  },
+  'utang.walkInName': { en: 'Walk-in', fil: 'Walk-in' },
+  'utang.openLedger': { en: 'See the records', fil: 'Tingnan ang mga naitala' },
+  'utang.statement': {
+    en: 'The whole list — send it or print it',
+    fil: 'Buong listahan — ipadala o i-print',
+  },
+  'utang.statementHint': {
+    en: 'Send it to whoever collects for you, or print it and tick each name off as it is paid.',
+    fil: 'Ipadala sa mangongolekta, o i-print at tsekan ang bawat pangalan kapag nagbayad na.',
+  },
+  'utang.statementTitle': { en: 'Utang list — {shop}', fil: 'Listahan ng Utang — {shop}' },
+  'utang.statementAsOf': { en: 'As of', fil: 'Hanggang' },
+  'utang.statementTotal': { en: 'Still unpaid', fil: 'Hindi pa nababayaran' },
+  'utang.statementCount': {
+    en: '{n} customers with utang',
+    fil: '{n} customer ang may utang',
+  },
+  'utang.statementNoShop': { en: 'My store', fil: 'Aking tindahan' },
+  'utang.statementSigned': { en: 'From {shop}', fil: 'Mula sa {shop}' },
+  'utang.statementNote': {
+    en: 'This is the shop’s own record of utang. It is not a BIR official receipt.',
+    fil: 'Sariling tala ito ng tindahan sa utang. Hindi ito official receipt ng BIR.',
+  },
+  'utang.statementColName': { en: 'Customer', fil: 'Customer' },
+  'utang.statementColAmount': { en: 'Amount owed', fil: 'Halagang utang' },
+  'utang.statementShopField': {
+    en: 'Shop name (it appears at the top of the list)',
+    fil: 'Pangalan ng tindahan (lalabas sa itaas ng listahan)',
+  },
+  'utang.statementShopPlaceholder': { en: 'E.g. Nena Store', fil: 'Hal. Nena Store' },
+  'utang.statementShare': { en: 'Send the list', fil: 'Ipadala ang listahan' },
+  'utang.statementPrint': { en: 'Print', fil: 'I-print' },
+  'utang.statementPrintHint': {
+    en: 'Choose “Save as PDF” in the print dialog if you want to keep a copy.',
+    fil: 'Piliin ang "Save as PDF" sa print dialog kung gusto mong may kopya ka.',
   },
 
   // --- Voice --------------------------------------------------------------
@@ -643,6 +897,27 @@ export const UI = {
   },
   'voice.draftTitle': { en: 'Draft — confirm it', fil: 'Draft — Kumpirmahin' },
   'voice.draftUnposted': { en: 'Not recorded yet', fil: 'Hindi pa naitala' },
+  // The draft now arrives as a sheet, because a confirmation that scrolls is a
+  // confirmation that gets skimmed. Its own copy:
+  'voice.draftSheetTitle': { en: 'Confirm the record', fil: 'Kumpirmahin ang tala' },
+  'voice.draftSheetHint': {
+    en: 'Nothing is saved until you tap the button at the bottom.',
+    fil: 'Walang nai-save hanggang pindutin mo ang button sa ibaba.',
+  },
+  'voice.fieldKind': { en: 'What kind of record', fil: 'Anong uri ng tala' },
+  'voice.kindUtang': { en: 'Utang (not cash yet)', fil: 'Utang (hindi pa cash)' },
+  'voice.page': { en: 'Items {n} of {total}', fil: 'Paninda {n} ng {total}' },
+  'voice.pagePrev': { en: 'Previous', fil: 'Nauna' },
+  'voice.pageNext': { en: 'Next', fil: 'Susunod' },
+  'voice.unresolved': { en: 'Not understood: {what}', fil: 'Hindi naintindihan: {what}' },
+  'voice.noLines': {
+    en: 'Nothing was recognised. Fix the words, then try again.',
+    fil: 'Walang nakilala. Ayusin ang mga salita, tapos subukan muli.',
+  },
+  'voice.utangNeedsName': {
+    en: 'Who took it on utang? A name is what makes it collectable.',
+    fil: 'Sino ang umutang? Ang pangalan ang dahilan kaya makokolekta ito.',
+  },
   'voice.field.customerUtang': { en: 'Customer (utang)', fil: 'Customer (utang)' },
   'voice.engineLabel': { en: 'Listening with', fil: 'Nakikinig gamit ang' },
   'voice.engineUnavailable': { en: '— unavailable', fil: '— hindi available' },
@@ -777,15 +1052,14 @@ export const UI = {
     fil: 'Demo lamang ito, kaya walang totoong bayad na nangyayari at walang card o wallet number na lumalabas sa phone mo. Naka-save ang plano sa device na ito lang.',
   },
   'plan.badgeBest': { en: 'Best value', fil: 'Pinakasulit' },
-  'plan.badgeTop': { en: 'Top tier', fil: 'Pinakamataas' },
   'plan.badgeCurrent': { en: 'Current', fil: 'Kasalukuyan' },
   'plan.institutionalHint': { en: 'For institutions', fil: 'Para sa mga institusyon' },
   'plan.contact': { en: 'Get in touch', fil: 'Makipag-ugnayan' },
   'plan.receiptsTitle': { en: 'Receipts', fil: 'Mga Resibo' },
   'plan.whyPriceTitle': { en: 'Why the price is what it is', fil: 'Bakit ganito ang presyo' },
   'plan.whyPriceBody': {
-    en: 'Everything that runs on your phone is free — the voice, the offline voice and the whole ledger — because none of it needs anything from us. You pay only for the parts that need an internet service of ours: the AI explanation, an online copy of your records, the Score history, a guess of next week, and comparison with other stores.',
-    fil: 'Libre ang lahat ng tumatakbo sa phone mo — ang boses, ang boses na offline, at ang buong tala — dahil wala sa kanilang kailangan ng serbisyo namin. Ang binabayaran mo lang ay ang mga bahaging kailangan ng serbisyong pang-internet namin: ang paliwanag ng AI, kopya ng rekord mo sa internet, kasaysayan ng Score, tantya ng susunod na linggo, at paghahambing sa ibang tindahan.',
+    en: 'Everything that runs on your phone is free — the voice, the offline voice, the whole ledger, and the Score with its week-by-week history — because none of it needs anything from us. You pay only for the two parts that need an internet service of ours: the AI explanation, and a safe copy of your records that survives a lost phone.',
+    fil: 'Libre ang lahat ng tumatakbo sa phone mo — ang boses, ang boses na offline, ang buong tala, at ang Score kasama ang kasaysayan nito linggo-linggo — dahil wala sa kanilang kailangan ng serbisyo namin. Ang binabayaran mo lang ay ang dalawang bahaging kailangan ng serbisyong pang-internet namin: ang paliwanag ng AI, at ang safe na kopya ng rekord mo na hindi mawawala kahit mapalitan ang phone.',
   },
   'plan.whyPriceFoot': {
     en: 'That is why cancelling never leaves you holding a paid feature: you are paying for a service, not for a file.',
@@ -834,11 +1108,30 @@ export const UI = {
   'backup.export': { en: 'Save a backup file', fil: 'Mag-save ng backup file' },
   'backup.import': { en: 'Bring back a backup', fil: 'Ibalik ang backup' },
   'backup.restored': { en: 'Backup restored.', fil: 'Naibalik ang backup.' },
+  // Bringing a file back REPLACES the books, so it is asked about first and
+  // undoable after. Naming both counts is the whole point: "replaces what is on
+  // this phone (236 records) with what is in that file (18 records)" is a
+  // sentence an owner can catch a wrong file with.
+  'backup.replaceTitle': { en: 'Bring this backup back?', fil: 'Ibalik ang backup na ito?' },
+  'backup.replaceBody': {
+    en: 'This file holds {file} records. Bringing it back replaces the {now} records on this phone. You can undo it right after.',
+    fil: 'May {file} rekord ang file na ito. Kapag ibinalik ito, mapapalitan ang {now} rekord na nasa phone na ito. Puwede mong i-undo pagkatapos.',
+  },
+  'backup.replaceConfirm': { en: 'Bring it back', fil: 'Ibalik ito' },
+  'backup.replaceCancel': { en: 'Keep what is on this phone', fil: 'Itago ang nasa phone' },
+  'backup.undo': { en: 'Undo', fil: 'I-undo' },
   'backup.invalid': { en: 'That file is not a SeePat backup.', fil: 'Hindi SeePat backup ang file na iyan.' },
   'backup.tooNew': {
     en: 'That backup comes from a newer SeePat. Update first, then restore.',
     fil: 'Galing sa mas bagong SeePat ang backup na iyan. Mag-update muna, tapos ibalik.',
   },
+  'dash.bestTitle': { en: 'Best sellers', fil: 'Pinakamalakas na paninda' },
+  'dash.bestHint': { en: 'This week', fil: 'Ngayong linggo' },
+  'dash.bestEmpty': {
+    en: 'No sales recorded yet in this window.',
+    fil: 'Wala pang naitalang benta sa panahong ito.',
+  },
+  'dash.bestQty': { en: '{n} {unit} sold', fil: '{n} {unit} nabenta' },
   'restock.title': { en: 'Buy again soon', fil: 'Bilhin muli malapit na' },
   'restock.empty': { en: 'Nothing is running out this week.', fil: 'Walang mauubos ngayong linggo.' },
   'restock.days': { en: '{n} days left', fil: '{n} araw na lang' },

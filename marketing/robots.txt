@@ -1,0 +1,14 @@
+# SeePat marketing site.
+#
+# Nothing here is disallowed, and the file exists for one reason: the Sitemap
+# line. A crawler that finds the sitemap early wastes fewer requests discovering
+# two pages, and this site has exactly two.
+#
+# Note that robots.txt is not a way to keep a page out of results — a blocked URL
+# can still be indexed, just without its content. Anything that genuinely must
+# not be indexed gets a `noindex` (see 404.html), not a rule here.
+
+User-agent: *
+Allow: /
+
+Sitemap: %SITE_URL%/sitemap.xml

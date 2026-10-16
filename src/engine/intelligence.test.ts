@@ -267,6 +267,47 @@ describe('constrained voice parsing', () => {
     const b = parseSpoken('nakabenta ako ng sampung Coke', ledger, 'fil')
     expect(a).toEqual(b)
   })
+
+  /*
+   * The four cases below were all found by the measurement bench
+   * (tools/bench-voice-parse.mjs) rather than by reading the parser, and all
+   * four reached a screen. They are pinned here so the bench is not the only
+   * thing standing between them and a regression.
+   */
+
+  it('understands a quantity spoken AFTER the item — the weighing order', () => {
+    // "bigas, kalahating kilo" is how a rice sale is actually said. The parser
+    // only looked backwards for a number, so the weight was dropped and the
+    // draft silently defaulted to one kilo: right item, right screen, wrong
+    // amount.
+    const half = parseSpoken('bigas, kalahating kilo', ledger, 'fil')
+    expect(half.lines.find((l) => l.skuId === 'bigas')?.qty).toBe(500)
+
+    const two = parseSpoken('umutang si Nena ng bigas dalawang kilo', ledger, 'fil')
+    expect(two.lines.find((l) => l.skuId === 'bigas')?.qty).toBe(2000)
+  })
+
+  it('never borrows a number across a conjunction', () => {
+    // In "coke at dalawang skyflakes" the two belongs to the Skyflakes. Reading
+    // it the other way invents a Coke sale of two that nobody said.
+    const draft = parseSpoken('coke at dalawang skyflakes', ledger, 'fil')
+    expect(draft.lines.find((l) => l.skuId === 'coke')?.qty).toBe(1)
+    expect(draft.lines.find((l) => l.skuId === 'skyflakes')?.qty).toBe(2)
+  })
+
+  it('does not list an item it understood as a word it did not understand', () => {
+    // The confirmation sheet used to read "Not understood: bigas" underneath a
+    // correct Bigas line, which is how an owner learns to ignore the one warning
+    // that exists to catch a real mishearing.
+    expect(parseSpoken('nakabenta ako ng bigas', ledger, 'fil').unresolved).toEqual([])
+    expect(parseSpoken('sipat, nakabenta ako ng limang lucky me', ledger, 'fil').unresolved).toEqual([])
+  })
+
+  it('does not list a customer it matched as a word it did not understand', () => {
+    const draft = parseSpoken('umutang ng dalawang bigas si Nena', ledger, 'fil')
+    expect(draft.customerId).toBe('aling_nena')
+    expect(draft.unresolved).toEqual([])
+  })
 })
 
 describe('demo data', () => {

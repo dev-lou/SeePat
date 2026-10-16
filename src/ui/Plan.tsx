@@ -7,6 +7,7 @@ import {
   PAYMENT_METHODS,
   formatDate,
   formatPlanPrice,
+  invoicePlanName,
   liveFeatures,
   paymentMethodLabel,
   priceFor,
@@ -23,9 +24,12 @@ import { pick, useLang, useT } from '../i18n/index.ts'
  *
  * No payment gateway is contacted, no card or wallet details are transmitted,
  * and nothing here should be mistaken for a live billing integration. What the
- * screen *does* prove is the shape of the business model: three tiers, one
- * honest sentence per tier, and a hard line between what is free because it
- * costs nothing to serve and what is paid because it does.
+ * screen *does* prove is the shape of the business model: two plans, one
+ * honest sentence per plan, and a hard line between what is free because it
+ * costs nothing to serve and what is paid because it does — a server and AI.
+ *
+ * Receipts are the one place a *retired* plan may still be named, through
+ * `invoicePlanName`: a receipt records what was paid, not what is on offer.
  */
 
 type Step = 'browse' | 'method' | 'processing' | 'done'
@@ -76,9 +80,10 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="eyebrow text-brand-700">{t('plan.currentTitle')}</div>
-            {/* Fluid rather than a fixed 24px: the tier name is the longest string
-                on this card ("SeePat NEGOSYO") and it shares the row with the tier
-                badge, so on a 280px phone it shrinks instead of wrapping under it. */}
+            {/* Fluid rather than a fixed 24px: the plan name is the longest string
+                on this card ("SeePat NEGOSYO" on an old receipt) and it shares the
+                row with the plan badge, so on a 280px phone it shrinks instead of
+                wrapping under it. */}
             <div className="headline mt-1.5 text-[clamp(1.25rem,6.5vw,1.5rem)] leading-tight text-fg">
               {current.name}
             </div>
@@ -130,7 +135,8 @@ export function PlanScreen({ billing }: { billing: Billing }) {
       {visibleTiers().map((tier) => {
         const isCurrent = billing.tier === tier.id
         // Only features with working code are ever listed — planned items are
-        // not sold. NEGOSYO is hidden from this page until it is built.
+        // not sold. `liveFeatures` is the only source this page reads, so a
+        // feature cannot be advertised before it exists.
         const live = liveFeatures()
         const included = live.filter((f) => tierRank(f.tier) <= tierRank(tier.id))
         const locked = live.filter((f) => tierRank(f.tier) > tierRank(tier.id))
@@ -139,12 +145,11 @@ export function PlanScreen({ billing }: { billing: Billing }) {
          * The recommended column is the one dark card on the page — the same
          * near-black surface as the app's hero card. That is how a modern pricing
          * table marks its recommendation: no ribbon, no badge, no drop-shadow, just
-         * a deliberately different surface where the eye already lands. The top
-         * tier takes a brand-tinted panel, and FREE stays white so the two paid
-         * columns are the ones that read as offers.
+         * a deliberately different surface where the eye already lands. With two
+         * plans there is exactly one dark column (PRO) and FREE stays white, so
+         * the column that reads as an offer is the one that has a price on it.
          */
         const ink = tier.highlight === true
-        const brandTier = !ink && tier.id === 'negosyo'
         const soft = ink ? 'text-white/65' : 'text-fg-faint'
         const body = ink ? 'text-white/80' : 'text-fg-muted'
 
@@ -154,9 +159,7 @@ export function PlanScreen({ billing }: { billing: Billing }) {
             className={`relative w-full overflow-hidden border-y !border-x-0 p-5.5 shadow-e2 backdrop-blur-md ${
               ink
                 ? 'border-white/20 bg-gradient-to-br from-[#0c1445] via-[#091030] to-[#040714] text-white shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)]'
-                : brandTier
-                  ? 'border-brand-300/60 bg-gradient-to-br from-brand-50/90 to-white/90'
-                  : 'border-white/80 bg-white/70 shadow-xs'
+                : 'border-white/80 bg-white/70 shadow-xs'
             }`}
           >
             <div className="relative flex items-start justify-between gap-3">
@@ -187,9 +190,6 @@ export function PlanScreen({ billing }: { billing: Billing }) {
                     </>
                   ) : (
                     <>
-                      {tier.id === 'negosyo' ? (
-                        <span className="stamp text-gold-700">{t('plan.badgeTop')}</span>
-                      ) : null}
                       {isCurrent ? (
                         <span className="stamp text-brand-700">{t('plan.badgeCurrent')}</span>
                       ) : null}
@@ -285,7 +285,7 @@ export function PlanScreen({ billing }: { billing: Billing }) {
                 /* The recommended column's action is the soft yellow on near-black:
                    the one warm shape on a cool screen, which is what makes it read
                    as the offer rather than as another button. */
-                variant={ink ? 'gold' : brandTier ? 'brand' : 'ghost'}
+                variant={ink ? 'gold' : 'ghost'}
                 onClick={() => startCheckout(tier.id as Exclude<TierId, 'free'>)}
               >
                 {t('plan.upgradeTo', { tier: tier.short })}
@@ -330,7 +330,10 @@ export function PlanScreen({ billing }: { billing: Billing }) {
                       receipt, and a receipt is the one row here someone might
                       need to read back to someone else. */}
                   <div className="text-[0.8125rem] leading-snug text-fg-muted">
-                    {tierById(invoice.tier).name} · {paymentMethodLabel(invoice.method)}
+                    {/* `invoicePlanName`, not the plan table: a receipt may name a
+                        plan that is no longer sold, and that is the point — it
+                        records what was paid, not what is on offer today. */}
+                    {invoicePlanName(invoice)} · {paymentMethodLabel(invoice.method)}
                   </div>
                   <div className="text-[0.8125rem] text-fg-faint">
                     {invoice.reference} · {formatDate(invoice.at, lang)}

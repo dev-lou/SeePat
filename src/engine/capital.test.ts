@@ -23,6 +23,9 @@ import type { BusinessTwin, Ledger } from './types.ts'
 function fixtureTwin(fields: Partial<BusinessTwin>): BusinessTwin {
   return {
     cashCentavos: 0,
+    // Nothing in these fixtures arrived by e-wallet, so every peso of cash is in
+    // the box — which is what keeps the concept note's own examples intact.
+    walletCentavos: 0,
     payablesCentavos: 0,
     fixedAssetsCentavos: 0,
     capitalInjectedCentavos: 0,

@@ -238,11 +238,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
             {/* Message Body */}
             <div className="min-w-0 flex-1">
-              <p className="text-[0.875rem] font-bold text-white tracking-wide truncate drop-shadow-xs">
+              {/* `line-clamp-2` rather than `truncate`: a validation message is
+                  the one place the toast has something to say, and "Add an item,
+                  a quantity, and a pri…" is not a message. Two lines fit every
+                  string in the table at both reading sizes. */}
+              <p className="text-[0.875rem] font-bold text-white tracking-wide line-clamp-2 drop-shadow-xs">
                 {current.title}
               </p>
               {current.description ? (
-                <p className="text-[0.75rem] font-medium text-white/75 truncate mt-0.5">
+                <p className="text-[0.75rem] font-medium text-white/75 line-clamp-2 mt-0.5">
                   {current.description}
                 </p>
               ) : null}

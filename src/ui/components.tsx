@@ -272,12 +272,24 @@ export function Bar({
   tone = 'brand',
   note,
   color,
+  showPercent = true,
 }: {
   label: string
   amount: string
   share: number
   tone?: 'brand' | 'offset' | 'muted'
   note?: string
+  /**
+   * Off where `share` is a comparison against the longest bar rather than a
+   * part of a whole.
+   *
+   * The printed percentage is a claim, not decoration: on the capital card
+   * "42%" means 42% of the capital, but on a ranked bar chart the same number
+   * would mean "42% of the biggest item", which nobody reads that way — beside
+   * the best seller it printed a bare "100%" that looked like a share of profit.
+   * Where there is no whole to take a share of, the percentage is not shown.
+   */
+  showPercent?: boolean
   /**
    * Exact fill colour, used when the bar must match a sibling mark — the
    * capital donut's segments. Every audited stop below clears 3:1 on white,
@@ -309,9 +321,11 @@ export function Bar({
             style={{ width: `${width}%`, ...(color ? { backgroundColor: color } : {}) }}
           />
         </div>
-        <span className="num w-12 shrink-0 text-right text-[0.8125rem] font-semibold text-fg-faint">
-          {pct.toFixed(0)}%
-        </span>
+        {showPercent ? (
+          <span className="num w-12 shrink-0 text-right text-[0.8125rem] font-semibold text-fg-faint">
+            {pct.toFixed(0)}%
+          </span>
+        ) : null}
       </div>
       {note ? <div className="mt-1.5 text-[0.8125rem] leading-relaxed text-fg-faint">{note}</div> : null}
     </div>
@@ -1097,6 +1111,160 @@ export function CollapsibleSection({
  * banner nobody reads twice. Max two lines + a count; the full list lives in
  * the section it came from.
  */
+/**
+ * A sheet that exists only on paper.
+ *
+ * Two screens print — the week's report and an utang statement — and both go
+ * through here, so there is exactly one print route in the app rather than one
+ * per screen. Three things have to agree for a print to work, and bundling them
+ * in one component is how they are kept agreeing:
+ *
+ * 1. The sheet is a **portal onto `<body>`**, because the print rule hides every
+ *    other child of `<body>`. A sheet left inside `#root` would be hidden with
+ *    the app it is supposed to replace.
+ * 2. `body[data-print-sheet]` is set **by the sheet itself**, in an effect, and
+ *    removed with it. This is the part that is easy to get wrong: a marker set
+ *    by the *screen* stays on after the sheet unmounts (the report's sheet only
+ *    exists in one of the dashboard's three views), and printing then hides the
+ *    whole app and produces a blank page.
+ * 3. It is always mounted while its screen is, and hidden by CSS rather than by
+ *    React, because `window.print()` is synchronous — a sheet rendered in the
+ *    click handler would still be missing from the DOM when the printer runs.
+ *
+ * Only one sheet is ever mounted at a time, because only one screen is: the
+ * tabs swap, they do not stack. If that ever changes, this needs a counter
+ * rather than a boolean.
+ */
+export function PrintSheet({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    document.body.dataset.printSheet = 'sheet'
+    return () => {
+      delete document.body.dataset.printSheet
+    }
+  }, [])
+
+  if (typeof document === 'undefined') return null
+  return createPortal(<>{children}</>, document.body)
+}
+
+/**
+ * The one gate in front of an action that throws work away.
+ *
+ * It exists because of a bug this app actually shipped: "Erase everything"
+ * deleted a whole ledger on a single tap, with no dialog and no undo, while the
+ * app asked twice before deleting *one* row. Confirming a row and not confirming
+ * the books is backwards — so the destructive actions all come through here.
+ *
+ * The body is asked to say what is about to be lost, in figures: "the 236
+ * records saved on this phone" is a consequence an owner can weigh, and "are you
+ * sure?" is not. Cancel is the plain button and the confirm is the coloured one,
+ * because the safe exit should never be the louder control.
+ */
+export function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+  tone = 'danger',
+  onConfirm,
+  onCancel,
+}: {
+  title: string
+  body: string
+  confirmLabel: string
+  cancelLabel: string
+  tone?: 'danger' | 'brand'
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-5 backdrop-blur-sm"
+      onClick={onCancel}
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div
+        className="surface w-full max-w-xs rounded-2xl border border-white/80 p-5 shadow-e2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="headline text-[1.0625rem] leading-snug text-fg">{title}</h2>
+        <p className="mt-1.5 text-[0.875rem] leading-relaxed text-fg-muted">{body}</p>
+        <div className="mt-4 flex flex-col gap-2.5">
+          <Button variant={tone} className="w-full" onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+/**
+ * The bottom sheet: one shape for every "stop and decide" surface.
+ *
+ * A portal, and anchored to the bottom rather than the middle, for two reasons
+ * that both come from the phone: this is where the thumb already is, and the
+ * keyboard opens downward — a centred dialog has to jump when the owner starts
+ * typing, which reads as the app flinching.
+ *
+ * It is deliberately a *place*, not a page: the screen behind it stays visible
+ * and the sheet closes on a scrim tap, so nothing an owner does here can strand
+ * them somewhere they do not recognise.
+ */
+export function Sheet({
+  title,
+  hint,
+  closeLabel,
+  onClose,
+  children,
+}: {
+  title: string
+  hint?: string
+  closeLabel: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div
+        className="safe-bottom flex max-h-[88vh] w-full max-w-md flex-col rounded-t-3xl border border-line bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* A grabber, because the whole sheet is also closeable by tapping the
+            scrim and nobody taps an edge they cannot see. */}
+        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-line-strong" aria-hidden />
+        <div className="flex items-start justify-between gap-3 border-b border-line/70 px-4 pt-3 pb-3">
+          <div className="min-w-0">
+            <h2 className="headline text-[1.0625rem] leading-snug text-fg">{title}</h2>
+            {hint ? <p className="mt-0.5 text-[0.8125rem] leading-snug text-fg-faint">{hint}</p> : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 shrink-0 rounded-full border border-line-strong px-4 text-[0.8125rem] font-bold text-fg-subtle transition active:translate-y-px"
+          >
+            {closeLabel}
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 export function NoticeBanner({
   tone = 'warn',
   title,

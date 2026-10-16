@@ -1,9 +1,20 @@
 # Dependencies
 node_modules/
 
+# Environment overrides. `.env` itself IS tracked: it holds defaults, never
+# secrets (see .env.example). Anything machine-specific or private goes here.
+.env.local
+.env.*.local
+
 # Build output
 dist/
 dev-dist/
+
+# The marketing site is its own project and carries its own .gitignore; these
+# two lines are the belt to that pair of braces, so a build from the repo root
+# can never stage a deployment.
+marketing/dist/
+marketing/.env
 
 # Local dev servers
 .vite-dev.log

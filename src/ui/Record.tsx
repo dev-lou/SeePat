@@ -2,8 +2,16 @@ import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, Card, Chip, CustomSelect, EmptyState, Field, SectionTitle, inputClass } from './components.tsx'
 import { useToast } from './Toast.tsx'
-import { formatPHP, pesos, suggestedCost, suggestedPrice } from '../engine/index.ts'
-import type { Sku, Transaction } from '../engine/index.ts'
+import {
+  formatPHP,
+  pesos,
+  pricePerBaseUnit,
+  pricePerDisplayUnit,
+  suggestedCost,
+  suggestedPrice,
+  unitPriceDrifts,
+} from '../engine/index.ts'
+import type { PaymentChannel, Sku, Transaction } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
 import type { Negosyo } from '../store.ts'
 import { UI, clockTime, dayMonth, tr, useLang, useT } from '../i18n/index.ts'
@@ -34,6 +42,20 @@ const PRIMARY_IDS: Mode[] = ['cash_sale', 'expense', 'credit_sale']
 const MORE_IDS: Mode[] = ['purchase', 'payment_received', 'capital_injection', 'owner_withdrawal']
 const PRIMARY_MODES = MODES.filter((m) => PRIMARY_IDS.includes(m.id))
 const MORE_MODES = MODES.filter((m) => MORE_IDS.includes(m.id))
+
+/**
+ * Where a cash sale's money landed, in the order a store meets them.
+ *
+ * Cash first because it is the default and the most common; GCash before Maya
+ * because of reach; bank last, because a bank transfer to a sari-sari is rare
+ * enough to be the last option rather than hidden behind a menu.
+ */
+const PAYMENT_CHANNELS: { id: PaymentChannel; labelKey: UIStr }[] = [
+  { id: 'cash', labelKey: 'record.channel.cash' },
+  { id: 'gcash', labelKey: 'record.channel.gcash' },
+  { id: 'maya', labelKey: 'record.channel.maya' },
+  { id: 'bank', labelKey: 'record.channel.bank' },
+]
 
 export type HistoryRange = 'today' | 'week' | 'all'
 export type DirectionFilter = 'all' | 'in' | 'out'
@@ -106,7 +128,17 @@ function toBaseQty(sku: Sku | undefined, displayQty: number): number {
   return Math.round(displayQty)
 }
 
-export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
+export function RecordScreen({
+  negosyo,
+  onOpenItems,
+  onOpenUtang,
+}: {
+  negosyo: Negosyo
+  /** Opens "My items" — where the item being recorded would be added. */
+  onOpenItems?: () => void
+  /** Opens the utang book — where the name being asked for is kept. */
+  onOpenUtang?: () => void
+}) {
   const { ledger, add, removeTransaction, restoreTransaction } = negosyo
   const lang = useLang()
   const t = useT()
@@ -117,6 +149,12 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
   const [amount, setAmount] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [onCredit, setOnCredit] = useState(false)
+  /**
+   * Where a cash sale's money landed. Defaults to the box, which is both the
+   * commonest answer and the behaviour every record written before this field
+   * existed is read with.
+   */
+  const [channel, setChannel] = useState<PaymentChannel>('cash')
   const [flash, setFlash] = useState('')
   // History filters: a store owner reconciles the current shift first, so the
   // feed opens on today rather than on everything ever recorded.
@@ -147,6 +185,19 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
     })
   }
 
+  /**
+   * Changing what you are recording clears last time's complaint.
+   *
+   * The message under the button used to survive the switch: pick Utang, hit
+   * Record it without a name, then move to Expense and the form still reads
+   * "Pick a customer." above an empty amount box. A stale warning on a fresh
+   * form is worse than no warning — it teaches the owner to ignore the line.
+   */
+  function changeMode(next: Mode) {
+    setMode(next)
+    setFlash('')
+  }
+
   function changeRange(next: HistoryRange) {
     setRange(next)
     setVisibleCount(HISTORY_PAGE)
@@ -173,18 +224,56 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
     setAmount('')
     setCustomerId('')
     setOnCredit(false)
+    setChannel('cash')
+  }
+
+  /**
+   * The items this shop sells most, as one-tap tiles.
+   *
+   * A sari-sari's day is the same eight products over and over, and the form's
+   * path to them is item → quantity → price → record, read out while a customer
+   * waits. Counting what has actually been sold turns that into one tap for the
+   * common case, and it needs no setup: the tiles appear once there is history.
+   *
+   * Tapping a tile fills the empty line if there is one, and otherwise adds a
+   * line — so two taps record a two-item sale rather than overwriting the first.
+   */
+  const quickSkus = useMemo(() => {
+    const counted = new Map<string, number>()
+    for (const txn of ledger.transactions) {
+      if (txn.kind !== 'cash_sale' && txn.kind !== 'credit_sale') continue
+      if (ledger.voids.some((v) => v.txnId === txn.id)) continue
+      for (const line of txn.lines) counted.set(line.skuId, (counted.get(line.skuId) ?? 0) + 1)
+    }
+    return [...counted.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([skuId]) => ledger.skus.find((s) => s.id === skuId))
+      .filter((sku): sku is Sku => Boolean(sku))
+      .slice(0, 8)
+  }, [ledger])
+
+  function quickAdd(skuId: string) {
+    const empty = lines.length === 1 && !lines[0].skuId
+    if (empty) {
+      pickSku(lines[0].key, skuId)
+      return
+    }
+    const key = String(Date.now() + lines.length)
+    setLines((current) => [...current, { key, skuId: '', qty: '1', price: '' }])
+    pickSku(key, skuId)
   }
 
   function pickSku(key: string, skuId: string) {
     const sku = ledger.skus.find((s) => s.id === skuId)
-    const defaultPrice =
-      mode === 'purchase'
-        ? suggestedCost(ledger, skuId)
-        : suggestedPrice(ledger, skuId)
+    const stored =
+      mode === 'purchase' ? suggestedCost(ledger, skuId) : suggestedPrice(ledger, skuId)
+    // Last time's price, put back into the unit the owner prices in. For rice
+    // that is the kilo, not the gram: `suggestedPrice` returns what is stored.
+    const display = sku ? pricePerDisplayUnit(sku.baseUnit, stored) : stored
     setLines((current) =>
       current.map((line) =>
         line.key === key
-          ? { ...line, skuId, price: defaultPrice > 0 ? String(defaultPrice / 100) : '' }
+          ? { ...line, skuId, price: display > 0 ? String(display / 100) : '' }
           : line,
       ),
     )
@@ -209,7 +298,10 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
           return {
             skuId: l.skuId,
             qty: toBaseQty(sku, Number(l.qty)),
-            unitCostCentavos: pesos(Number(l.price)),
+            // The form's price is per DISPLAY unit (kilo); the line stores the
+            // price of one base unit (gram), because that is what the engine
+            // multiplies the stored quantity by.
+            unitCostCentavos: pricePerBaseUnit(sku?.baseUnit ?? 'pc', pesos(Number(l.price))),
           }
         })
         const total = purchaseLines.reduce((s, l) => s + l.qty * l.unitCostCentavos, 0)
@@ -246,18 +338,31 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
         return {
           skuId: l.skuId,
           qty: toBaseQty(sku, Number(l.qty)),
-          unitPriceCentavos: pesos(Number(l.price)),
+          unitPriceCentavos: pricePerBaseUnit(sku?.baseUnit ?? 'pc', pesos(Number(l.price))),
         }
       })
       const total = saleLines.reduce((s, l) => s + l.qty * l.unitPriceCentavos, 0)
 
       if (mode === 'credit_sale') {
+        /*
+         * A nameless utang is uncollectable: it lands in "Owed to you" with
+         * nobody to ask, and the app's own top advice ("Collect first") starts
+         * pointing at a person who does not exist. Recording a PAYMENT already
+         * refuses to proceed without a name; lending was the one that quietly
+         * defaulted to `walk_in`, which is the wrong way round.
+         */
+        if (!customerId) {
+          const msg = t('record.utangNeedName')
+          setFlash(msg)
+          toast.show({ title: msg, tone: 'warn' })
+          return
+        }
         const txn: Transaction = {
           id: newTxnId('utang'),
           at,
           kind: 'credit_sale',
           lines: saleLines,
-          customerId: customerId || 'walk_in',
+          customerId,
         }
         add(txn)
         const msg = t('record.flash.credit', { amount: formatPHP(total) })
@@ -275,7 +380,15 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
           },
         })
       } else {
-        const txn: Transaction = { id: newTxnId('sal'), at, kind: 'cash_sale', lines: saleLines }
+        const txn: Transaction = {
+          id: newTxnId('sal'),
+          at,
+          kind: 'cash_sale',
+          lines: saleLines,
+          // Only written when it is not the default, so a plain cash sale stays
+          // the same shape it has always been in the ledger.
+          ...(channel === 'cash' ? {} : { channel }),
+        }
         add(txn)
         const msg = t('record.flash.sale', { amount: formatPHP(total) })
         setFlash(msg)
@@ -444,7 +557,7 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
         <div className="rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 shadow-xs p-1.5 space-y-1.5">
           <div className="flex flex-wrap gap-1.5">
             {PRIMARY_MODES.map((m) => (
-              <Chip key={m.id} active={mode === m.id} onClick={() => setMode(m.id)}>
+              <Chip key={m.id} active={mode === m.id} onClick={() => changeMode(m.id)}>
                 {t(m.labelKey)}
               </Chip>
             ))}
@@ -463,7 +576,7 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
           {showMoreModes || MORE_IDS.includes(mode) ? (
             <div className="flex flex-wrap gap-1.5 border-t border-line/60 pt-1.5">
               {MORE_MODES.map((m) => (
-                <Chip key={m.id} active={mode === m.id} onClick={() => setMode(m.id)}>
+                <Chip key={m.id} active={mode === m.id} onClick={() => changeMode(m.id)}>
                   {t(m.labelKey)}
                 </Chip>
               ))}
@@ -475,10 +588,83 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
       <Card>
         <SectionTitle>{t(MODES.find((m) => m.id === mode)?.labelKey ?? 'record.mode.cash_sale')}</SectionTitle>
 
+        {/*
+         * Where the money landed, asked only of a cash sale.
+         *
+         * This is not a payment integration and must never look like one: the
+         * owner tells the app where the money went, exactly as they would tell
+         * their notebook. What it buys is that the drawer figure stays true — a
+         * GCash sale is money received that is not in the box, and every app in
+         * this market that treats the two as one number makes an owner's nightly
+         * count come out short for no visible reason.
+         */}
+        {mode === 'cash_sale' ? (
+          <div className="mb-3.5">
+            <div className="eyebrow text-fg-subtle">{t('record.field.channel')}</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {PAYMENT_CHANNELS.map((option) => (
+                <Chip
+                  key={option.id}
+                  active={channel === option.id}
+                  onClick={() => setChannel(option.id)}
+                >
+                  {t(option.labelKey)}
+                </Chip>
+              ))}
+            </div>
+            {channel !== 'cash' ? (
+              <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-subtle">
+                {t('record.channelNote')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/*
+         * Money taken home, said out loud at the moment it is recorded.
+         *
+         * The whole positioning of this app is that business capital and
+         * household cash are two different things, and this is the single tap
+         * where an owner could accidentally merge them: a withdrawal entered as
+         * "gastos" turns a profitable week into a losing one, and hides the fact
+         * that she paid herself. The machinery already keeps them apart
+         * (a withdrawal is a use of capital in `capitalProvenance`) — this line
+         * is what tells her, where the choice is made, that she has not made a
+         * mistake by tapping it.
+         */}
+        {mode === 'owner_withdrawal' ? (
+          <p className="mb-3.5 text-[0.8125rem] leading-relaxed text-fg-subtle">
+            {t('record.withdrawalNote')}
+          </p>
+        ) : null}
+
         {isLineMode ? (
           <div className="space-y-3.5">
+            {quickSkus.length > 0 ? (
+              <div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="eyebrow text-fg-subtle">{t('record.quickTitle')}</span>
+                  <span className="text-[0.75rem] text-fg-faint">{t('record.quickHint')}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {quickSkus.map((sku) => (
+                    <button
+                      key={sku.id}
+                      type="button"
+                      onClick={() => quickAdd(sku.id)}
+                      className="min-h-11 rounded-full border border-brand-500/30 bg-brand-50/70 px-3.5 text-[0.875rem] font-semibold text-brand-800 shadow-xs backdrop-blur-md transition active:scale-[0.97] hover:border-brand-600/50"
+                    >
+                      {sku.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {lines.map((line) => {
               const sku = ledger.skus.find((s) => s.id === line.skuId)
+              const perKilo = sku?.baseUnit === 'g'
+              const typed = pesos(Number(line.price))
               return (
                 <div key={line.key} className="rounded-2xl border border-line/80 bg-white/60 backdrop-blur-md p-4 shadow-xs space-y-3">
                   <Field label={t('record.field.item')}>
@@ -516,8 +702,24 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
                     </Field>
                     <Field
                       label={
-                        mode === 'purchase' ? t('record.field.unitCost') : t('record.field.unitPrice')
+                        perKilo
+                          ? mode === 'purchase'
+                            ? t('record.field.costPerKilo')
+                            : t('record.field.pricePerKilo')
+                          : mode === 'purchase'
+                            ? t('record.field.unitCost')
+                            : t('record.field.unitPrice')
                       }
+                      hint={
+                        perKilo && typed > 0 && sku && unitPriceDrifts(sku.baseUnit, typed)
+                          ? t('record.priceRecording', {
+                              amount: formatPHP(sku ? pricePerDisplayUnit(sku.baseUnit, pricePerBaseUnit(sku.baseUnit, typed)) : typed),
+                            })
+                          : undefined
+                      }
+                      /* Prices in the unit the item is sold in: rice is ₱72 a
+                         kilo, and asking for the price of one GRAM is how a
+                         2-kilo sale once became ₱144,000. */
                     >
                       <input
                         className={inputClass}
@@ -564,6 +766,20 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
               {t('record.addItem')}
             </Button>
 
+            {/* Where an item that is not on the list gets added. Without this
+                the picker is a closed set of ten seeded products and there is
+                no way out of it from the screen that needs one. */}
+            {onOpenItems ? (
+              <button
+                type="button"
+                onClick={onOpenItems}
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full text-[0.875rem] font-bold text-brand-700 transition active:scale-[0.99]"
+              >
+                {t('items.manage')}
+                <span aria-hidden>→</span>
+              </button>
+            ) : null}
+
             {mode === 'credit_sale' || mode === 'purchase' ? (
               <Field
                 label={t('record.field.customer')}
@@ -572,11 +788,30 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
                 <CustomSelect
                   value={customerId}
                   onChange={(val) => setCustomerId(val)}
-                  placeholder={t('record.walkIn')}
+                  /* "Choose…", not "Walk-in": utang now requires a name, and a
+                     placeholder that reads like a default was what let a
+                     nameless debt through in the first place. */
+                  placeholder={
+                    mode === 'purchase' ? t('record.walkIn') : t('record.select')
+                  }
                   options={ledger.customers.map((c) => ({ value: c.id, label: c.name }))}
                   disabled={mode === 'purchase'}
                 />
               </Field>
+            ) : null}
+
+            {/* Utang is the one mode whose value is not in the single record but
+                in the running list of who owes what, so the list is one tap
+                away from the form that creates a debt. */}
+            {mode === 'credit_sale' && onOpenUtang ? (
+              <button
+                type="button"
+                onClick={onOpenUtang}
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full text-[0.875rem] font-bold text-brand-700 transition active:scale-[0.99]"
+              >
+                {t('app.utangList')}
+                <span aria-hidden>→</span>
+              </button>
             ) : null}
 
             {mode === 'purchase' ? (
@@ -695,6 +930,10 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
               const showDay = index === 0 || dayOf(txn) !== dayOf(visible[index - 1])
               const direction = txnDirection(txn)
               const expanded = expandedId === txn.id
+              // Only resolved for the row that is actually open: naming ten
+              // thousand records on every render to show one of them is work the
+              // phone does not need to do.
+              const detailLines = expanded ? displayLines(txn, ledger) : null
               const centavos = txnTotalCentavos(txn)
               const amount =
                 centavos !== 0
@@ -816,11 +1055,37 @@ export function RecordScreen({ negosyo }: { negosyo: Negosyo }) {
                       <div className="num">
                         {dayOf(txn)} · {clockTime(new Date(txn.at))}
                       </div>
+
+                      {/* What was actually bought or sold. Tapping a row used to
+                          reveal a reference number and nothing else — the one
+                          thing an owner opening their own record wants to check
+                          ("was that really five?") was the one thing missing. */}
+                      {detailLines ? (
+                        <ul className="mt-1.5 space-y-1 border-t border-line/60 pt-1.5">
+                          {detailLines.map((line, i) => (
+                            <li key={`${line.name}-${i}`} className="flex items-baseline justify-between gap-3">
+                              <span className="min-w-0">
+                                <span className="num font-semibold text-fg">
+                                  {line.unit === 'pc' ? line.qty : `${line.qty} ${line.unit}`}
+                                </span>{' '}
+                                × {line.name}
+                              </span>
+                              <span className="num shrink-0 text-right text-fg-faint">
+                                {t('record.detail.each', { amount: formatPHP(line.unitPriceCentavos) })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+
+                      {/* The reference stays, last and faint: it is provenance, not
+                          information — there only for the day someone has to
+                          reconcile a record over the phone. */}
                       <div className="mt-1.5 flex items-baseline justify-between gap-2 border-t border-line/60 pt-1.5">
                         <span className="font-bold tracking-wide uppercase text-[0.6875rem] text-fg-faint">
-                          {t('record.detail.ref')}
+                          {t('record.detail.support')}
                         </span>
-                        <span className="num min-w-0 truncate">{txn.id}</span>
+                        <span className="num min-w-0 truncate text-fg-faint">{txn.id}</span>
                       </div>
                     </div>
                   ) : null}
@@ -956,24 +1221,123 @@ function describeCount(
     : label(looseKey, { n: total.toFixed(1) })
 }
 
-function describe(txn: Transaction, ledger: Negosyo['ledger'], lang: Lang): string {
+/**
+ * One line of a transaction, put back into the numbers the owner typed.
+ *
+ * Quantities are stored in the SKU's base unit, so 1.5 kg of rice is 1500 in
+ * the ledger. Showing that figure back to the owner would be worse than showing
+ * nothing, so every read of a line goes through here first.
+ */
+interface DisplayLine {
+  name: string
+  qty: number
+  unit: string
+  unitPriceCentavos: number
+}
+
+function displayLines(txn: Transaction, ledger: Negosyo['ledger']): DisplayLine[] | null {
+  const lines =
+    txn.kind === 'cash_sale' || txn.kind === 'credit_sale'
+      ? txn.lines.map((l) => ({ skuId: l.skuId, qty: l.qty, price: l.unitPriceCentavos }))
+      : txn.kind === 'purchase'
+        ? txn.lines.map((l) => ({ skuId: l.skuId, qty: l.qty, price: l.unitCostCentavos }))
+        : null
+  if (!lines || lines.length === 0) return null
+  const out: DisplayLine[] = []
+  for (const line of lines) {
+    const sku = ledger.skus.find((s) => s.id === line.skuId)
+    // An unknown SKU is not a reason to print an id: the caller falls back to
+    // the count phrasing, which is true even when the goods cannot be named.
+    if (!sku) return null
+    const grams = sku.baseUnit === 'g'
+    out.push({
+      name: sku.name,
+      qty: grams ? displayQty(line.qty / 1000) : line.qty,
+      // The display unit ('kg'), never the base unit ('g').
+      unit: sku.unit,
+      unitPriceCentavos: line.price,
+    })
+  }
+  return out
+}
+
+/**
+ * Quantities for display, at the precision a hand can type.
+ *
+ * Storage is exact (grams), which is right; printing `7.532 kg` of rice is not —
+ * nobody weighs to the gram, and three decimals makes a simple figure look like
+ * a calculation leak. Two decimals is the most a person types (¼ kilo, 1.5, 2.25),
+ * so two decimals is exactly as precise as this can be without inventing
+ * precision the owner never entered.
+ */
+function displayQty(qty: number): number {
+  return Math.round(qty * 100) / 100
+}
+
+/**
+ * The row title for a line-based transaction: the goods, in the owner's unit.
+ *
+ * One line is named outright — "5 × Coke Mismo". Several lines lead with the
+ * first and count the rest, because a row is one line tall and the full list is
+ * one tap away in the detail underneath.
+ */
+function describeGoods(
+  txn: Transaction,
+  ledger: Negosyo['ledger'],
+  label: (key: UIStr, params?: Params) => string,
+  fallback: () => string,
+): string {
+  const lines = displayLines(txn, ledger)
+  if (!lines) return fallback()
+  if (lines.length > 1) return label('record.row.items', { item: lines[0].name, n: lines.length - 1 })
+  const only = lines[0]
+  return only.unit === 'pc'
+    ? label('record.row.item', { n: only.qty, item: only.name })
+    : label('record.row.itemWeighed', { item: only.name, qty: only.qty, unit: only.unit })
+}
+
+/**
+ * Exported for its test: every row title in the ledger comes from here, and a
+ * row that names the wrong goods is a worse bug than a row that names none.
+ */
+export function describe(txn: Transaction, ledger: Negosyo['ledger'], lang: Lang): string {
   // A local binding, because this runs outside React and cannot use the hook.
   const label = (key: UIStr, params?: Params) => tr(lang, UI, key, params)
   switch (txn.kind) {
     case 'cash_sale':
-      return describeCount('record.row.sale', 'record.row.saleLoose', txn.lines, label)
+      // The goods, then the count: the fallback only appears for a record whose
+      // item is no longer in the book.
+      return describeGoods(txn, ledger, label, () =>
+        describeCount('record.row.sale', 'record.row.saleLoose', txn.lines, label),
+      )
     case 'credit_sale':
+      /*
+       * For utang the *person* is the headline, not the goods: the whole point
+       * of the row is who owes you, and "2 × Bigas" does not answer that. The
+       * sentence list lives in the detail below.
+       *
+       * `walk_in` has no customer record to look up, and printing the raw id
+       * put the string "walk_in" in the middle of an owner's Tagalog ledger.
+       */
       return label('record.row.credit', {
-        name: ledger.customers.find((c) => c.id === txn.customerId)?.name ?? txn.customerId,
+        name: ledger.customers.find((c) => c.id === txn.customerId)?.name ?? label('record.walkIn'),
       })
     case 'purchase':
-      return describeCount('record.row.purchase', 'record.row.purchaseLoose', txn.lines, label)
+      return describeGoods(txn, ledger, label, () =>
+        describeCount('record.row.purchase', 'record.row.purchaseLoose', txn.lines, label),
+      )
     // Amounts live in their own right-aligned column, so these labels stay
     // labels. Repeating the figure twice on one row was pure noise.
     case 'expense':
       return label('record.kind.expense')
-    case 'payment_received':
-      return label('record.kind.payment')
+    case 'payment_received': {
+      // "Paid by Aling Nena", not a bare "Payment": in a column of rows that all
+      // say Payment, the name is the only thing that distinguishes them.
+      const customer = ledger.customers.find((c) => c.id === txn.customerId)
+      return customer
+        ? label('record.row.payment', { name: customer.name })
+        : label('record.kind.payment')
+    }
     case 'capital_injection':
       return label('record.kind.capital')
     case 'owner_withdrawal':

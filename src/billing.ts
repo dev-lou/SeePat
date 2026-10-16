@@ -29,7 +29,20 @@ import type { Bilingual, Lang } from './i18n/index.ts'
  * economics are enforced by the suite rather than remembered by a human.
  */
 
-export type TierId = 'free' | 'pro' | 'negosyo'
+export type TierId = 'free' | 'pro'
+
+/**
+ * A plan that was once sold and is not any more.
+ *
+ * These ids are not `TierId`s and never appear in `TIERS`: nothing may offer
+ * one, and no price is published for them. They exist so that *history* reads
+ * truthfully — an old ₱199 receipt must not be relabelled "SeePat FREE" just
+ * because the plan behind it was withdrawn.
+ */
+export type RetiredTierId = 'negosyo'
+
+/** Anything that can be written in a plan field, current or historical. */
+export type PlanId = TierId | RetiredTierId
 
 export interface Tier {
   id: TierId
@@ -43,7 +56,7 @@ export interface Tier {
   highlight?: boolean
 }
 
-// Plan names (brand + tier word) are not translated: FREE / PRO / NEGOSYO are the
+// Plan names (brand + tier word) are not translated: FREE / PRO are the
 // product's own words and already read correctly to both audiences.
 export const TIERS: Tier[] = [
   {
@@ -77,22 +90,32 @@ export const TIERS: Tier[] = [
     },
     highlight: true,
   },
-  {
-    id: 'negosyo',
-    name: 'SeePat NEGOSYO',
-    short: 'NEGOSYO',
-    priceCentavos: pesos(199),
-    period: { en: '/month', fil: '/buwan' },
-    tagline: {
-      en: "A guess of next week's sales, how you compare with nearby stores, and accounts for your staff.",
-      fil: 'Tantya ng benta sa susunod na linggo, paghahambing sa kalapit na tindahan, at account para sa mga tauhan mo.',
-    },
-    audience: {
-      en: 'For a growing store with employees and suppliers.',
-      fil: 'Para sa lumalaking tindahan na may empleyado at supplier.',
-    },
-  },
 ]
+
+/**
+ * The withdrawn plan, kept for one reason: old receipts name it.
+ *
+ * NEGOSYO was the ₱199 plan for a growing store with staff and suppliers. It was
+ * withdrawn from sale because none of what it promised was built — and a plan
+ * that is not sold must not be shown, demoable, or holdable by an owner who once
+ * picked it in the demo window (`migrateOffSale` moves that entitlement onto
+ * PRO). What is left is the name and the price, so a receipt can still say what
+ * was actually paid.
+ *
+ * There is deliberately no tagline, audience or feature list here: those were
+ * marketing for a plan nobody can buy, and dead copy that is never displayed is
+ * copy that never gets translated or corrected. Nothing may offer a plan from
+ * this map — it is not in `TIERS`, and `visibleTiers()` never returns it.
+ */
+interface RetiredPlan {
+  name: string
+  short: string
+  priceCentavos: Centavos
+}
+
+export const RETIRED_PLANS: Record<RetiredTierId, RetiredPlan> = {
+  negosyo: { name: 'SeePat NEGOSYO', short: 'NEGOSYO', priceCentavos: pesos(199) },
+}
 
 export const INSTITUTIONAL = {
   name: {
@@ -105,19 +128,39 @@ export const INSTITUTIONAL = {
   } as Bilingual,
 }
 
-const RANK: Record<TierId, number> = { free: 0, pro: 1, negosyo: 2 }
+/**
+ * Retired ids are ranked on purpose.
+ *
+ * A stored NEGOSYO entitlement is read once, before `migrateOffSale` moves it to
+ * PRO, and during that read it has to unlock everything it was paid for. A rank
+ * of 0 there would lock a paying owner out of the app for one render.
+ */
+const RANK: Record<PlanId, number> = { free: 0, pro: 1, negosyo: 2 }
 
-export function tierRank(tier: TierId): number {
+export function tierRank(tier: PlanId): number {
   return RANK[tier]
 }
 
-export function tierById(id: TierId): Tier {
-  return TIERS.find((t) => t.id === id) ?? TIERS[0]
+/** A plan that was withdrawn, if `id` names one. */
+function retiredPlan(id: PlanId): RetiredPlan | undefined {
+  return Object.prototype.hasOwnProperty.call(RETIRED_PLANS, id)
+    ? RETIRED_PLANS[id as RetiredTierId]
+    : undefined
 }
 
-export function nextTier(tier: TierId): Tier | null {
-  const index = TIERS.findIndex((t) => t.id === tier)
-  return TIERS[index + 1] ?? null
+/** Names a plan. Retired plans are named too, so an old receipt reads truthfully. */
+export function planName(id: PlanId): string {
+  return TIERS.find((t) => t.id === id)?.name ?? retiredPlan(id)?.name ?? TIERS[0].name
+}
+
+/** What a plan cost, current or retired. `migrateOffSale` needs the retired price. */
+export function planPrice(id: PlanId): Centavos {
+  return TIERS.find((t) => t.id === id)?.priceCentavos ?? retiredPlan(id)?.priceCentavos ?? 0
+}
+
+/** Names a plan for display: the plan itself when it is for sale. */
+export function tierById(id: TierId): Tier {
+  return TIERS.find((t) => t.id === id) ?? TIERS[0]
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +174,7 @@ export type FeatureKey =
   | 'capital_views'
   | 'ask_deterministic'
   | 'voice_capture'
+  | 'speak_answers'
   | 'offline_voice_model'
   | 'score_current'
   | 'ai_narration'
@@ -210,6 +254,16 @@ export const FEATURES: FeatureDef[] = [
     },
   },
   {
+    key: 'speak_answers',
+    label: { en: 'SeePat answers out loud', fil: 'Sinasagot ni SeePat nang malakas' },
+    tier: 'free',
+    onDevice: true,
+    note: {
+      en: 'Your phone does the talking, too. Ask a question out loud and the answer is read back — free, and with no signal.',
+      fil: 'Phone mo rin ang nagsasalita. Itanong nang malakas at babasahin ang sagot — libre, at walang kailangang signal.',
+    },
+  },
+  {
     key: 'offline_voice_model',
     label: {
       en: 'Offline Voice — download once, works with no signal',
@@ -228,6 +282,26 @@ export const FEATURES: FeatureDef[] = [
     tier: 'free',
     onDevice: true,
   },
+  {
+    key: 'score_history',
+    label: { en: 'How your Score moved, week by week', fil: 'Galaw ng Score mo linggo-linggo' },
+    tier: 'free',
+    onDevice: true,
+    note: {
+      en: 'Worked out from the records already on your phone. Free, like the Score itself.',
+      fil: 'Kinukwenta mula sa rekord na nasa phone mo na. Libre, tulad ng Score mismo.',
+    },
+  },
+  {
+    key: 'restocking',
+    label: { en: 'Advice on what to buy again, and when', fil: 'Payo kung ano ang bibilhin muli at kailan' },
+    tier: 'free',
+    onDevice: true,
+    note: {
+      en: 'Reads your own stock and your own sales. Nothing is sent anywhere to answer it.',
+      fil: 'Binabasa ang paninda at benta mo mismo. Walang ipinapadala kahit saan para sagutin ito.',
+    },
+  },
 
   // --- PRO: has a marginal cost, or needs a server --------------------------
   {
@@ -239,12 +313,6 @@ export const FEATURES: FeatureDef[] = [
       en: 'Costs us every time you ask. This is the only part that uses AI.',
       fil: 'May bayad kami sa bawat tanong. Ito lang ang bahaging gumagamit ng AI.',
     },
-  },
-  {
-    key: 'score_history',
-    label: { en: 'How your Score moved, week by week', fil: 'Galaw ng Score mo linggo-linggo' },
-    tier: 'pro',
-    onDevice: false,
   },
   {
     key: 'cloud_backup',
@@ -265,21 +333,19 @@ export const FEATURES: FeatureDef[] = [
     onDevice: false,
     status: 'planned',
   },
-  {
-    key: 'restocking',
-    label: { en: 'Advice on what to buy again, and when', fil: 'Payo kung ano ang bibilhin muli at kailan' },
-    tier: 'pro',
-    onDevice: false,
-  },
-
-  // --- NEGOSYO: compounding value that needs a server -----------------------
+  // --- Planned: needs a server, not built, and not for sale at any price -----
+  //
+  // These are deliberately `tier: 'pro'` + `status: 'planned'` rather than a
+  // third plan: there is no third plan. They describe what PRO grows into once a
+  // server exists, and `can()` refuses them until they do, so no screen can gate
+  // a door onto a room that was never built.
   {
     key: 'multi_user',
     label: {
       en: 'Several people can use it, each with their own access, and every change is recorded',
       fil: 'Marami ang pwedeng gumamit, may sariling access ang bawat isa, at naitala ang bawat pagbabago',
     },
-    tier: 'negosyo',
+    tier: 'pro',
     onDevice: false,
     status: 'planned',
   },
@@ -289,14 +355,14 @@ export const FEATURES: FeatureDef[] = [
       en: 'A guess of next week: sales, spending, and which items may run out',
       fil: 'Tantya sa susunod na linggo: benta, gastos, at mga panindang maaaring maubos',
     },
-    tier: 'negosyo',
+    tier: 'pro',
     onDevice: false,
     status: 'planned',
   },
   {
     key: 'supplier_intelligence',
     label: { en: 'What you buy, from whom, and at what price', fil: 'Ano ang binibili mo, kanino, at magkano' },
-    tier: 'negosyo',
+    tier: 'pro',
     onDevice: false,
     status: 'planned',
   },
@@ -306,7 +372,7 @@ export const FEATURES: FeatureDef[] = [
       en: 'See how your store compares with other stores nearby',
       fil: 'Tingnan ang pagkakaiba ng tindahan mo sa kalapit na tindahan',
     },
-    tier: 'negosyo',
+    tier: 'pro',
     onDevice: false,
     status: 'planned',
   },
@@ -316,7 +382,7 @@ export const FEATURES: FeatureDef[] = [
       en: 'Reports you can print or send, and adding many records at once',
       fil: 'Mga ulat na pwede mong i-print o ipadala, at pagpasok ng maraming rekord nang sabay',
     },
-    tier: 'negosyo',
+    tier: 'pro',
     onDevice: false,
     status: 'planned',
   },
@@ -333,6 +399,15 @@ export function requiredTier(key: FeatureKey): TierId {
 }
 
 export function can(entitlement: Entitlement, key: FeatureKey): boolean {
+  /*
+   * A feature with no code behind it is not usable at any price.
+   *
+   * This is the second half of the honesty rule. The pricing page may not list
+   * vapor (see `liveFeatures`), and `can()` may not unlock it either — otherwise
+   * a screen that gated itself on `receipt_ocr` would show a working door onto
+   * an empty room, which is a worse failure than an upsell.
+   */
+  if (featureDef(key).status === 'planned') return false
   return tierRank(entitlement.tier) >= tierRank(requiredTier(key))
 }
 
@@ -346,10 +421,61 @@ export function liveFeatures(): FeatureDef[] {
   return FEATURES.filter((f) => (f.status ?? 'live') === 'live')
 }
 
-/** Tiers shown on the pricing page. NEGOSYO stays in the type system but is
-    hidden until staff/multi-device is built and asked for. */
+/**
+ * The plans that are for sale, and the only list any screen may offer one from.
+ *
+ * Every entry in `TIERS` is for sale — a withdrawn plan is not in it at all and
+ * lives in `RETIRED_TIERS` instead, where nothing may offer it. The pricing page
+ * and the Settings demo picker both map this one list, because they once did not:
+ * the pricing page filtered while the demo picker mapped the raw `TIERS`, so the
+ * app sold on one screen a plan the other refused to sell.
+ *
+ * `billing.test.ts` asserts the list ascends by price, which is what lets
+ * `migrateOffSale` pick a fallback by position rather than by a second table.
+ */
 export function visibleTiers(): Tier[] {
-  return TIERS.filter((t) => t.id !== 'negosyo')
+  return TIERS
+}
+
+/**
+ * A plan withdrawn from sale is not held, either.
+ *
+ * Withdrawing NEGOSYO hid it from the pricing page but left the entitlement of
+ * anyone who had already bought it (a real state in the demo, since the demo
+ * picker offered it) sitting in localStorage. The app then contradicted itself:
+ * a plan nobody can buy, still named in the header of the owner who has it —
+ * which reads as "the plan I removed is still here", because it was.
+ *
+ * The migration moves that entitlement to the most expensive plan still for sale
+ * that was already paid for, so nobody is quietly moved up a price step, and the
+ * invoices are kept: a receipt records what happened, not what is on offer now.
+ *
+ * The price of a retired plan still resolves (`RETIRED_PLANS`), which is what
+ * makes the rule provable after the plan itself is gone: ₱199 was the most anyone
+ * could have paid on NEGOSYO, so the fallback is PRO and never FREE.
+ */
+export function migrateOffSale(entitlement: StoredEntitlement): Entitlement {
+  const onSale = visibleTiers()
+  /*
+   * Returned *by identity*, not rebuilt, and the difference is behavioural:
+   * `load()` compares the result to what it parsed to decide whether to write
+   * storage back. A rebuild here would rewrite the entitlement on every start.
+   *
+   * The cast is sound because every id `visibleTiers()` can return is a
+   * `TierId` by construction — it is `TIERS`, and retired plans are not in it.
+   */
+  if (onSale.some((tier) => tier.id === entitlement.tier)) return entitlement as Entitlement
+
+  const paid = planPrice(entitlement.tier)
+  const fallback = onSale.filter((t) => t.priceCentavos <= paid).at(-1) ?? TIERS[0]
+
+  return {
+    ...entitlement,
+    tier: fallback.id,
+    // Free is not billed, so it cannot carry a renewal date: keeping one would
+    // describe a subscription that does not exist.
+    renewsAt: fallback.id === 'free' ? null : entitlement.renewsAt,
+  }
 }
 
 /** PRO annual prepay: ~2 months free. Price-sensitive markets commit yearly. */
@@ -377,7 +503,10 @@ export const PAYMENT_METHODS: { id: PaymentMethod; label: string; hint: string }
 export interface MockInvoice {
   id: string
   at: string
-  tier: TierId
+  /** Historical: may name a plan that is no longer sold. */
+  tier: PlanId
+  /** The plan as it was named on the day. Absent on receipts from older builds. */
+  planName?: string
   amountCentavos: Centavos
   method: PaymentMethod
   reference: string
@@ -385,6 +514,19 @@ export interface MockInvoice {
   period: BillingPeriod
   /** Always true. No money moves. */
   simulated: true
+}
+
+/**
+ * What a receipt calls its plan.
+ *
+ * New receipts carry the name they were written with; older ones resolve through
+ * `tierById`, which still knows the retired plans. Either way a ₱199 receipt from
+ * the demo window keeps reading "SeePat NEGOSYO" — it is a record of what was
+ * paid, and rewriting it to a plan that did not exist that day would be the
+ * larger inaccuracy.
+ */
+export function invoicePlanName(invoice: MockInvoice): string {
+  return invoice.planName ?? planName(invoice.tier)
 }
 
 export interface Entitlement {
@@ -475,6 +617,7 @@ export function purchase(
     id: `inv-${new Date(at).getTime()}`,
     at,
     tier,
+    planName: tierById(tier).name,
     amountCentavos: priceFor(tier, period),
     method,
     reference: reference ?? mockReference(at, tier),
@@ -555,7 +698,17 @@ export function formatDate(iso: string, lang: Lang): string {
 /** `legacyKey` carries the slot from before the TimbangAI → SeePat rename. */
 const STORAGE = { key: 'seepat.entitlement.v1', legacyKey: 'timbangai.entitlement.v1' }
 
-function isEntitlement(value: unknown): value is Entitlement {
+/**
+ * The shape as it sits on disk.
+ *
+ * Identical to `Entitlement` except that the tier may name a plan that has since
+ * been withdrawn — which is exactly the state this migration exists to clean up.
+ * Keeping it separate is what lets every screen downstream hold a `TierId` that
+ * is genuinely for sale, instead of a union nobody can act on.
+ */
+export type StoredEntitlement = Omit<Entitlement, 'tier'> & { tier: PlanId }
+
+function isEntitlement(value: unknown): value is StoredEntitlement {
   if (typeof value !== 'object' || value === null) return false
   const c = value as Partial<Entitlement>
   return (
@@ -572,7 +725,13 @@ function load(): Entitlement | null {
   if (!raw) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    return isEntitlement(parsed) ? parsed : null
+    if (!isEntitlement(parsed)) return null
+    // A plan withdrawn in a later build must not survive a reload, so the
+    // migration happens here — at the one door stored state comes through — and
+    // is written back, so every screen downstream sees a plan that is for sale.
+    const migrated = migrateOffSale(parsed)
+    if (migrated !== parsed) persist(migrated)
+    return migrated
   } catch {
     return null
   }
