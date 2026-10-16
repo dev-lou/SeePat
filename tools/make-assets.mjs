@@ -9,19 +9,11 @@
  * Nothing is hand-exported, so an icon can never drift from the logo, and
  * re-running this after a brand change regenerates the whole set.
  *
- * TWO CROPS, AND THE DIFFERENCE IS NOT COSMETIC:
- *
- *   THE MARK is the owl on its own, above the wordmark. The square icons are
- *   built from it. A home-screen icon is drawn at 48-96px and a favicon at
- *   16px, and lettering disintegrates into noise well before that: the lockup
- *   is the right asset for the splash, the header and the social card, and the
- *   wrong one for anything square. This is a crop of the official artwork, not
- *   a second logo — the band boundary is found in the image, so a re-export of
- *   the master keeps working.
- *
- *   THE LOCKUP is the whole thing, trimmed of its transparent margin. It is
- *   what the app itself renders (`/seepat-logo.png`: boot splash and header) and
- *   what the 1200x630 social card is built around.
+ * The master's two crops — the owl MARK, which everything square is built from,
+ * and the whole LOCKUP — are cut in `tools/brand-master.mjs`, which this file
+ * shares with the tools that derive the marketing site's rasters. That module
+ * documents what each crop is for, and why the band between them is found in the
+ * image rather than hardcoded.
  *
  * Why the icons exist at all — this is the part that broke install:
  *
@@ -40,14 +32,11 @@
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-let sharp
-try {
-  sharp = (await import('sharp')).default
-} catch {
-  console.error('sharp is not installed. Run: npm install --save-dev sharp')
-  process.exitCode = 1
-  throw new Error('missing sharp')
-}
+import { brandMaster, PNG } from './brand-master.mjs'
+
+// `brand-master.mjs` has already reported a missing sharp in plain words by the
+// time this line runs; here it is only needed, not diagnosed.
+const sharp = (await import('sharp')).default
 
 const ROOT = process.cwd()
 const PUBLIC = join(ROOT, 'public')
@@ -58,8 +47,6 @@ const CANVAS = '#f2f2f5'
 const GOLD = '#f5c21d'
 const NAVY = '#1b45a6'
 
-const MASTER = join(ROOT, 'new_logo.png')
-
 const report = []
 function write(name, buffer) {
   const path = join(PUBLIC, name)
@@ -67,89 +54,23 @@ function write(name, buffer) {
   report.push({ name, kb: (statSync(path).size / 1024).toFixed(1) })
 }
 
-/** PNG settings shared by every output: small is a feature here, not a detail. */
-const png = { compressionLevel: 9, effort: 10 }
+/** PNG settings, shared with the brand module — one place, one recipe. */
+const png = PNG
 
-/* ------------------------------------------------------------------ master -- */
+/* ------------------------------------------------------------ the two crops -- */
 
-const master = await sharp(MASTER).metadata()
-if ((master.width ?? 0) < 512) {
-  throw new Error(`new_logo.png is ${master.width}px — the master must be at least 512px wide`)
-}
-
-// Trim the transparent margin once, and measure everything from the trimmed
-// box: the master ships with a lot of air, and every pixel of it would
-// otherwise be charged to the offline precache and to the header layout.
-const trimmed = await sharp(MASTER).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
-const lockupBuf = trimmed.data
-const LOCKUP_W = trimmed.info.width
-const LOCKUP_H = trimmed.info.height
-
-/* ----------------------------------------------------- finding the two crops -- */
-
-/**
- * Split the lockup into its stacked bands by probing a small rasterisation of
- * it: the mark is the first band of ink, the wordmark and the tagline are what
- * follow it. Reading the image instead of hard-coding pixel offsets means a
- * re-export of the master with different spacing still produces the right crop;
- * a hard-coded box would silently start slicing the owl in half.
- */
-const PROBE_W = 512
-const probe = await sharp(lockupBuf)
-  .resize({ width: PROBE_W, fit: 'inside' })
-  .ensureAlpha()
-  .raw()
-  .toBuffer({ resolveWithObject: true })
-const { width: pw, height: ph, channels } = probe.info
-const alphaAt = (x, y) => probe.data[(y * pw + x) * channels + 3]
-const INK = 8
-
-const inked = Array.from({ length: ph }, (_, y) => {
-  for (let x = 0; x < pw; x += 1) if (alphaAt(x, y) > INK) return true
-  return false
-})
-
-const firstInk = inked.indexOf(true)
-if (firstInk < 0) throw new Error('new_logo.png appears to be empty')
-let lastInk = firstInk
-while (lastInk + 1 < ph && inked[lastInk + 1]) lastInk += 1
-
-const markShare = (lastInk - firstInk + 1) / ph
-if (markShare < 0.2 || markShare > 0.85) {
-  throw new Error(
-    `the mark band is ${(markShare * 100).toFixed(1)}% of the lockup — the artwork's layout changed, check the crop`,
-  )
-}
-
-// The mark's own horizontal extent, so the crop is centred on the owl rather
-// than on the lockup's full width.
-let minX = pw
-let maxX = -1
-for (let y = firstInk; y <= lastInk; y += 1) {
-  for (let x = 0; x < pw; x += 1) {
-    if (alphaAt(x, y) > INK) {
-      if (x < minX) minX = x
-      if (x > maxX) maxX = x
-    }
-  }
-}
-
-const sx = LOCKUP_W / pw
-const sy = LOCKUP_H / ph
-const pad = Math.round(LOCKUP_H * 0.012)
-const box = {
-  left: Math.max(0, Math.floor(minX * sx) - pad),
-  top: Math.max(0, Math.floor(firstInk * sy) - pad),
-  width: Math.ceil((maxX - minX + 1) * sx) + pad * 2,
-  height: Math.ceil((lastInk - firstInk + 1) * sy) + pad * 2,
-}
-// Never read past the edge: extract() throws rather than clamping.
-box.width = Math.min(box.width, LOCKUP_W - box.left)
-box.height = Math.min(box.height, LOCKUP_H - box.top)
-
-const markBuf = await sharp(lockupBuf).extract(box).png(png).toBuffer()
-const mark = await sharp(markBuf).metadata()
-const markAspect = (mark.width ?? 1) / (mark.height ?? 1)
+const {
+  masterPath,
+  masterWidth,
+  masterHeight,
+  lockupBuf,
+  lockupWidth: LOCKUP_W,
+  lockupHeight: LOCKUP_H,
+  markBuf,
+  box,
+  markShare,
+  markAspect,
+} = await brandMaster()
 
 /* ------------------------------------------------------------------- icons -- */
 
@@ -295,7 +216,9 @@ write(
 /* ------------------------------------------------------------------ report -- */
 
 const art = await sharp(lockup).metadata()
-console.log(`master:  ${MASTER.replace(`${ROOT}\\`, '').replace(`${ROOT}/`, '')} ${master.width}x${master.height}`)
+console.log(
+  `master:  ${masterPath.replace(`${ROOT}\\`, '').replace(`${ROOT}/`, '')} ${masterWidth}x${masterHeight}`,
+)
 console.log(`trimmed: ${LOCKUP_W}x${LOCKUP_H}`)
 console.log(`mark:    ${box.width}x${box.height} (${(markShare * 100).toFixed(0)}% of the lockup height, aspect ${markAspect.toFixed(2)})`)
 console.log(`lockup:  ${art.width}x${art.height}`)

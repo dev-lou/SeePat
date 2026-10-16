@@ -17,6 +17,9 @@
  * Exit code is 1 if anything fails, so this can gate a build.
  */
 
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 const hex = (h) => {
   const s = h.replace('#', '')
   return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16) / 255)
@@ -185,6 +188,105 @@ for (const [label, fg, bg, min] of [
 ]) {
   check(label, fg, bg, min)
 }
+
+// --- The marketing site ------------------------------------------------------
+/*
+ * The landing pages have their own palette — `marketing/assets/site.css`, because
+ * they are hand-written CSS rather than the app's Tailwind theme — and nothing
+ * audited it until now. That is how a *stale selector* shipped a line of copy at
+ * 2.60:1: the pricing line under the hero buttons was rendering in `--subtle`, a
+ * light-surface grey, because the rule that was supposed to lighten it was
+ * written for `.hero--dark`, a class no page has ever carried.
+ *
+ * Contrast is a property of a pair, not of a colour, so the values below are read
+ * out of the stylesheet's own tokens rather than copied here: rename a token and
+ * this file fails loudly instead of quietly auditing yesterday's palette.
+ */
+const marketing = readFileSync(
+  fileURLToPath(new URL('../marketing/assets/site.css', import.meta.url)),
+  'utf8',
+)
+
+const token = (name) => {
+  const found = marketing.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))
+  if (!found) throw new Error(`marketing/assets/site.css has no --${name}`)
+  return found[1]
+}
+
+const m = {
+  navy: token('navy'),
+  page: token('page'),
+  paper: token('paper'),
+  card: token('card'),
+  ink: token('ink'),
+  muted: token('muted'),
+  subtle: token('subtle'),
+  goldInk: token('gold-ink'),
+  gold300: token('gold-300'),
+  gold400: token('gold-400'),
+  goldBar: token('gold-bar'),
+  brand500: token('brand-500'),
+  brand800: token('brand-800'),
+}
+
+/* The bar track, as the stylesheet sets it. */
+const TRACK = '#e6e6ee'
+
+for (const [label, fg, bg] of [
+  // On the navy hero and the dark bands: every string, including the two that
+  // sit at the smallest sizes on the page.
+  ['marketing: hero headline on navy', '#ffffff', m.navy],
+  ['marketing: hero sub on navy', '#ced2e8', m.navy],
+  ['marketing: hero bullets on navy', '#dfe2f2', m.navy],
+  ['marketing: hero eyebrow on navy', m.gold300, m.navy],
+  ['marketing: hero small print on navy', '#c3c7e0', m.navy],
+  ['marketing: hero pill on navy', '#e6e9f7', m.navy],
+  ['marketing: dark band body on navy', '#cfd3e9', m.navy],
+  ['marketing: footer body on navy', '#b9bedb', m.navy],
+  ['marketing: footer link on navy', '#e8eaf7', m.navy],
+  ['marketing: footer heading on navy', '#8f95bd', m.navy],
+  // The light surfaces. Paper is lighter than the canvas, so the canvas is the
+  // binding case — and the gold eyebrow is the pair that had to be darkened for
+  // it, which is the whole reason --gold-ink exists as a separate token.
+  ['marketing: ink on canvas', m.ink, m.page],
+  ['marketing: muted on canvas', m.muted, m.page],
+  ['marketing: subtle on canvas', m.subtle, m.page],
+  ['marketing: gold eyebrow on canvas', m.goldInk, m.page],
+  ['marketing: muted on paper', m.muted, m.paper],
+  ['marketing: subtle on paper', m.subtle, m.paper],
+  ['marketing: gold eyebrow on paper', m.goldInk, m.paper],
+  ['marketing: card body on card', m.muted, m.card],
+  ['marketing: not-yet-live tag on its fill', m.subtle, '#f4f4f7'],
+  // Buttons, on the three fills the page uses.
+  ['marketing: brand button label', '#ffffff', m.brand800],
+  ['marketing: gold button label', '#2b1f00', m.gold400],
+  ['marketing: ghost button label on white', m.brand800, '#ffffff'],
+]) {
+  check(label, fg, bg, TEXT)
+}
+
+/* The capital breakdown is a chart drawn in plain HTML, and the length of the
+ * fill IS the value — so the fills are held to the graphic floor against their
+ * own track, which is where two of them used to fail: brand-400 measured 2.9:1
+ * and gold-500 measured 1.7:1, which is a bar nobody can see. */
+check('marketing: capital bar (cash) on track', m.brand800, TRACK, GRAPHIC)
+check('marketing: capital bar (stock) on track', m.brand500, TRACK, GRAPHIC)
+check('marketing: capital bar (utang) on track', m.goldBar, TRACK, GRAPHIC)
+
+/* The nav's "you are here" rule. It is 2px under one link, it is the only thing on
+ * the page that says which section you are reading, and it therefore carries
+ * meaning — so it is held to the graphic floor, not treated as decoration.
+ *
+ * The surface is the honest part. The sticky header is `--page` at 88% over
+ * whatever is behind it, which is the canvas once you are past the hero and the
+ * navy hero itself for the first screen: two different surfaces, so both are
+ * audited. The rule cleared neither as the emphasis gold — 1.88:1 on the canvas
+ * and 1.47:1 over the hero — which is exactly the failure this file exists to
+ * catch. The header over the hero is computed rather than guessed, because it is
+ * the blend the browser paints. */
+const HEADER_OVER_HERO = over(m.page, 0.88, m.navy)
+check('marketing: nav rule on the header over canvas', m.brand800, m.page, GRAPHIC)
+check('marketing: nav rule on the header over the hero', m.brand800, HEADER_OVER_HERO, GRAPHIC)
 
 // --- Report -----------------------------------------------------------------
 const failures = checks.filter((c) => !c.ok)

@@ -70,17 +70,58 @@ const jsonLd = (html: string): { '@graph': { '@type': string }[] } => {
 const nodeOf = (html: string, type: string): Record<string, unknown> =>
   jsonLd(html)['@graph'].find((node) => node['@type'] === type) as Record<string, unknown>
 
-describe('the marketing pages ship no JavaScript', () => {
+describe('the marketing pages ship almost no JavaScript', () => {
   for (const [name, html] of Object.entries(PAGES)) {
     it(`${name}: no external scripts and no inline handlers`, () => {
-      // The whole performance story is that there is nothing to run: no INP to
-      // measure, nothing that can shift a layout after paint. One `<script src>`
-      // added in a hurry would end that quietly, which is what this catches.
+      // The performance story is that there is nothing to load and nothing to
+      // hydrate: no INP to measure, no framework that can shift a layout after
+      // paint. One `<script src>` added in a hurry would end that quietly, which
+      // is what this catches.
       expect(html).not.toMatch(/<script\s+src=/i)
       expect(html).not.toMatch(/\son(click|load|error|submit|change)=/i)
       expect(html).not.toMatch(/javascript:/i)
     })
   }
+
+  it('the one inline script is small, and only about the nav', () => {
+    // Each landing page carries exactly one hand-written script: it marks the
+    // section you are reading in the navigation. It is allowed to exist because
+    // it is 700 bytes and a request is what these pages are built to avoid — so
+    // it is also capped here, and held to the one job. A second script, a
+    // `fetch`, storage, or anything that runs before paint turns "a page with a
+    // nicety" back into "an app with a marketing page".
+    for (const [name, html] of Object.entries({ en: PAGES.en, fil: PAGES.fil })) {
+      const inline = [
+        ...html.matchAll(/<script(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g),
+      ].map((match) => match[1])
+
+      expect(inline.length, `${name}: inline script count`).toBe(1)
+      const js = inline[0]
+      // Raw source, indentation and one comment included — ~1.3KB as written, so
+      // the cap is a tripwire for a bundle arriving here, not a byte budget.
+      expect(js.length, `${name}: inline script size`).toBeLessThan(1600)
+      expect(js, `${name}: marks the current section`).toContain('aria-current')
+      expect(js).toContain('IntersectionObserver')
+      expect(js, `${name}: the script must not fetch or evaluate anything`).not.toMatch(
+        /fetch\(|XMLHttpRequest|eval\(|new Function|localStorage|sessionStorage|document\.write/,
+      )
+    }
+  })
+
+  it('the nav still works as plain links with the script blocked', () => {
+    // Progressive enhancement, asserted rather than assumed: if the script never
+    // runs, every nav target must still exist as a real anchor on the page.
+    for (const [name, html] of Object.entries({ en: PAGES.en, fil: PAGES.fil })) {
+      const targets = attr(html, /class="site-nav"[^>]*>([\s\S]*?)<\/nav>/g)
+      const hrefs = attr(targets[0] ?? '', /href="(#[^"]+)"/g)
+      expect(hrefs.length, `${name}: nav links`).toBeGreaterThanOrEqual(4)
+      for (const href of hrefs) {
+        expect(html, `${name}: nav points at a section that is not there`).toContain(
+          `id="${href.slice(1)}"`,
+        )
+      }
+    }
+  })
 
   it('404: is a page a crawler is told to forget', () => {
     expect(PAGES.notFound).toContain('content="noindex, follow"')
@@ -105,6 +146,36 @@ describe('every reference resolves', () => {
       expect(missing).toEqual([])
     })
   }
+
+  it('resolves every asset the stylesheet asks for', () => {
+    // The pages' own references are covered above; the stylesheet's are invisible
+    // to that test, and this is where all three textures are named — the grain,
+    // the hero's wave and the emphasis stroke's mask. A mistyped url() fails
+    // SILENTLY here: the band still paints, just without its texture, and nothing
+    // in the browser, the build or the smoke script says a word about it.
+    const css = readFileSync(join(SITE, 'assets', 'site.css'), 'utf8')
+    const urls = [...css.matchAll(/url\('(\/assets\/[^']+)'\)/g)].map((match) => match[1])
+
+    expect(urls.length, 'no url() references found — did the stylesheet move?').toBeGreaterThan(2)
+    expect(urls.filter((url) => resolvePath(url) === null)).toEqual([])
+
+    // The SVGs are named here so they cannot be swapped for a hand-made file that
+    // quietly diverges from the tool that is supposed to regenerate them. Fonts
+    // are exempt: they are copied from packages, not drawn by a recipe.
+    // Deduped: several rules share a texture — every band that is paper, for
+    // instance — so the same URL legitimately appears more than once.
+    const textures = [...new Set(urls.filter((url) => url.endsWith('.svg')))].sort()
+    expect(textures).toEqual([
+      '/assets/grain.svg',
+      '/assets/swipe-mask.svg',
+      '/assets/wave-mask.svg',
+    ])
+    for (const texture of textures) {
+      expect(texture, 'a texture with no recipe in tools/make-textures.mjs').toMatch(
+        /^\/assets\/(grain|wave-mask|swipe-mask)\.svg$/,
+      )
+    }
+  })
 
   it('points at the generated social card and declares its size', () => {
     for (const html of [PAGES.en, PAGES.fil]) {

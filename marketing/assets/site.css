@@ -20,19 +20,29 @@
  */
 
 /* ─── Fonts ──────────────────────────────────────────────────────────────────
- * Self-hosted, latin subset only, copied from the same @fontsource packages the
- * app uses (SIL Open Font License — texts sit beside the files). No third-party
- * font host: an owner on data should not pay for a DNS lookup and a TLS
- * handshake to Google to read a headline.
+ * Self-hosted, latin subset only. No third-party font host: an owner on data
+ * should not pay for a DNS lookup and a TLS handshake to Google to read a
+ * headline.
  *
- * `swap` plus a preload in each page's <head>: text is readable immediately in
- * the fallback and re-renders once the real face arrives. Both subsets are
- * 60KB together, so the swap window is short.
+ * TWO FACES, AND WHY THEY ARE DIFFERENT ONES:
+ *
+ *  - **Archivo** is the display face, used for every heading, every button and
+ *    every figure. It is a tight, heavy grotesque — the letterforms get out of
+ *    the way and the weight does the talking — where the app's own Sora is a
+ *    softer geometric face that reads as a product UI rather than as something
+ *    said out loud. This is the one place the marketing page deliberately does
+ *    NOT copy the app's type: a landing page has one second to be believed.
+ *  - **Plus Jakarta Sans** is the body face, the same one the app uses. Body
+ *    copy is where you want familiarity, not personality.
+ *
+ * Both are SIL Open Font License, with the licence texts beside the files. The
+ * variable weights mean one file covers 400 to 900, so nothing is downloaded
+ * twice: 35KB + 27KB, preloaded in each page's <head>.
  */
 @font-face {
-  font-family: 'Sora';
-  src: url('/assets/fonts/sora-latin.woff2') format('woff2-variations');
-  font-weight: 100 800;
+  font-family: 'Archivo';
+  src: url('/assets/fonts/archivo-latin.woff2') format('woff2-variations');
+  font-weight: 400 900;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
@@ -73,6 +83,11 @@
   /* The one value that is NOT the app's: gold-700 is 4.5:1 on paper, so small
    * gold text on a light band uses this instead of the brand's brighter gold. */
   --gold-ink: #7a5504;
+  /* And the gold for a FILL on the bar chart, which is a different job: the
+   * brand's own gold-500 measures 1.7:1 on the grey track, which is a bar you
+   * cannot see. This one clears 3:1 against the track while still reading as
+   * gold rather than brown in a 10px bar. */
+  --gold-bar: #8a6206;
 
   --page: #f2f2f5;
   --card: #ffffff;
@@ -85,8 +100,32 @@
   --navy: #0d1136;
   --navy-soft: #171e63;
 
-  --display: 'Sora', system-ui, sans-serif;
+  --display: 'Archivo', system-ui, sans-serif;
   --body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* The header's height, so the hero can subtract it and still be one screen. */
+  --head-h: 4rem;
+
+  /* The two emphasis strokes: gold on the claim, blue on the mechanism. One per
+   * section at most, on the word that sentence turns on — see `.swipe`. */
+  --stroke-gold: #e0ab0f;
+  --stroke-blue: #3d51f0;
+
+  /* The nav's "you are here" rule.
+   *
+   * It was the emphasis gold, borrowed on the theory that the mark meaning "this
+   * is the word that matters" could double as "this is the section you are in".
+   * The theory was fine; the colour was not. The header is near-white, and gold
+   * on it measures 1.88:1 over a band and 1.47:1 where it sits over the navy
+   * hero — under the 3:1 floor for a mark that carries meaning, which is why the
+   * underline read as a faint yellow smear rather than as a location.
+   *
+   * The brand's own navy is 11.07:1 there (8.64:1 at the worst point, over the
+   * hero), and it is the same blue the language switch already uses to mark the
+   * current language — so "you are here" now looks the same wherever the page
+   * says it. The gold still marks the claim in the copy, where it is a stroke
+   * under one word rather than the only sign of a position. */
+  --nav-rule: var(--brand-800);
 
   --gutter: clamp(1.25rem, 5vw, 3rem);
   --measure: 72rem;
@@ -190,12 +229,53 @@ td,
   padding-inline: var(--gutter);
 }
 
+/* THE SURFACE.
+ *
+ * A flat light band is what a page looks like when nobody decided anything. Four
+ * very quiet layers do the work here, all of them background layers on elements
+ * that already exist — no extra markup, one 599-byte grain tile, and nothing that
+ * can shift a layout:
+ *
+ *  1. a vertical wash, so no two bands sit at exactly the same value;
+ *  2. a 24px dot grid — the ledger idea at a whisper, texture rather than graph
+ *     paper;
+ *  3. the grain tile, which is what stops a large flat area looking like a
+ *     mockup;
+ *  4. on `.band--glow`, one soft wash of colour so the page has light in it.
+ */
 .band {
+  position: relative;
   padding-block: clamp(3.5rem, 9vw, 7rem);
+  background-color: var(--page);
+  background-image:
+    url('/assets/grain.svg'),
+    radial-gradient(circle at 1px 1px, rgb(13 17 54 / 0.05) 1px, transparent 0),
+    linear-gradient(180deg, #f7f7fb, #eff0f7 55%, #f5f5f9);
+  background-size: 220px 220px, 24px 24px, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* One per page, blue, on the section that explains the mechanism. */
+.band--glow {
+  background-image:
+    url('/assets/grain.svg'),
+    radial-gradient(circle at 1px 1px, rgb(13 17 54 / 0.05) 1px, transparent 0),
+    radial-gradient(70% 55% at 88% 8%, rgb(61 81 240 / 0.1), transparent 62%),
+    linear-gradient(180deg, #f7f7fb, #eff0f7 55%, #f5f5f9);
+  background-size: 220px 220px, 24px 24px, 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
 }
 
 .band--tight {
   padding-block: clamp(2.5rem, 6vw, 4rem);
+}
+
+/* A nav click must clear the sticky header, or the section it jumps to lands
+ * with its own heading tucked underneath it. One line fixes every anchor on the
+ * page, including the footer's. */
+.band,
+.hero {
+  scroll-margin-top: calc(var(--head-h) + 0.75rem);
 }
 
 .stack > * + * {
@@ -242,8 +322,12 @@ td,
   background: var(--gold-500);
 }
 
+/* The hero is a dark surface too, and it is `class="hero"`, not `.band--dark`.
+ * It used to be listed as `.hero--dark`, a class no page carries — so the eyebrow
+ * fell back to `--gold-ink` and measured 2.72:1 on the navy. Named after the
+ * element that exists, rather than the element that was once imagined. */
 .band--dark .eyebrow,
-.hero--dark .eyebrow {
+.hero .eyebrow {
   color: var(--gold-300);
 }
 
@@ -324,12 +408,42 @@ td,
 }
 
 .site-nav a {
+  position: relative;
+  padding-block: 0.4rem;
   color: var(--muted);
   text-decoration: none;
 }
 
-.site-nav a:hover {
+/* The nav rule: the brand's navy, and why it is not the emphasis gold — see
+ * `--nav-rule`. It is 2px of the same blue that fills the language switch's
+ * current pill, so the header has exactly one way of saying "you are here".
+ *
+ * `[aria-current]` is set by a small inline script at the end of each page. It is
+ * progressive enhancement in the strict sense: with the script blocked, every
+ * link still navigates and the page is complete, it just stops telling you where
+ * you are. */
+.site-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--nav-rule);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current] {
   color: var(--ink);
+}
+
+.site-nav a:hover::after,
+.site-nav a[aria-current]::after {
+  transform: scaleX(1);
 }
 
 /* EN / FIL — two links, no JavaScript. The current one is marked up as text. */
@@ -440,63 +554,137 @@ td,
   color: var(--subtle);
 }
 
+/* Same stale-selector bug as the eyebrow above: the small print under the hero
+ * buttons — "Free for life for everything that runs on the phone" — was rendering
+ * in `--subtle`, which is a light-surface grey, and measured 2.60:1 on navy. It is
+ * the one line that answers "what does this cost", so it has to be readable. */
 .band--dark .note,
-.hero--dark .note {
+.hero .note {
   color: #c3c7e0;
 }
 
 /* ─── Hero ─────────────────────────────────────────────────────────────────── */
 .hero {
-  background:
-    radial-gradient(120% 90% at 82% 0%, rgb(61 81 240 / 0.28), transparent 60%),
-    radial-gradient(90% 70% at 8% 100%, rgb(221 170 18 / 0.18), transparent 55%),
-    var(--navy);
+  background-color: var(--navy);
+  background-image:
+    url('/assets/grain.svg'),
+    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.045) 1px, transparent 0),
+    radial-gradient(120% 90% at 82% 0%, rgb(61 81 240 / 0.3), transparent 60%),
+    radial-gradient(90% 70% at 8% 100%, rgb(221 170 18 / 0.18), transparent 55%);
+  background-size: 220px 220px, 30px 30px, 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
   color: #fff;
   overflow: hidden;
 }
 
+/* THE HERO IS ONE SCREEN, BY CONTRACT.
+ *
+ * A visitor decides on the first screen, so everything that makes the case —
+ * the eyebrow, the headline, the three claims, both buttons, the small print,
+ * the pills and the phone — has to be inside the viewport the moment the page
+ * loads, browser chrome included. It used to be 1006px tall at 1400px wide,
+ * which pushed the pills below the fold on every laptop that exists.
+ *
+ * Two rules keep that true as the window changes: the type is clamped against
+ * viewport HEIGHT as well as width, and the phone is sized by height on desktop
+ * instead of by a fixed width. Both are measured, not hoped for — 1440×900,
+ * 1366×768, 1280×720 and 390×844 (where the phone drops below the copy, which
+ * is the one arrangement a narrow screen cannot avoid).
+ */
 .hero__grid {
   display: grid;
-  gap: clamp(2.5rem, 6vw, 4rem);
-  padding-block: clamp(2.5rem, 7vw, 5rem);
+  gap: clamp(1.25rem, 2.5vw, 2.25rem);
+  /* Air above and below the copy, and it is the CHEAP way to give the band height:
+   * padding cannot push anything below the fold, whereas bigger type or a bigger
+   * phone both can. The vh terms are what let it breathe on a tall window and
+   * close up on a short one.
+   *
+   * The height it adds is at the BOTTOM, deliberately. Padding at the top pushes
+   * every line of copy down the screen, and on a 390×844 phone that was the
+   * difference between the pills sitting 25px above the fold and 11px — a phone
+   * with a slightly shorter viewport would have clipped them, which is the exact
+   * failure this band is not allowed to have. Below the copy, the same air costs
+   * nothing but the band's own height. */
+  padding-block: clamp(1.25rem, 2.5vh, 3rem) clamp(2rem, 10vh, 7rem);
+  align-items: center;
 }
 
 @media (min-width: 62rem) {
   .hero__grid {
     grid-template-columns: 1.15fr 0.85fr;
-    align-items: center;
+    /* Everything, plus the header, inside the first screen. The floor was 34rem;
+     * at 38rem the band fills a tall window instead of floating in it, and the
+     * `100svh` cap is what still guarantees the one-screen contract on a short
+     * one — when the two disagree, the viewport wins. */
+    min-height: min(38rem, calc(100svh - var(--head-h)));
   }
 }
 
-/* The type is set for a phone first: at 390px the headline is three lines and
- * fills the screen, which is the one screen that has to work. The ceiling is
- * deliberately below "as big as it fits", because four lines of display type at
- * desktop width reads as shouting. */
+/* Archivo at 800, tracking pulled in: the same voice as the reference the brand
+ * is aiming at — heavy, tight, no decoration. The vh term is what makes the fit
+ * hold on a short window. */
 .hero h1 {
-  font-size: clamp(2.1rem, 5.6vw, 3.75rem);
+  font-size: clamp(1.8rem, min(4.4vw, 4.9vh), 3rem);
   font-weight: 800;
-  letter-spacing: -0.035em;
-  margin-top: 1.25rem;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  margin-top: 0.9rem;
 }
 
 .hero__sub {
-  margin-top: 1.25rem;
-  font-size: clamp(1.0625rem, 1.9vw, 1.3125rem);
+  margin-top: 0.75rem;
+  font-size: clamp(0.9375rem, min(1.15vw, 1.9vh), 1.125rem);
   color: #ced2e8;
-  max-width: 42ch;
+  max-width: 44ch;
 }
 
-/* The gold swipe under the keyword: a highlighter stroke, drawn on load.
+/* The emphasis stroke: a SWIPE under the word a sentence turns on, drawn on load.
+ * At most one per section — a page where every sentence is emphasised has
+ * emphasised nothing.
  *
- * `isolation: isolate` is load-bearing. The stroke is a pseudo-element behind
- * the word, and without a stacking context of its own, `z-index: -1` drops it
- * behind the hero's own background — so the highlight is painted, and invisible.
- * Isolating the span keeps the stroke above the navy and below the letters. */
+ * `isolation: isolate` is load-bearing. The stroke is a pseudo-element behind the
+ * word, and without a stacking context of its own, `z-index: -1` drops it behind
+ * the hero's own background — so the highlight is painted, and invisible.
+ *
+ * THE SHAPE IS NOT A BAR. It went 0.32em (a marker pen, fighting the words) to
+ * 0.14em (a rule) to this: a tapered, tilted swipe whose own centreline drifts
+ * across a shallow wave, painted through `swipe-mask.svg`. A straight line of
+ * even weight is the one mark a hand never makes — it reads as a border, which is
+ * a box, which is the opposite of an emphasis. The mask stretches to whatever the
+ * word is, so the taper always lands on the ends; the recipe is in
+ * marketing/tools/make-textures.mjs.
+ *
+ * THE TEXT KEEPS THE HEADLINE'S COLOUR, deliberately, and this was considered the
+ * other way round first. Setting the word in the stroke's own colour is the more
+ * obvious move, and it makes the headline two-tone: a gold phrase with a gold rule
+ * under it stops being a sentence with a mark on one word and becomes a logo. The
+ * stroke is the accent; the word is still the sentence. It also collides with the
+ * ground — gold-300 on the paper bands, or blue on navy, would each need a
+ * different value to stay legible, so the same trick would say two different
+ * things on two different bands.
+ *
+ * Two stroke colours, because one colour used everywhere stops carrying meaning:
+ * gold on the claim, blue on the mechanism. */
 .swipe {
+  --stroke: var(--stroke-gold);
   position: relative;
   display: inline-block;
   isolation: isolate;
-  padding-inline: 0.06em;
+  padding-inline: 0.04em;
+}
+
+.swipe--blue {
+  --stroke: var(--stroke-blue);
+}
+
+.hero .swipe,
+.band--dark .swipe {
+  --stroke: var(--gold-300);
+}
+
+.hero .swipe--blue,
+.band--dark .swipe--blue {
+  --stroke: #8fa2ff;
 }
 
 .swipe::after {
@@ -504,10 +692,18 @@ td,
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0.06em;
+  /* Taller than the ink it paints: the mask's wave needs room to rise and fall,
+   * and the ink itself peaks at about half of this box. */
+  bottom: 0.03em;
   height: 0.32em;
-  background: var(--gold-400);
-  opacity: 0.85;
+  background: var(--stroke);
+  background-repeat: no-repeat;
+  -webkit-mask-image: url('/assets/swipe-mask.svg');
+  mask-image: url('/assets/swipe-mask.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   z-index: -1;
   transform-origin: left;
   animation: swipe 0.7s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -523,10 +719,10 @@ td,
 }
 
 .hero__list {
-  margin-top: 1.75rem;
+  margin-top: 1rem;
   display: grid;
-  gap: 0.6rem;
-  font-size: 1rem;
+  gap: 0.3rem;
+  font-size: 0.9375rem;
   color: #dfe2f2;
 }
 
@@ -541,11 +737,20 @@ td,
 .hero__list li::before {
   content: '';
   flex: none;
-  margin-top: 0.6rem;
-  width: 0.5rem;
-  height: 0.5rem;
+  margin-top: 0.52rem;
+  width: 0.45rem;
+  height: 0.45rem;
   border-radius: 999px;
   background: var(--gold-400);
+}
+
+/* The two buttons and the small print under them: one block, so the gap is set
+ * here rather than by an inline style in the HTML. */
+.hero__cta {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  margin-top: 1.1rem;
 }
 
 /* A phone with a screenshot in it. The frame is CSS, so the screenshot is the
@@ -559,26 +764,31 @@ td,
 
 .phone {
   position: relative;
-  width: min(19rem, 74vw);
+  width: fit-content;
   border-radius: 2.25rem;
   padding: 0.6rem;
   background: linear-gradient(160deg, #2a3164, #0b0e26 60%);
   box-shadow: var(--shadow-pop), inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }
 
+/* On a phone-sized screen the constraint is width. The height is `auto` here and
+ * height-driven in the desktop query below, which is what lets the hero fit one
+ * screen at any window height. */
 .phone img {
-  width: 100%;
+  width: min(17rem, 72vw);
   height: auto;
   border-radius: 1.75rem;
 }
 
+/* The frame's speaker slot, in percentages so it stays in proportion when the
+ * phone is sized by height rather than width. */
 .phone::after {
   content: '';
   position: absolute;
   left: 50%;
-  top: 0.9rem;
+  top: 4%;
   translate: -50% 0;
-  width: 4.25rem;
+  width: 22%;
   height: 0.4rem;
   border-radius: 999px;
   background: rgb(0 0 0 / 0.45);
@@ -598,20 +808,28 @@ td,
   .phone {
     rotate: -2deg;
   }
+  /* Sized by height, with a floor so the phone never becomes a thumbnail on a
+   * very short window. */
+  .phone img {
+    width: auto;
+    height: min(30rem, max(14rem, calc(100svh - 12rem)));
+  }
   .phone--second {
     display: block;
-    width: 12.5rem;
     rotate: 4deg;
-    translate: -1.5rem 1.5rem;
+    translate: -1.5rem 1rem;
     z-index: 1;
+  }
+  .phone--second img {
+    height: min(17rem, max(9rem, calc(100svh - 26rem)));
   }
 }
 
 .hero__badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
 }
 
 .pill {
@@ -633,28 +851,63 @@ td,
   color: var(--muted);
 }
 
-/* The torn receipt edge. One conic-gradient per tooth, no SVG, no extra file. */
+/* The bottom edge of the navy hero: a WAVE, and a mask rather than an image.
+ *
+ * The mask is opaque above a cosine curve and transparent below it, so this
+ * strip can paint itself navy and hand a soft, rolling edge to whatever band sits
+ * underneath — the ledger paper, today. `stitchTiles`-style continuity matters:
+ * the curve starts and ends at the same height with the same slope, so the tile
+ * repeats invisibly at any width.
+ *
+ * It replaced a sawtooth made of two 45° gradients. Same idea, but teeth read as
+ * a torn receipt, which is a paper joke in a product about money; a wave reads as
+ * calm, and it is the only soft edge on the page. */
 .tear {
-  height: 0.9rem;
-  background-image:
-    linear-gradient(45deg, var(--navy) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--navy) 25%, transparent 25%);
-  background-size: 1.4rem 1.4rem;
-  background-repeat: repeat-x;
-  background-position: 0 -0.7rem;
+  position: relative;
+  height: clamp(1.25rem, 3.2vw, 2.5rem);
+  /* The strip itself is painted PAPER, and the navy is a masked pseudo-element
+   * over it. That way the troughs show the warm paper of the band underneath
+   * rather than the cooler canvas behind the strip, which is the 1px seam of
+   * grey that showed along the wave when this was one masked navy box. */
+  background: var(--paper);
   margin-bottom: -1px;
+  overflow: hidden;
+}
+
+.tear::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--navy);
+  -webkit-mask-image: url('/assets/wave-mask.svg');
+  mask-image: url('/assets/wave-mask.svg');
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: bottom left;
+  mask-position: bottom left;
+  -webkit-mask-size: 12rem 100%;
+  mask-size: 12rem 100%;
 }
 
 /* ─── The five gaps: a ledger, not a feature grid ──────────────────────────── */
+/* The ledger bands are the other material: warm paper with ruled lines, grain,
+ * and one wash of gold from the top left so the paper is lit rather than flat.
+ * Two materials, alternating on purpose — canvas, then paper — is what makes the
+ * page read as composed instead of as one long white scroll. */
 .ledger {
-  background: var(--paper);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 calc(2.75rem - 1px),
-    rgb(13 17 54 / 0.05) calc(2.75rem - 1px) 2.75rem
-  );
+  background-color: var(--paper);
+  background-image:
+    url('/assets/grain.svg'),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(2.75rem - 1px),
+      rgb(13 17 54 / 0.045) calc(2.75rem - 1px) 2.75rem
+    ),
+    radial-gradient(75% 55% at 10% 0%, rgb(221 170 18 / 0.1), transparent 62%);
+  background-size: 220px 220px, 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
 }
 
 .gaps {
@@ -768,11 +1021,16 @@ td,
 }
 
 .bar__fill--gold {
-  background: var(--gold-500);
+  /* Not the brand gold: see --gold-bar — at 1.7:1 against the track the bar was
+   * invisible, which is a chart that has stopped being a chart. */
+  background: var(--gold-bar);
 }
 
 .bar__fill--light {
-  background: var(--brand-400);
+  /* brand-400 measured 2.9:1 on the track — a hair under the 3:1 floor for a
+   * mark that carries a value. brand-500 keeps the step down from the navy bar
+   * and clears it. */
+  background: var(--brand-500);
 }
 
 @keyframes grow {
@@ -806,10 +1064,18 @@ td,
 }
 
 /* ─── Dark band (voice) ────────────────────────────────────────────────────── */
+/* The dark bands get the same treatment in reverse: grain, a 28px dot grid, and
+ * two washes — blue from the top right, gold from the bottom left — so the navy
+ * has depth instead of being one flat colour under the type. */
 .band--dark {
-  background:
-    radial-gradient(80% 60% at 100% 0%, rgb(61 81 240 / 0.25), transparent 60%),
-    var(--navy);
+  background-color: var(--navy);
+  background-image:
+    url('/assets/grain.svg'),
+    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.05) 1px, transparent 0),
+    radial-gradient(80% 60% at 100% 0%, rgb(61 81 240 / 0.28), transparent 60%),
+    radial-gradient(60% 50% at 0% 100%, rgb(221 170 18 / 0.14), transparent 60%);
+  background-size: 220px 220px, 28px 28px, 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
   color: #fff;
 }
 
@@ -893,11 +1159,20 @@ td,
   }
 }
 
+/* Full-width card rows sit under a split, so they need their own gap from it. */
+.cards--wide {
+  margin-top: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+/* Short and wide, not tall and narrow. These three sat inside a half-width
+ * column, which made each one 200px wide and 400px tall — a column of text where
+ * a card should be a glance. They now span the full width as a row, and the
+ * padding is trimmed to match. */
 .card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: clamp(1.25rem, 3vw, 1.75rem);
+  padding: clamp(1.1rem, 2.2vw, 1.5rem);
   box-shadow: var(--shadow-card);
 }
 
@@ -906,7 +1181,7 @@ td,
 }
 
 .card p {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   font-size: 0.9375rem;
   color: var(--muted);
 }
@@ -915,12 +1190,12 @@ td,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
   background: var(--brand-50);
   color: var(--brand-800);
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.65rem;
 }
 
 .card__icon svg {

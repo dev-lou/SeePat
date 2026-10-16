@@ -457,7 +457,8 @@ Android, so the safe-zone padding is baked into its own file).
 
 **One master, one command.** `new_logo.png` at the repo root — the owl, the SeePat lockup and the
 tagline, stacked on transparency — is the official artwork, and every raster the platform needs is
-derived from it by `node tools/make-assets.mjs` (sharp): the tab icons at 16/32/48 plus a real
+derived from it by `node tools/make-assets.mjs` (sharp, on the two crops it shares with the site's
+tools — `tools/brand-master.mjs`): the tab icons at 16/32/48 plus a real
 `favicon.ico`, `pwa-192`, `pwa-512`, a full-bleed `pwa-maskable-512`, the opaque 180px
 `apple-touch-icon`, the 1200×630 social card, and `seepat-logo.png` (the trimmed, quantised lockup
 the app itself renders). Nothing is hand-exported, so an icon cannot drift from the logo.
@@ -465,7 +466,9 @@ the app itself renders). Nothing is hand-exported, so an icon cannot drift from 
 **Two crops, and the difference is not cosmetic.** The square icons are built from the **mark** —
 the owl, above the wordmark — because a home-screen icon is drawn at 48-96px and a favicon at 16px,
 where lettering is a grey smear. The **lockup** is used where there is room to read it: the splash,
-the header, the social card. The band boundary is *found in the image* (the first run of ink in a
+the app's header, the social card. The marketing site's *page* header is 40px, which is squarely in
+mark territory, and it carries the owl next to the name set as live text — see `marketing/README.md`.
+The band boundary is *found in the image* (the first run of ink in a
 downscaled probe) rather than hard-coded, so re-exporting the master with different spacing cannot
 silently start slicing the owl in half, and `src/shell.test.ts` fails if the generated set is
 missing while `index.html` still points at it.
@@ -721,7 +724,7 @@ reader would not otherwise guess; `npm test` is the full list.
 | `asr.test.ts` | 276 | speech failures are *diagnosed* rather than printed; the `fil-PH` → `en-PH` retry; a final transcript arrives with its final flag; every engine reports its session ending, including when starting throws |
 | `audio.test.ts` | 125 | the take-ending rule (1.8s of silence, a mid-sentence pause survives, a throttled timer cannot cut one short) and the speech-presence measure that keeps silence away from the model |
 | `asr-offline.test.ts` | 88 | a stored install record is only trusted for the model the runtime actually loads |
-| `marketing.test.ts` | 297 | the two landing pages: every asset resolves, no JavaScript, the FAQ marked up is the FAQ on the page, each language canonicalises to itself and shows its own screenshots, the sitemap lists exactly the canonicals |
+| `marketing.test.ts` | 297 | the two landing pages: every asset resolves, the one inline script stays one and stays small, the FAQ marked up is the FAQ on the page, each language canonicalises to itself and shows its own screenshots, the sitemap lists exactly the canonicals |
 | `env.test.ts` | 133 | every `process.env` / `import.meta.env` read in the repository appears in an `.env.example`, with a comment above it |
 
 `shell.test.ts` is the one that keeps the *shell* honest — the splash timing and social metadata
@@ -761,9 +764,9 @@ owner pays in mobile data for the app to work with no signal. The social card is
 the ML runtime is lazy and runtime-cached instead, and the brand master (1 MB) ships only as a
 trimmed, quantised 52 KB lockup for the same reason. The `favicon-*` set is excluded from the
 precache entirely: the tab is chrome, not interface. The **marketing site** has its own, much
-smaller budget and is measured separately: roughly 250 KB for the first screen on mobile data, no
-JavaScript to run, and `npm run smoke` in `marketing/` fails if a page or a screenshot grows past
-the limit stated in that script. The 843 KB ML chunk is split by `manualChunks` so it is never on the startup
+smaller budget and is measured separately: roughly 250 KB for the first screen on mobile data,
+700 bytes of inline JavaScript and nothing to load, and `npm run smoke` in `marketing/` fails if a
+page or a screenshot grows past the limit stated in that script. The 843 KB ML chunk is split by `manualChunks` so it is never on the startup
 path.
 
 ## 16. Accessibility
@@ -863,7 +866,7 @@ deliberately **not** part of this build.
 | | |
 |---|---|
 | Pages | `index.html` (English) and `fil.html` (Filipino), plus a bilingual `404.html` |
-| JavaScript | none, in either page |
+| JavaScript | no bundle and no `<script src>`. One ~1.3KB inline script per landing page marks the section you are reading in the navigation; with it blocked the nav is still five working anchors |
 | Build | one file, `marketing/tools/stamp.mjs`, which substitutes `%SITE_URL%` and four other tokens |
 | Check | `npm run smoke` inside the folder: links, JSON-LD, hreflang, sitemap, page weight |
 | Deploy | Vercel with Root Directory `marketing` — the steps are in [`marketing/README.md`](marketing/README.md) |
@@ -878,8 +881,9 @@ in both languages, and committed as images.
 **The search claims are tested rather than asserted.** `src/marketing.test.ts` reads the pages back
 and fails the suite if an asset reference does not resolve, if a marked-up FAQ answer is not visible
 on the page, if the two languages disagree about their hreflang set, if a canonical points at the
-sibling page, if one language shows the other's screenshots, if the pages ship any JavaScript at
-all, or if a title or description falls outside the length search actually shows. `src/env.test.ts`
+sibling page, if one language shows the other's screenshots, if the inline script grows into a
+bundle or starts fetching, or if a title or description falls outside the length search actually
+shows. `src/env.test.ts`
 does the same for `.env.example`: a variable that is read but not documented is a failure, not a
 surprise three weeks later.
 
@@ -895,6 +899,7 @@ apply regardless:
 | `onnx-community/whisper-base` weights | MIT (OpenAI Whisper) — commercial use permitted |
 | `vosk-model-tl-ph-generic-0.6` | CC-BY-NC-SA — **not installable; cannot ship commercially** |
 | Sora, Plus Jakarta Sans | SIL Open Font License (licence texts in `public/fonts/`) |
+| Archivo (marketing site display face only) | SIL Open Font License (licence text in `marketing/assets/fonts/`) |
 | React, Vite, Tailwind, Vitest, Workbox | MIT |
 
 Brand assets (`new_logo.png` and everything generated from it into `public/`) are the project's own
