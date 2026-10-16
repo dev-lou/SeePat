@@ -80,7 +80,10 @@ const WAVE = [
   0.18, 0.34, 0.55, 0.78, 0.62, 0.9, 0.5, 0.72, 0.42, 0.86, 1, 0.66, 0.48, 0.94, 0.58, 0.76, 0.4,
   0.68, 0.5, 0.82, 0.44, 0.6, 0.32, 0.2,
 ]
-const SEGMENT_COLORS = ['#1b45a6', '#b07f08', '#ce1126', '#0284c7', '#7c3aed']
+/* The donut's five segment colours. The first one is the brand blue the rest of
+   the app is built on, so slide two's chart belongs to this product rather than
+   to a generic palette. */
+const SEGMENT_COLORS = ['#2a3ad6', '#b0830a', '#ce1126', '#0284c7', '#7c3aed']
 
 export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => void }) {
   const t = useT()
@@ -202,8 +205,11 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
       <div className="canvas-grid" aria-hidden />
 
       <div className="safe-top flex items-center justify-between px-4 pt-3">
+        {/* The first control anyone touches, so it is the plainest form of the
+            app's segmented control: a light track with the chosen half filled in
+            near-black. */}
         <div
-          className="flex items-center gap-0.5 rounded-full p-0.5 surface"
+          className="flex items-center gap-0.5 rounded-full border border-line bg-card p-0.5 shadow-e1"
           role="group"
           aria-label={t('welcome.languageLabel')}
         >
@@ -213,8 +219,8 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
               type="button"
               onClick={() => setLang(option.id)}
               aria-pressed={lang === option.id}
-              className={`rounded-full px-2.5 py-1 text-[0.66rem] font-bold transition ${
-                lang === option.id ? 'bg-brand-700 text-white' : 'text-fg-subtle hover:text-fg'
+              className={`min-h-11 rounded-full px-4 text-[0.8125rem] font-bold transition ${
+                lang === option.id ? 'bg-ink-900 text-white shadow-e1' : 'text-fg-subtle hover:text-fg'
               }`}
             >
               {option.native}
@@ -224,14 +230,14 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
         <button
           type="button"
           onClick={finish}
-          className="rounded-full px-3 py-1.5 text-[0.72rem] font-bold text-fg-subtle transition hover:bg-sunken hover:text-fg"
+          className="min-h-11 rounded-full px-4 text-[0.875rem] font-bold text-fg-subtle transition hover:bg-sunken hover:text-fg"
         >
           {t('welcome.skip')}
         </button>
       </div>
 
       <div
-        className="flex min-h-0 flex-1 touch-pan-y select-none flex-col justify-center px-5 pb-2"
+        className="no-scrollbar flex min-h-0 flex-1 touch-pan-y select-none flex-col overflow-y-auto px-5 py-2"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -240,7 +246,7 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
         {/* Keyed so the entrance replays per slide rather than only on mount. */}
         <div
           key={slide.id}
-          className="enter"
+          className="enter my-auto"
           style={{
             transform: `translateX(${drag}px)`,
             transition: dragging ? 'none' : 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -254,14 +260,25 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
             <div className="mt-1 flex min-h-[150px] w-full items-center justify-center">
               <SlideVisual which={slide.visual} negosyo={negosyo} segments={segments} />
             </div>
-            <div className="eyebrow mt-2 text-gold-700">{t(slide.eyebrow)}</div>
+            <div className="eyebrow mt-2.5 text-brand-700">{t(slide.eyebrow)}</div>
+            {/*
+             * Fluid, and bigger than the app's own headings: this is the one
+             * screen where type is the design. At a fixed size the longest slide
+             * title ("Free, and it runs on your phone.") needed more height than a
+             * small phone has, so it scales between 280px and 448px instead.
+             */}
             <h1
               id="welcome-title"
-              className="headline mt-2 max-w-[19ch] text-[1.9rem] leading-[1.1] text-fg"
+              className="headline mt-2.5 max-w-[17ch] text-[clamp(1.75rem,8.4vw,2.35rem)] leading-[1.06] text-fg"
             >
               {t(slide.tagline)}
             </h1>
-            <p className="mt-3 max-w-[38ch] text-[0.78rem] leading-relaxed text-fg-muted">
+            {/*
+             * The explanation is a centred subtitle: one step down in weight and
+             * colour from the headline, in a measure narrow enough that it reads as
+             * a sentence rather than as a paragraph of small print.
+             */}
+            <p className="aside mt-3.5 max-w-[36ch] text-[1rem] leading-relaxed text-fg-subtle">
               {t(slide.body)}
             </p>
           </div>
@@ -290,20 +307,24 @@ export function Welcome({ negosyo, onDone }: { negosyo: Negosyo; onDone: () => v
               type="button"
               onClick={() => go(-1)}
               aria-label={t('welcome.step', { n: index, total })}
-              className="surface grid size-12 place-items-center rounded-full text-[1rem] font-bold text-fg-muted transition active:scale-[0.96]"
+              className="surface grid size-14 shrink-0 place-items-center rounded-full text-[1.0625rem] font-bold text-fg-muted transition active:translate-y-px"
             >
               <span aria-hidden>←</span>
             </button>
           ) : null}
+          {/* The primary action of the whole product, so it is the app's one
+              primary shape: flat near-black, a soft shadow, full pill. */}
           <button
             type="button"
             onClick={() => (last ? finish() : go(1))}
-            className="flex-1 rounded-full bg-gradient-to-b from-brand-600 to-brand-800 px-4 py-3.5 text-[0.86rem] font-bold text-white shadow-e2 transition active:scale-[0.99]"
+            className="btn btn-ink min-h-14 flex-1 rounded-full text-[1rem]"
           >
             {last ? t('welcome.start') : t('welcome.next')}
           </button>
         </div>
-        <p className="mt-3 text-center text-[0.66rem] text-fg-faint">{t('welcome.demoNote')}</p>
+        <p className="aside mt-3 text-[0.8125rem] leading-snug text-fg-faint">
+          {t('welcome.demoNote')}
+        </p>
       </div>
     </div>
   )
@@ -398,9 +419,11 @@ function SlideVisual({
 
         {/* Speech in, ledger out — the whole product in two lines. */}
         <div className="mt-3 border-t border-line pt-3 text-left">
-          <div className="text-[0.66rem] text-fg-faint">{t('welcome.speak.uttered')}</div>
-          <div className="mt-1 flex items-baseline justify-between gap-2 text-[0.8rem] font-semibold text-fg">
-            <span className="truncate">
+          <div className="text-[0.8125rem] text-fg-faint">{t('welcome.speak.uttered')}</div>
+          {/* No `truncate` on the parsed line: on a small phone it cut the item
+              name off the one example that shows what speaking a sale does. */}
+          <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[0.9375rem] font-semibold text-fg">
+            <span className="min-w-0 leading-snug">
               {t('welcome.speak.parsed')} {qty} × {sku?.name ?? '—'}
             </span>
             <span className="num shrink-0">{unitPrice ? formatPHP(qty * unitPrice) : ''}</span>
@@ -429,16 +452,16 @@ function SlideVisual({
     <div className="surface w-full max-w-sm rounded-card p-4">
       <div className="flex items-center justify-around gap-3">
         <ProgressRing value={negosyo.score.value} size={104} stroke={11}>
-          <span className="figure-lg text-[1.4rem] leading-none text-fg">
+          <span className="figure-lg text-[clamp(1.0625rem,5.6vw,1.4rem)] leading-none text-fg">
             {negosyo.score.value}
           </span>
         </ProgressRing>
         <div className="min-w-0 text-left">
           <div className="eyebrow text-brand-700">{t('dash.scoreTitle')}</div>
-          <div className="num mt-1 text-[0.78rem] text-fg-subtle">
+          <div className="num mt-1 text-[0.875rem] leading-snug text-fg-subtle">
             {t('dash.margin')} — {formatPercent(negosyo.week.netMargin)}
           </div>
-          <ul className="mt-2 space-y-1 text-[0.72rem] text-fg-muted">
+          <ul className="mt-2 space-y-1.5 text-[0.875rem] text-fg-muted">
             {(['tab.ledger', 'tab.score', 'welcome.offlineVoice'] as const).map((key) => (
               <li key={key} className="flex items-center gap-1.5">
                 <span className="text-emerald-600" aria-hidden>

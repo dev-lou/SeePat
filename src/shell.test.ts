@@ -40,8 +40,8 @@ describe('the boot splash', () => {
     expect(num('FALLBACK_MS')).toBeGreaterThan(num('MIN_MS'))
   })
 
-  it('renders the official wordmark, not type we set ourselves', () => {
-    expect(html).toContain('src="/seepat-wordmark.png"')
+  it('renders the official lockup, not type we set ourselves', () => {
+    expect(html).toContain('src="/new_logo.png"')
     // The old hand-set "See"/"Pat" spans must not come back: the brand's
     // letterforms belong to the artwork.
     expect(html).not.toContain('class="boot-word"')

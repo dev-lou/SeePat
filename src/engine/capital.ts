@@ -49,47 +49,47 @@ export function capitalComposition(twin: BusinessTwin, lang: Lang): CapitalCompo
   const components: CapitalComponent[] = [
     {
       key: 'cash',
-      label: { en: 'Cash on hand', fil: 'Cash sa Kahon' },
+      label: { en: 'Cash in the box', fil: 'Cash sa kahon' },
       amountCentavos: twin.cashCentavos,
       share: safeDiv(twin.cashCentavos, total),
       kind: 'asset',
     },
     {
       key: 'inventory',
-      label: { en: 'Inventory at cost', fil: 'Paninda' },
+      label: { en: 'Stock (what you paid)', fil: 'Paninda' },
       amountCentavos: d.inventoryValueCentavos,
       share: safeDiv(d.inventoryValueCentavos, total),
       // Negative inventory means sales have been recorded without the matching
       // purchases, so the position is a claim against the business, not an asset.
       kind: d.inventoryValueCentavos < 0 ? 'offset' : 'asset',
       note: {
-        en: 'Valued at what you paid, not what you sell it for.',
-        fil: 'Nasa presyo ng puhunan, hindi presyo ng benta.',
+        en: 'Counted at what you paid for it, not at what you sell it for.',
+        fil: 'Bilang sa presyo ng puhunan mo, hindi sa presyo ng benta.',
       },
     },
     {
       key: 'receivables',
-      label: { en: 'Owed to you', fil: 'Utang sa Iyo' },
+      label: { en: 'Owed to you', fil: 'Utang sa iyo' },
       amountCentavos: d.receivablesCentavos,
       share: safeDiv(d.receivablesCentavos, total),
       kind: 'asset',
     },
     {
       key: 'fixed_assets',
-      label: { en: 'Equipment and fixtures', fil: 'Kagamitan' },
+      label: { en: 'Equipment and tools', fil: 'Kagamitan' },
       amountCentavos: twin.fixedAssetsCentavos,
       share: safeDiv(twin.fixedAssetsCentavos, total),
       kind: 'asset',
     },
     {
       key: 'payables',
-      label: { en: 'Owed to suppliers', fil: 'Utang sa Supplier' },
+      label: { en: 'Owed to suppliers', fil: 'Utang sa supplier' },
       amountCentavos: -twin.payablesCentavos,
       share: safeDiv(-twin.payablesCentavos, total),
       kind: 'offset',
       note: {
-        en: 'Subtracted: money in the business that still belongs to the supplier.',
-        fil: 'Ibawas: pera na nasa negosyo pero pag-aari pa ng supplier.',
+        en: 'Minus this: the money is in the business, but it still belongs to the supplier.',
+        fil: 'Ibawas ito: nasa negosyo ang pera pero pag-aari pa ng supplier.',
       },
     },
   ]
@@ -118,8 +118,8 @@ function buildCompositionNarrative(
   if (!biggest || total === 0) {
     return [
       pickCopy(lang, {
-        en: 'No capital recorded yet. Add capital or record a sale to see the breakdown.',
-        fil: 'Wala pang naitalang puhunan. Magdagdag ng puhunan o benta para makita ang hatian.',
+        en: 'Nothing recorded yet. Add the money you started with, or record a sale, to see this breakdown.',
+        fil: 'Wala pang naitala. Idagdag ang panimulang puhunan o mag-record ng benta para makita ang hatian.',
       }),
     ]
   }
@@ -132,8 +132,8 @@ function buildCompositionNarrative(
   if (inventoryLine && inventoryLine.amountCentavos < 0) {
     lines.push(
       pickCopy(lang, {
-        en: 'Purchases are under-recorded — inventory has gone negative. Record the buys so the numbers agree.',
-        fil: 'Kulang pa ang naitalang bili — negatibo ang halaga ng paninda. I-record ang mga bili para tumugma ang mga numero.',
+        en: 'Some purchases are missing from the records, so your stock shows less than nothing. Record the buys so the numbers agree.',
+        fil: 'May mga bili na hindi pa naitala, kaya mas mababa pa sa wala ang bilang ng paninda. I-record ang mga bili para tumugma ang mga numero.',
       }),
     )
   }
@@ -141,29 +141,29 @@ function buildCompositionNarrative(
   if (biggest.key === 'inventory') {
     lines.push(
       pickCopy(lang, {
-        en: `Most of your capital is sitting in stock (${pct(biggest)}). It is not cash until it sells.`,
-        fil: `Malaking bahagi ng puhunan mo ay nasa paninda (${pct(biggest)}). Hindi ito cash hanggang hindi ito maibenta.`,
+        en: `Most of your money is in stock — ${pct(biggest)} of every ₱100 of it. It is not cash until it sells.`,
+        fil: `Nasa paninda ang malaking bahagi ng puhunan mo — ${pct(biggest)} sa bawat ₱100 nito. Hindi ito cash hangga't hindi naibenta.`,
       }),
     )
   } else if (biggest.key === 'receivables') {
     lines.push(
       pickCopy(lang, {
-        en: `Most of your capital is out on customer credit (${pct(biggest)}). That money is not in the store.`,
-        fil: `Malaking bahagi ng puhunan mo ay nasa utang ng customers (${pct(biggest)}). Nasa labas ang pera na ito.`,
+        en: `Most of your money is out on utang to customers — ${pct(biggest)} of every ₱100 of it. That money is not in the store.`,
+        fil: `Nasa utang ng customers ang malaking bahagi ng puhunan mo — ${pct(biggest)} sa bawat ₱100 nito. Nasa labas ang pera na ito.`,
       }),
     )
   } else if (biggest.key === 'cash') {
     lines.push(
       pickCopy(lang, {
-        en: `Most of your capital is in cash (${pct(biggest)}).`,
-        fil: `Nasa cash ang malaking bahagi ng puhunan mo (${pct(biggest)}).`,
+        en: `Most of your money is in cash — ${pct(biggest)} of every ₱100 of it.`,
+        fil: `Nasa cash ang malaking bahagi ng puhunan mo — ${pct(biggest)} sa bawat ₱100 nito.`,
       }),
     )
   } else {
     lines.push(
       pickCopy(lang, {
-        en: `Most of your capital is tied up in equipment (${pct(biggest)}).`,
-        fil: `Malaking bahagi ng puhunan mo ay nasa kagamitan (${pct(biggest)}).`,
+        en: `Most of your money is in equipment and tools — ${pct(biggest)} of every ₱100 of it.`,
+        fil: `Nasa kagamitan ang malaking bahagi ng puhunan mo — ${pct(biggest)} sa bawat ₱100 nito.`,
       }),
     )
   }
@@ -172,8 +172,8 @@ function buildCompositionNarrative(
   if (receivables && total > 0 && Math.abs(receivables.share) >= 0.15) {
     lines.push(
       pickCopy(lang, {
-        en: `Watch this: ${pct(receivables)} of your capital has not been collected yet. Collect before adding an order.`,
-        fil: `Bantayan: ${pct(receivables)} ng puhunan mo ay hindi pa nakokolekta. Bago magdagdag ng order, unahin ang koleksyon.`,
+        en: `Watch this: ${pct(receivables)} of every ₱100 of your money has not been collected yet. Collect before you order again.`,
+        fil: `Bantayan: ${pct(receivables)} sa bawat ₱100 ng puhunan mo ay hindi pa nakokolekta. Kolektahin bago mag-order ulit.`,
       }),
     )
   }
@@ -182,8 +182,8 @@ function buildCompositionNarrative(
   if (payables && payables.amountCentavos !== 0 && netAssets > 0) {
     lines.push(
       pickCopy(lang, {
-        en: `${Math.round(Math.abs(payables.share) * 100)}% of your total assets is still owed to suppliers.`,
-        fil: `May ${Math.round(Math.abs(payables.share) * 100)}% ng kabuuang assets mo na utang pa sa supplier.`,
+        en: `Out of everything the business owns, ${Math.round(Math.abs(payables.share) * 100)}% is still owed to suppliers.`,
+        fil: `Sa lahat ng pag-aari ng negosyo, ${Math.round(Math.abs(payables.share) * 100)}% nito ay utang pa sa supplier.`,
       }),
     )
   }
@@ -225,12 +225,12 @@ export function capitalProvenance(twin: BusinessTwin): CapitalProvenance {
   const sources: ProvenanceLine[] = [
     {
       key: 'capital_in',
-      label: { en: 'Capital you put in', fil: 'Puhunan na Inilagay' },
+      label: { en: 'Money you put in', fil: 'Puhunan na inilagay' },
       amountCentavos: twin.capitalInjectedCentavos,
     },
     {
       key: 'retained_profit',
-      label: { en: 'Profit kept in the business', fil: 'Naipon na Kita' },
+      label: { en: 'Profit left in the business', fil: 'Kita na naipon' },
       amountCentavos: d.netProfitCentavos,
     },
   ]
@@ -238,32 +238,32 @@ export function capitalProvenance(twin: BusinessTwin): CapitalProvenance {
   const uses: ProvenanceLine[] = [
     {
       key: 'withdrawals',
-      label: { en: 'Money you took out', fil: 'Kinuhang Pera' },
+      label: { en: 'Money you took out', fil: 'Kinuhang pera' },
       amountCentavos: twin.withdrawalsCentavos,
     },
     {
       key: 'cash',
-      label: { en: 'Held as cash now', fil: 'Nasa Cash Ngayon' },
+      label: { en: 'In cash right now', fil: 'Nasa cash ngayon' },
       amountCentavos: twin.cashCentavos,
     },
     {
       key: 'inventory',
-      label: { en: 'Held as stock now', fil: 'Nasa Paninda Ngayon' },
+      label: { en: 'In stock right now', fil: 'Nasa paninda ngayon' },
       amountCentavos: d.inventoryValueCentavos,
     },
     {
       key: 'receivables',
-      label: { en: 'Held as customer credit', fil: 'Nasa Utang Ngayon' },
+      label: { en: 'Owed to you right now', fil: 'Nasa utang ngayon' },
       amountCentavos: d.receivablesCentavos,
     },
     {
       key: 'fixed_assets',
-      label: { en: 'Held as equipment', fil: 'Nasa Kagamitan Ngayon' },
+      label: { en: 'In equipment right now', fil: 'Nasa kagamitan ngayon' },
       amountCentavos: twin.fixedAssetsCentavos,
     },
     {
       key: 'payables_offset',
-      label: { en: 'Less: owed to suppliers', fil: 'Ibawas: Utang sa Supplier' },
+      label: { en: 'Minus: still owed to suppliers', fil: 'Ibawas: utang sa supplier' },
       amountCentavos: -twin.payablesCentavos,
     },
   ]

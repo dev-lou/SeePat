@@ -90,6 +90,78 @@ export const SILENCE_DEFAULTS: SilenceOptions = {
 /** How often the level is sampled while recording. */
 export const VAD_INTERVAL_MS = 60
 
+/*
+ * The room's own noise floor, read from the recording rather than assumed.
+ *
+ * A single absolute amplitude threshold cannot tell quiet speech from a quiet
+ * room, and the measurements say that is not a theoretical problem: four clean
+ * FLEURS `fil_ph` recordings arrived at 0.018–0.029 RMS, so the 0.02 threshold
+ * credited only about half of each take as speech — and the same audio 20 dB down
+ * credited **0ms**, which the engine reports as "No words were heard". The quiet
+ * parts of any take are the best evidence available about the room it was made
+ * in, so a frame now counts as speech if it clears the absolute floor *or* stands
+ * this far above that floor. See `speechDurationMs`.
+ */
+const NOISE_PERCENTILE = 0.2
+
+/** A frame this far above the room's own floor is speech, not room. ~10 dB. */
+const NOISE_TO_SPEECH_RATIO = 3
+
+/** Below this the "floor" is digital silence and proves nothing about the room. */
+const MIN_MEANINGFUL_NOISE_RMS = 0.0005
+
+/**
+ * Software AGC — for takes that are too quiet to use, and only those.
+ *
+ * WHY IT EXISTS AT ALL. Audio 20 dB down is not merely quieter, it is unusable:
+ * the same four Tagalog clips scored **57.5%** word error attenuated against
+ * **35.6%** at level, and every one of them was refused outright by the gate
+ * first (credit of 0ms against 1.5–2.7s). Lifting that audio recovered it to
+ * **45.2%**, and for one clip from 100% error to 58%.
+ *
+ * WHY IT IS CONDITIONAL, WHICH IS THE PART THAT WAS MEASURED LAST. The first
+ * version of this lifted every take to a common peak, on the reasoning that
+ * Whisper likes full-scale input. That was wrong, and expensively so: the real
+ * recordings in the benchmark arrive at peaks of **0.147, 0.375, 0.181 and 0.199**,
+ * and normalizing *those* made `whisper-base` worse — 35.6% → 45.2% across the
+ * corpus, and for one clip 27.3% → 72.7%. `whisper-small` was indifferent
+ * (24.7% → 23.3%). So the gain is now applied only to audio below a threshold the
+ * measured recordings sit well above, and it aims at audibility rather than full
+ * scale.
+ *
+ * `MAX_GAIN` is what keeps it safe rather than merely helpful. Whisper answers
+ * silence with invention, so an uncapped lifter would amplify a room's hum into
+ * something the gate then accepts as speech. At 8× a genuinely silent take peaks
+ * at 0.016 — still under the 0.02 floor — while the quiet-but-real case (peaks
+ * 0.015–0.038) is lifted to 0.12–0.3, where the measurements were taken.
+ */
+export const NORMALIZE_TARGET_PEAK = 0.3
+
+/** Only recordings quieter than this are touched at all. */
+export const QUIET_PEAK_THRESHOLD = 0.05
+
+export const MAX_GAIN = 8
+
+export function normalisePeak(
+  samples: Float32Array,
+  targetPeak = NORMALIZE_TARGET_PEAK,
+): Float32Array {
+  let peak = 0
+  for (let i = 0; i < samples.length; i += 1) {
+    const magnitude = Math.abs(samples[i])
+    if (magnitude > peak) peak = magnitude
+  }
+  // Already usable: hand the same buffer back rather than copying it, since a
+  // recording is the largest thing this module ever allocates.
+  if (peak <= 0 || peak >= QUIET_PEAK_THRESHOLD) return samples
+
+  const gain = Math.min(MAX_GAIN, targetPeak / peak)
+  if (gain <= 1) return samples
+  const out = new Float32Array(samples.length)
+  for (let i = 0; i < samples.length; i += 1) out[i] = samples[i] * gain
+  return out
+}
+
 /**
  * How much of a recording sits above the speech floor.
  *
@@ -109,13 +181,28 @@ export function speechDurationMs(
   speechRms: number = SILENCE_DEFAULTS.speechRms,
 ): number {
   const window = Math.max(1, Math.round((TARGET_SAMPLE_RATE * VAD_INTERVAL_MS) / 1000))
-  let voicedMs = 0
+
+  const frames: number[] = []
   for (let start = 0; start < samples.length; start += window) {
     const end = Math.min(samples.length, start + window)
     let sum = 0
     for (let i = start; i < end; i += 1) sum += samples[i] * samples[i]
-    if (Math.sqrt(sum / (end - start)) >= speechRms) {
-      voicedMs += ((end - start) / TARGET_SAMPLE_RATE) * 1000
+    frames.push(Math.sqrt(sum / (end - start)))
+  }
+
+  const sorted = [...frames].sort((a, b) => a - b)
+  const floor = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * NOISE_PERCENTILE))] ?? 0
+  const relativeGate =
+    floor >= MIN_MEANINGFUL_NOISE_RMS ? floor * NOISE_TO_SPEECH_RATIO : Number.POSITIVE_INFINITY
+
+  let voicedMs = 0
+  for (const level of frames) {
+    // Either test alone is defeasible; together they are not. The absolute floor
+    // refuses a take whose every frame is room noise, because there the floor and
+    // the speech are the same level. The relative test is what rescues quiet but
+    // genuinely spoken audio, which the absolute floor alone was refusing.
+    if (level >= speechRms || level >= relativeGate) {
+      voicedMs += (window / TARGET_SAMPLE_RATE) * 1000
     }
   }
   return Math.round(voicedMs)
@@ -316,6 +403,9 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
       }
       const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
       toMono16k(blob)
+        // Lifted before anything reads it, so the silence gate and the model both
+        // see audio at the level Whisper was trained on. See `normalisePeak`.
+        .then((samples) => normalisePeak(samples))
         .then((samples) => {
           if (samples.length < TARGET_SAMPLE_RATE * MIN_SECONDS) {
             reject(
@@ -382,6 +472,15 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
 function startSilenceMonitor(stream: MediaStream, onSilence: () => void): () => void {
   const Ctor = getAudioContextCtor()
   const context = new Ctor()
+  /*
+   * Resumed explicitly, because this context is created *after* the `await` on
+   * `getUserMedia` — outside the user gesture that opened the microphone. On iOS
+   * a context created that way can come up suspended, and a suspended context
+   * feeds an analyser nothing but zeros: the tracker would never see speech, and
+   * every take would run to the 10s no-speech timeout instead of ending when the
+   * owner stopped talking.
+   */
+  void context.resume().catch(() => undefined)
   const source = context.createMediaStreamSource(stream)
   const analyser = context.createAnalyser()
   analyser.fftSize = 1024

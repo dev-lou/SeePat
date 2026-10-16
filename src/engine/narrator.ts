@@ -183,30 +183,36 @@ export function answerIntent(
         intent,
         question,
         headline: pickCopy(lang, {
-          en: `${formatPHP(metrics.netProfitCentavos)} is your real profit over the last ${days} days.`,
-          fil: `${formatPHP(metrics.netProfitCentavos)} ang tunay na kita mo sa huling ${days} araw.`,
+          en: `${formatPHP(metrics.netProfitCentavos)} is what you really earned in the last ${days} days, after paying for stock and expenses.`,
+          fil: `${formatPHP(metrics.netProfitCentavos)} ang tunay na kinita mo sa huling ${days} araw, pagkatapos ibawas ang puhunan at gastos.`,
         }),
         detail: [
           pickCopy(lang, {
-            en: `Sales: ${formatPHP(metrics.revenueCentavos)} — this is not profit.`,
-            fil: `Benta: ${formatPHP(metrics.revenueCentavos)} — hindi ito kita.`,
+            en: `You sold ${formatPHP(metrics.revenueCentavos)} worth of goods. Sales are not profit yet.`,
+            fil: `Nakabenta ka ng ${formatPHP(metrics.revenueCentavos)}. Hindi pa ito kita.`,
           }),
           pickCopy(lang, {
-            en: `Cost of what you sold (COGS): ${formatPHP(metrics.cogsCentavos)}`,
-            fil: `Puhunan ng nabenta (COGS): ${formatPHP(metrics.cogsCentavos)}`,
+            en: `What you paid for those goods: ${formatPHP(metrics.cogsCentavos)}`,
+            fil: `Ang binayaran mo para sa panindang iyon: ${formatPHP(metrics.cogsCentavos)}`,
           }),
           pickCopy(lang, {
             en: `Expenses: ${formatPHP(metrics.expensesCentavos)}${metrics.shrinkageCentavos !== 0 ? ` · Spoiled or missing: ${formatPHP(metrics.shrinkageCentavos)}` : ''}`,
             fil: `Gastos: ${formatPHP(metrics.expensesCentavos)}${metrics.shrinkageCentavos !== 0 ? ` · Panis/nawala: ${formatPHP(metrics.shrinkageCentavos)}` : ''}`,
           }),
+          // The share is given as an amount of money rather than as a percentage:
+          // "₱29.70 of every ₱100" is a sentence an owner can repeat to someone
+          // else, and "29.7% of your sales" is not.
           pickCopy(lang, {
-            en: `Profit before expenses: ${formatPHP(metrics.grossProfitCentavos)} (${formatPercent(metrics.grossMargin)})`,
-            fil: `Kita bago gastos: ${formatPHP(metrics.grossProfitCentavos)} (${formatPercent(metrics.grossMargin)})`,
+            en: `After paying for the goods, ${formatPHP(metrics.grossProfitCentavos)} was left — ₱${(metrics.grossMargin * 100).toFixed(2)} out of every ₱100 of sales, before expenses.`,
+            fil: `Pagkatapos bayaran ang paninda, ${formatPHP(metrics.grossProfitCentavos)} ang natira — ₱${(metrics.grossMargin * 100).toFixed(2)} sa bawat ₱100 ng benta, bago pa ang gastos.`,
           }),
         ],
         evidence: [
           { label: pickCopy(lang, { en: 'Sales', fil: 'Benta' }), value: formatPHP(metrics.revenueCentavos) },
-          { label: 'COGS', value: formatPHP(metrics.cogsCentavos) },
+          {
+            label: pickCopy(lang, { en: 'Paid for the goods', fil: 'Bayad sa paninda' }),
+            value: formatPHP(metrics.cogsCentavos),
+          },
           { label: pickCopy(lang, { en: 'Expenses', fil: 'Gastos' }), value: formatPHP(metrics.expensesCentavos) },
           {
             label: pickCopy(lang, { en: 'Real profit', fil: 'Tunay na kita' }),
@@ -217,8 +223,8 @@ export function answerIntent(
           metrics.netProfitCentavos <= 0
             ? [
                 pickCopy(lang, {
-                  en: 'Check which items have the thinnest margin.',
-                  fil: 'Tingnan kung aling paninda ang mababa ang margin.',
+                  en: 'Look for items that leave you the least money after you pay for them.',
+                  fil: 'Tingnan ang panindang pinakaunti ang natitira pagkatapos mong bayaran ang puhunan.',
                 }),
                 pickCopy(lang, {
                   en: 'Look for expenses that can wait.',
@@ -242,7 +248,7 @@ export function answerIntent(
           .filter((c) => c.amountCentavos !== 0)
           .map(
             (c) =>
-              `${pickCopy(lang, c.label)}: ${formatPHP(c.amountCentavos)} (${Math.round(Math.abs(c.share) * 100)}%)`,
+              `${pickCopy(lang, c.label)}: ${formatPHP(c.amountCentavos)} — ${Math.round(Math.abs(c.share) * 100)}% ${pickCopy(lang, { en: 'of your capital', fil: 'ng puhunan mo' })}`,
           ),
         evidence: comp.narrative.map((n) => ({
           label: pickCopy(lang, { en: 'Noticed', fil: 'Napansin' }),
@@ -250,8 +256,8 @@ export function answerIntent(
         })),
         actions: [
           pickCopy(lang, {
-            en: 'Before adding an order, know where the capital is parked.',
-            fil: 'Bago magdagdag ng order, tiyakin kung saan naka-park ang puhunan.',
+            en: 'Before you order more stock, look at where your money is right now.',
+            fil: 'Bago mag-order ng dagdag na paninda, tingnan muna kung nasaan ang pera mo ngayon.',
           }),
         ],
       }
@@ -265,8 +271,8 @@ export function answerIntent(
         intent,
         question,
         headline: pickCopy(lang, {
-          en: `${formatPHP(prov.totalSourcesCentavos)} came into the business; the same amount went out or is still held.`,
-          fil: `${formatPHP(prov.totalSourcesCentavos)} ang pinagmulan ng puhunan; ganoon din ang napuntahan.`,
+          en: `${formatPHP(prov.totalSourcesCentavos)} is all the money that has come into the business so far.`,
+          fil: `${formatPHP(prov.totalSourcesCentavos)} ang lahat ng pumasok na pera sa negosyo hanggang ngayon.`,
         }),
         detail: [
           ...prov.sources.map(
@@ -290,8 +296,8 @@ export function answerIntent(
           ? []
           : [
               pickCopy(lang, {
-                en: 'Something does not tally in the records — report it.',
-                fil: 'May hindi tugma sa records — i-report ito.',
+                en: 'The records do not add up. Check the entries you made.',
+                fil: 'Hindi tugma ang mga rekord. Suriin ang mga naitala mo.',
               }),
             ],
       }
@@ -317,8 +323,8 @@ export function answerIntent(
           fil: `Cash mo ngayon: ${formatPHP(twin.cashCentavos)}.`,
         }),
         pickCopy(lang, {
-          en: `${formatPHP(derived.inventoryValueCentavos)} of your capital is sitting in stock (${formatPercent(inventoryShare)}).`,
-          fil: `${formatPHP(derived.inventoryValueCentavos)} ng puhunan mo ay nasa paninda (${formatPercent(inventoryShare)}).`,
+          en: `${formatPHP(derived.inventoryValueCentavos)} of your money is in stock right now — ${formatPercent(inventoryShare)} of your capital.`,
+          fil: `${formatPHP(derived.inventoryValueCentavos)} ng pera mo ay nasa paninda ngayon — ${formatPercent(inventoryShare)} ng puhunan mo.`,
         }),
       ]
       const actions: string[] = []
@@ -381,13 +387,13 @@ export function answerIntent(
         intent,
         question,
         headline: pickCopy(lang, {
-          en: `${skuName(ledger, top[0])} is your strongest item — it earned ${formatPHP(top[1].marginCentavos)} over the last ${days} days.`,
-          fil: `${skuName(ledger, top[0])} ang pinakamalakas mo — ${formatPHP(top[1].marginCentavos)} ang kita nito sa huling ${days} araw.`,
+          en: `${skuName(ledger, top[0])} is your best seller: you kept ${formatPHP(top[1].marginCentavos)} from it in the last ${days} days.`,
+          fil: `${skuName(ledger, top[0])} ang pinakamalakas mong paninda: ${formatPHP(top[1].marginCentavos)} ang natira sa iyo mula dito sa huling ${days} araw.`,
         }),
         detail: ranked.slice(0, 5).map(([id, s]) =>
           pickCopy(lang, {
-            en: `${skuName(ledger, id)}: ${s.qtySold} pcs · sales ${formatPHP(s.revenueCentavos)} · profit ${formatPHP(s.marginCentavos)}`,
-            fil: `${skuName(ledger, id)}: ${s.qtySold} pcs · benta ${formatPHP(s.revenueCentavos)} · kita ${formatPHP(s.marginCentavos)}`,
+            en: `${skuName(ledger, id)}: ${s.qtySold} pieces · sold for ${formatPHP(s.revenueCentavos)} · you kept ${formatPHP(s.marginCentavos)}`,
+            fil: `${skuName(ledger, id)}: ${s.qtySold} piraso · benta ${formatPHP(s.revenueCentavos)} · natira sa iyo ${formatPHP(s.marginCentavos)}`,
           }),
         ),
         evidence: ranked.slice(0, 5).map(([id, s]) => ({
@@ -396,8 +402,8 @@ export function answerIntent(
         })),
         actions: [
           pickCopy(lang, {
-            en: 'Make sure it does not run out — it is carrying the profit.',
-            fil: 'Tiyaking hindi ito mauubos — ito ang nagdadala ng kita.',
+            en: 'Keep this one in stock. Most of your profit comes from it.',
+            fil: 'Panatilihing may stock nito. Dito galing ang malaking bahagi ng kita mo.',
           }),
         ],
       }
@@ -423,13 +429,13 @@ export function answerIntent(
         intent,
         question,
         headline: pickCopy(lang, {
-          en: `${formatPHP(trapped)} of your capital is sitting in stock that is not moving.`,
-          fil: `${formatPHP(trapped)} ng puhunan mo ang nakatengga sa hindi gumagalaw na paninda.`,
+          en: `${formatPHP(trapped)} of your money is tied up in stock that has not sold for two weeks.`,
+          fil: `${formatPHP(trapped)} ng pera mo ang nakatali sa panindang dalawang linggo nang walang benta.`,
         }),
         detail: slow.slice(0, 5).map(([id, s]) =>
           pickCopy(lang, {
-            en: `${skuName(ledger, id)}: ${s.qty} left · ${formatPHP(s.valueCentavos)} parked · no sales in 14 days`,
-            fil: `${skuName(ledger, id)}: ${s.qty} natitira · ${formatPHP(s.valueCentavos)} naka-park · walang benta sa 14 araw`,
+            en: `${skuName(ledger, id)}: ${s.qty} left · ${formatPHP(s.valueCentavos)} of your money in it · no sale for 14 days`,
+            fil: `${skuName(ledger, id)}: ${s.qty} natitira · ${formatPHP(s.valueCentavos)} ng pera mo ang nandito · 14 araw nang walang benta`,
           }),
         ),
         evidence: slow.slice(0, 5).map(([id, s]) => ({
@@ -437,10 +443,13 @@ export function answerIntent(
           value: formatPHP(s.valueCentavos),
         })),
         actions: [
-          pickCopy(lang, { en: 'Hold off ordering more of it.', fil: 'Iwasan munang mag-order nito.' }),
           pickCopy(lang, {
-            en: 'If you can, bundle or discount it to turn it back into cash.',
-            fil: 'Kung kaya, i-bundle o i-discount para maging cash.',
+            en: 'Do not order more of this yet.',
+            fil: 'Huwag munang mag-order ng dagdag nito.',
+          }),
+          pickCopy(lang, {
+            en: 'If you can, pair it with a fast-selling item, or lower the price, so your money comes back.',
+            fil: 'Kung kaya, isama ito sa mabilis mabenta, o babaan ang presyo, para bumalik ang pera mo.',
           }),
         ],
       }
@@ -455,8 +464,8 @@ export function answerIntent(
           intent,
           question,
           pickCopy(lang, {
-            en: 'Nobody owes you anything. Well done!',
-            fil: 'Walang outstanding na utang sa iyo. Magaling!',
+            en: 'No one owes you money right now.',
+            fil: 'Walang may utang sa iyo ngayon.',
           }),
         )
       }
@@ -521,7 +530,7 @@ export function answerIntent(
       const drivers = [
         { name: pickCopy(lang, { en: 'sales', fil: 'benta' }), value: revenueDelta },
         {
-          name: pickCopy(lang, { en: 'cost of goods', fil: 'puhunan ng paninda' }),
+          name: pickCopy(lang, { en: 'what you paid for stock', fil: 'puhunan ng paninda' }),
           value: -cogsDelta,
         },
         { name: pickCopy(lang, { en: 'expenses', fil: 'gastos' }), value: -expenseDelta },
@@ -529,8 +538,8 @@ export function answerIntent(
       const main = drivers[0]
       detail.push(
         pickCopy(lang, {
-          en: `Biggest driver: ${main.name} (${main.value >= 0 ? '+' : ''}${formatPHP(main.value)}).`,
-          fil: `Pinakamalaking dahilan: ${main.name} (${main.value >= 0 ? '+' : ''}${formatPHP(main.value)}).`,
+          en: `The biggest reason your profit moved: ${main.name} (${main.value >= 0 ? '+' : ''}${formatPHP(main.value)}).`,
+          fil: `Ang pinakamalaking dahilan ng paggalaw ng kita mo: ${main.name} (${main.value >= 0 ? '+' : ''}${formatPHP(main.value)}).`,
         }),
       )
       return {
@@ -558,7 +567,12 @@ export function answerIntent(
         ],
         actions:
           main.value < 0
-            ? [pickCopy(lang, { en: `Check the ${main.name}.`, fil: `Suriin ang ${main.name}.` })]
+            ? [
+                pickCopy(lang, {
+                  en: `Take a look at your ${main.name}.`,
+                  fil: `Tingnan ang ${main.name} mo.`,
+                }),
+              ]
             : [],
       }
     }
@@ -677,7 +691,12 @@ export function answerIntent(
       return {
         intent,
         question,
-        headline: `${score.value}/100 — ${bandLabel(score.band, lang).toUpperCase()} (${score.version})`,
+        // The score always arrives with its words attached: a bare "81" tells an
+        // owner nothing, and the figure is only meaningful next to the band it
+        // falls in.
+        // The version already names the product ("Sipat-Score v1"), so prefixing
+        // "Sipat Score" as well printed the name twice on the card.
+        headline: `${score.value} out of 100 — ${bandLabel(score.band, lang)} (${score.version})`,
         detail: score.dimensions.map(
           (d) => `${pickCopy(lang, d.label)}: ${Math.round(d.score)}/100 · ${d.rawValue}`,
         ),

@@ -68,8 +68,8 @@ export const TIERS: Tier[] = [
     priceCentavos: pesos(99),
     period: { en: '/month', fil: '/buwan' },
     tagline: {
-      en: 'AI explains the numbers, and your ledger is backed up.',
-      fil: 'Ipaliwanag ng AI ang mga numero, at i-backup sa cloud.',
+      en: 'AI explains your numbers, and a safe copy of your records is kept online.',
+      fil: 'Ipapaliwanag ng AI ang numero mo, at may safe na kopya ng rekord mo sa internet.',
     },
     audience: {
       en: 'For a store with steady sales that wants to understand its profit.',
@@ -84,8 +84,8 @@ export const TIERS: Tier[] = [
     priceCentavos: pesos(199),
     period: { en: '/month', fil: '/buwan' },
     tagline: {
-      en: 'Forecasting, benchmarking, and a team.',
-      fil: 'Previsyon, benchmarking, at maraming tauhan.',
+      en: "A guess of next week's sales, how you compare with nearby stores, and accounts for your staff.",
+      fil: 'Tantya ng benta sa susunod na linggo, paghahambing sa kalapit na tindahan, at account para sa mga tauhan mo.',
     },
     audience: {
       en: 'For a growing store with employees and suppliers.',
@@ -100,8 +100,8 @@ export const INSTITUTIONAL = {
     fil: 'Institusyon',
   } as Bilingual,
   tagline: {
-    en: 'Bulk licensing and an aggregate dashboard for cooperatives, LGUs, and livelihood programs.',
-    fil: 'Bulk licence at aggregate dashboard para sa kooperatiba, LGU, at livelihood program.',
+    en: 'One licence for many stores, with a single view for cooperatives, LGUs, and livelihood programs.',
+    fil: 'Isang lisensya para sa maraming tindahan, iisang tanawin para sa kooperatiba, LGU, at livelihood program.',
   } as Bilingual,
 }
 
@@ -151,6 +151,12 @@ export interface FeatureDef {
   tier: TierId
   /** True when it runs entirely on the owner's device at ₱0 marginal cost. */
   onDevice: boolean
+  /**
+   * `planned` features exist in the roadmap but have no working code behind
+   * them yet. The Plan screen only lists `live` features, so vapor can never
+   * be sold — see `liveFeatures` and the honesty test in billing.test.ts.
+   */
+  status?: 'live' | 'planned'
   note?: Bilingual
 }
 
@@ -189,8 +195,8 @@ export const FEATURES: FeatureDef[] = [
     tier: 'free',
     onDevice: true,
     note: {
-      en: 'Answered by the deterministic engine from your own records. No AI cost.',
-      fil: 'Sinasagot ng deterministik na engine mula sa iyong records. Walang AI na gastos.',
+      en: 'Answered from your own records. Nothing here is guessed by AI.',
+      fil: 'Sinasagot mula sa sarili mong rekord. Walang hinuhula rito ang AI.',
     },
   },
   {
@@ -199,23 +205,26 @@ export const FEATURES: FeatureDef[] = [
     tier: 'free',
     onDevice: true,
     note: {
-      en: 'The browser itself does the recognising. Free for us, free for you.',
-      fil: 'Ang browser mismo ang nagre-recognize. Libre kami at libre ka.',
+      en: 'Your phone does the listening. It is free, and it never costs you anything.',
+      fil: 'Ang phone mo ang nakikinig. Libre ito, wala kang babayaran.',
     },
   },
   {
     key: 'offline_voice_model',
-    label: { en: 'Offline Voice — download the model', fil: 'Boses Offline — i-download ang modelo' },
+    label: {
+      en: 'Offline Voice — download once, works with no signal',
+      fil: 'Boses Kahit Walang Internet — i-download minsan, gagana kahit walang signal',
+    },
     tier: 'free',
     onDevice: true,
     note: {
-      en: 'Downloaded once, then it runs on your phone. No server for us to pay for.',
-      fil: 'Isang beses lang i-download, tumatakbo sa phone mo. Walang server na binabayaran namin.',
+      en: 'It stays on your phone after one download. Nothing to pay for afterwards.',
+      fil: 'Mananatili ito sa phone mo pagkatapos ng isang download. Wala nang babayaran pagkatapos.',
     },
   },
   {
     key: 'score_current',
-    label: { en: 'Sipat Score (current)', fil: 'Sipat Score (kasalukuyan)' },
+    label: { en: "Sipat Score — today's reading", fil: 'Sipat Score — marka ngayon' },
     tier: 'free',
     onDevice: true,
   },
@@ -223,35 +232,42 @@ export const FEATURES: FeatureDef[] = [
   // --- PRO: has a marginal cost, or needs a server --------------------------
   {
     key: 'ai_narration',
-    label: { en: 'AI explanation of the insights', fil: 'AI na Paliwanag ng mga insight' },
+    label: { en: 'AI explanation of your numbers', fil: 'AI na paliwanag ng numero mo' },
     tier: 'pro',
     onDevice: false,
     note: {
-      en: 'Costs us per question. The only AI in the product.',
-      fil: 'May bayad kada tanong sa amin. Ito ang tanging AI sa produkto.',
+      en: 'Costs us every time you ask. This is the only part that uses AI.',
+      fil: 'May bayad kami sa bawat tanong. Ito lang ang bahaging gumagamit ng AI.',
     },
   },
   {
     key: 'score_history',
-    label: { en: 'Score history and trend', fil: 'Kasaysayan at trend ng Score' },
+    label: { en: 'How your Score moved, week by week', fil: 'Galaw ng Score mo linggo-linggo' },
     tier: 'pro',
     onDevice: false,
   },
   {
     key: 'cloud_backup',
-    label: { en: 'Cloud backup and multi-device sync', fil: 'Cloud backup at multi-device sync' },
+    label: {
+      en: 'A safe copy of your records online, on every phone you use',
+      fil: 'Safe na kopya ng rekord mo sa internet, sa lahat ng phone mo',
+    },
     tier: 'pro',
     onDevice: false,
   },
   {
     key: 'receipt_ocr',
-    label: { en: 'Receipts — photograph and read them automatically', fil: 'Resibo — kunan ng litrato at awtomatikong basahin' },
+    label: {
+      en: 'Receipts — take a photo and the numbers are typed in for you',
+      fil: 'Resibo — kunan ng litrato at kusang maipapasok ang mga numero',
+    },
     tier: 'pro',
     onDevice: false,
+    status: 'planned',
   },
   {
     key: 'restocking',
-    label: { en: 'Recommendations on what to restock', fil: 'Rekomendasyon kung ano ang i-restock' },
+    label: { en: 'Advice on what to buy again, and when', fil: 'Payo kung ano ang bibilhin muli at kailan' },
     tier: 'pro',
     onDevice: false,
   },
@@ -259,33 +275,50 @@ export const FEATURES: FeatureDef[] = [
   // --- NEGOSYO: compounding value that needs a server -----------------------
   {
     key: 'multi_user',
-    label: { en: 'Multiple users with roles and an audit trail', fil: 'Maraming user na may role at audit trail' },
+    label: {
+      en: 'Several people can use it, each with their own access, and every change is recorded',
+      fil: 'Marami ang pwedeng gumamit, may sariling access ang bawat isa, at naitala ang bawat pagbabago',
+    },
     tier: 'negosyo',
     onDevice: false,
+    status: 'planned',
   },
   {
     key: 'forecasting',
-    label: { en: 'Forecasting — sales, cash flow, stockouts', fil: 'Previsyon — benta, cash flow, stockout' },
+    label: {
+      en: 'A guess of next week: sales, spending, and which items may run out',
+      fil: 'Tantya sa susunod na linggo: benta, gastos, at mga panindang maaaring maubos',
+    },
     tier: 'negosyo',
     onDevice: false,
+    status: 'planned',
   },
   {
     key: 'supplier_intelligence',
-    label: { en: 'Supplier intelligence', fil: 'Supplier intelligence' },
+    label: { en: 'What you buy, from whom, and at what price', fil: 'Ano ang binibili mo, kanino, at magkano' },
     tier: 'negosyo',
     onDevice: false,
+    status: 'planned',
   },
   {
     key: 'benchmarking',
-    label: { en: 'Compare against other stores in the barangay', fil: 'Paghahambing sa ibang tindahan sa barangay' },
+    label: {
+      en: 'See how your store compares with other stores nearby',
+      fil: 'Tingnan ang pagkakaiba ng tindahan mo sa kalapit na tindahan',
+    },
     tier: 'negosyo',
     onDevice: false,
+    status: 'planned',
   },
   {
     key: 'reports_export',
-    label: { en: 'Exported reports and bulk import', fil: 'Nailuluwas na ulat at bulk na pag-import' },
+    label: {
+      en: 'Reports you can print or send, and adding many records at once',
+      fil: 'Mga ulat na pwede mong i-print o ipadala, at pagpasok ng maraming rekord nang sabay',
+    },
     tier: 'negosyo',
     onDevice: false,
+    status: 'planned',
   },
 ]
 
@@ -308,6 +341,27 @@ export function featuresAtTier(tier: TierId): FeatureDef[] {
   return FEATURES.filter((f) => f.tier === tier)
 }
 
+/** Only features with working code behind them — the only ones the Plan screen may list. */
+export function liveFeatures(): FeatureDef[] {
+  return FEATURES.filter((f) => (f.status ?? 'live') === 'live')
+}
+
+/** Tiers shown on the pricing page. NEGOSYO stays in the type system but is
+    hidden until staff/multi-device is built and asked for. */
+export function visibleTiers(): Tier[] {
+  return TIERS.filter((t) => t.id !== 'negosyo')
+}
+
+/** PRO annual prepay: ~2 months free. Price-sensitive markets commit yearly. */
+export const PRO_ANNUAL_CENTAVOS: Centavos = pesos(999)
+
+export type BillingPeriod = 'monthly' | 'annual'
+
+export function priceFor(tier: TierId, period: BillingPeriod): Centavos {
+  if (tier === 'pro' && period === 'annual') return PRO_ANNUAL_CENTAVOS
+  return tierById(tier).priceCentavos
+}
+
 // ---------------------------------------------------------------------------
 // Entitlement
 // ---------------------------------------------------------------------------
@@ -327,6 +381,8 @@ export interface MockInvoice {
   amountCentavos: Centavos
   method: PaymentMethod
   reference: string
+  /** Monthly or annual prepay. Defaults to monthly for old receipts. */
+  period: BillingPeriod
   /** Always true. No money moves. */
   simulated: true
 }
@@ -413,21 +469,23 @@ export function purchase(
   method: PaymentMethod,
   at: string = new Date().toISOString(),
   reference?: string,
+  period: BillingPeriod = 'monthly',
 ): Entitlement {
   const invoice: MockInvoice = {
     id: `inv-${new Date(at).getTime()}`,
     at,
     tier,
-    amountCentavos: tierById(tier).priceCentavos,
+    amountCentavos: priceFor(tier, period),
     method,
     reference: reference ?? mockReference(at, tier),
+    period,
     simulated: true,
   }
   return {
     ...entitlement,
     tier,
     since: at,
-    renewsAt: addDays(at, SUBSCRIPTION_DAYS),
+    renewsAt: addDays(at, period === 'annual' ? 365 : SUBSCRIPTION_DAYS),
     cancelAtPeriodEnd: false,
     usage: { aiQuestionsThisMonth: 0, periodStart: at },
     invoices: [invoice, ...entitlement.invoices],
@@ -537,7 +595,7 @@ export interface Billing {
   requiredTier: (key: FeatureKey) => TierId
   aiQuestionsUsed: number
   aiQuestionsRemaining: number
-  purchase: (tier: Exclude<TierId, 'free'>, method: PaymentMethod) => MockInvoice
+  purchase: (tier: Exclude<TierId, 'free'>, method: PaymentMethod, period?: BillingPeriod) => MockInvoice
   downgrade: () => void
   cancel: () => void
   resume: () => void
@@ -556,9 +614,9 @@ export function useEntitlement(): Billing {
   }, [])
 
   const buy = useCallback(
-    (tier: Exclude<TierId, 'free'>, method: PaymentMethod): MockInvoice => {
+    (tier: Exclude<TierId, 'free'>, method: PaymentMethod, period: BillingPeriod = 'monthly'): MockInvoice => {
       const at = new Date().toISOString()
-      const next = purchase(entitlement, tier, method, at)
+      const next = purchase(entitlement, tier, method, at, undefined, period)
       persist(next)
       setEntitlement(next)
       return next.invoices[0]

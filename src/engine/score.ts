@@ -1,4 +1,4 @@
-import { clamp, formatPercent, safeDiv, scaleScore } from './money.ts'
+import { clamp, formatPHP, formatPercent, safeDiv, scaleScore } from './money.ts'
 import { deriveTwin } from './twin.ts'
 import type { PeriodMetrics } from './metrics.ts'
 import type { BusinessTwin } from './types.ts'
@@ -132,85 +132,97 @@ export function computeScore(
     {
       key: 'profitability',
       label: { en: 'Profit', fil: 'Kita' },
-      term: { en: 'Profitability', fil: 'Kita sa bawat benta' },
+      term: { en: 'What is left from your sales', fil: 'Natira sa bawat benta' },
       weight: 0.25,
       score: profitability,
       contribution: 0,
-      rawValue: formatPercent(netMargin),
+      rawValue:
+        lang === 'fil'
+          ? `${formatPercent(netMargin)} ang natitira sa bawat ₱100 ng benta`
+          : `${formatPercent(netMargin)} is left from every ₱100 of sales`,
       explanation: pickCopy(lang, {
-        en: 'Net margin over the period. 20% or better scores full marks.',
-        fil: 'Net margin sa buong panahon. Bente porsyento o higit pa ang buong marka.',
+        en: 'Out of every ₱100 you sell, this is what stays with you after you pay for the goods. ₱20 or more earns full marks.',
+        fil: 'Sa bawat ₱100 ng benta, ito ang natitira sa iyo pagkatapos bayaran ang paninda. ₱20 pataas ang buong marka.',
       }),
     },
     {
       key: 'cash_flow',
-      label: { en: 'Cash', fil: 'Cash' },
-      term: { en: 'Cash-flow health', fil: 'Kalagayan ng cash' },
+      label: { en: 'Cash you can spend', fil: 'Cash na magagamit' },
+      term: { en: 'Money in the box vs. spending', fil: 'Pera sa kahon kumpara sa gastos' },
       weight: 0.2,
       score: cashFlow,
       contribution: 0,
       rawValue:
         lang === 'fil'
-          ? `${cashCoverRatio.toFixed(2)}x linggong gastos`
-          : `${cashCoverRatio.toFixed(2)}x a week of outflow`,
+          ? `Kayang takpan ang ${cashCoverRatio.toFixed(2)} linggong gastos (isang linggo ang pinakamababa)`
+          : `Covers ${cashCoverRatio.toFixed(2)} weeks of spending (a week is the minimum)`,
       explanation: pickCopy(lang, {
-        en: 'How many weeks of operating outflow your cash on hand could cover. 2x scores full marks.',
-        fil: 'Ilang linggo ng gastos ang kayang takpan ng cash mo ngayon. Dalawang beses ang buong marka.',
+        en: 'How many weeks the money in the box could keep the store going if nothing sold. Two weeks or more earns full marks.',
+        fil: 'Ilang linggo kayang ipagpatuloy ng pera sa kahon ang tindahan kung walang benta. Dalawang linggo pataas ang buong marka.',
       }),
     },
     {
       key: 'inventory_efficiency',
-      label: { en: 'Stock turnover', fil: 'Galaw ng Paninda' },
-      term: { en: 'Inventory efficiency', fil: 'Bilis ng galaw ng paninda' },
+      label: { en: 'How fast stock sells', fil: 'Bilis ng galaw ng paninda' },
+      term: { en: 'Stock sold and replaced', fil: 'Panindang naibenta at napalitan' },
       weight: 0.15,
       score: inventoryEfficiency,
       contribution: 0,
       rawValue:
         lang === 'fil'
-          ? `${turnover.toFixed(2)}x bawat ${metrics.days} araw`
-          : `${turnover.toFixed(2)}x in ${metrics.days} days`,
+          ? `Naibenta at napalitan ng ${turnover.toFixed(2)} beses bawat ${metrics.days} araw`
+          : `Sold and replaced ${turnover.toFixed(2)} times in ${metrics.days} days`,
       explanation: pickCopy(lang, {
-        en: 'How many times your average inventory turned over in the period.',
-        fil: 'Ilan beses naikot ang karaniwang paninda mo sa buong panahon.',
+        en: 'How many times your stock was sold and then replaced during this period. Twice or more earns full marks.',
+        fil: 'Ilan beses naubos at napalitan ang paninda mo sa panahong ito. Dalawang beses pataas ang buong marka.',
       }),
     },
     {
       key: 'receivable_exposure',
-      label: { en: 'Owed to you', fil: 'Utang sa Iyo' },
-      term: { en: 'Receivable exposure', fil: 'Laki ng utang sa iyo' },
+      label: { en: 'Owed to you', fil: 'Utang sa iyo' },
+      term: { en: 'Utang not yet collected', fil: 'Utang na hindi pa nakokolekta' },
       weight: 0.15,
       score: receivableExposure,
       contribution: 0,
-      rawValue: formatPercent(exposure),
+      rawValue:
+        lang === 'fil'
+          ? `${formatPercent(exposure)} ng benta ang utang na hindi pa bayad`
+          : `${formatPercent(exposure)} of your sales is utang not yet paid`,
       explanation: pickCopy(lang, {
-        en: 'Outstanding utang as a share of period sales. At 50% or above this scores zero.',
-        fil: 'Utang na hindi pa bayad kumpara sa benta ng panahon. Singkwenta porsyento pataas ay zero.',
+        en: 'How much of your sales is still unpaid by customers. Half of your sales or more scores zero.',
+        fil: 'Magkano sa benta mo ang hindi pa bayad ng customers. Kalahati ng benta o higit pa ay zero.',
       }),
     },
     {
       key: 'expense_control',
       label: { en: 'Expenses', fil: 'Gastos' },
-      term: { en: 'Expense control', fil: 'Kontrol sa gastos' },
+      term: { en: 'What it costs to run the store', fil: 'Gastos sa pagpapatakbo' },
       weight: 0.15,
       score: expenseControl,
       contribution: 0,
-      rawValue: formatPercent(expenseRatio),
+      rawValue:
+        lang === 'fil'
+          ? `${formatPercent(expenseRatio)} ng benta ang napupunta sa gastos`
+          : `${formatPercent(expenseRatio)} of your sales goes to costs`,
       explanation: pickCopy(lang, {
-        en: 'Operating costs plus shrinkage as a share of sales. 20% or below scores full marks.',
-        fil: 'Gastos at panis/nawala kumpara sa benta. Bente porsyento pababa ang buong marka.',
+        en: 'What you spend to run the store, plus spoilage and lost stock, measured against sales. ₱20 or less for every ₱100 earns full marks.',
+        fil: 'Ang gastos sa pagpapatakbo, kasama ang panis at nawawalang paninda, kumpara sa benta. ₱20 pababa sa bawat ₱100 ang buong marka.',
       }),
     },
     {
       key: 'sales_stability',
-      label: { en: 'Sales stability', fil: 'Tibay ng Benta' },
-      term: { en: 'Sales stability', fil: 'Tibay ng benta' },
+      label: { en: 'Steady sales', fil: 'Tibay ng benta' },
+      term: { en: 'Steady or swinging?', fil: 'Pantay ba o pataas-pababa?' },
       weight: 0.1,
       score: salesStability,
       contribution: 0,
-      rawValue: cv.toFixed(2),
+      rawValue:
+        lang === 'fil'
+          ? `Umaalog ang benta ng mga ${(cv * 100).toFixed(0)}% kada araw`
+          : `Sales move about ${(cv * 100).toFixed(0)}% up or down a day`,
       explanation: pickCopy(lang, {
-        en: 'Day-to-day variation in sales. A variation of 100% or more scores zero.',
-        fil: 'Pagbabago ng benta araw-araw. Isandaang porsyento pataas na pagbabago ay zero.',
+        en: 'Whether sales are steady day by day, or swinging up and down. Swinging by as much as double scores zero.',
+        fil: 'Pantay ba ang benta araw-araw, o pataas-pababa. Kung dumodoble ang pagbabago, zero.',
       }),
     },
   ]
@@ -260,37 +272,40 @@ function priorityFor(
   receivablesCentavos: number,
   lang: Lang,
 ): string {
-  const owed = (receivablesCentavos / 100).toFixed(0)
+  // formatPHP, not a hand-built "₱" + number: this figure sits in a sentence next
+  // to properly formatted ones, and "₱4159" beside "₱38,998.95" reads as a
+  // different kind of number rather than as the same amount of money.
+  const owed = formatPHP(receivablesCentavos)
   switch (dim.key) {
     case 'receivable_exposure':
       return pickCopy(lang, {
-        en: `Collect first — ₱${owed} is still tied up in utang before you add another order.`,
-        fil: `Unahin ang koleksyon — may ${owed} piso pang nakabinbin sa utang bago magdagdag ng order.`,
+        en: `Collect first — ${owed} of utang is still unpaid. Collect it before you order again.`,
+        fil: `Unahin ang koleksyon — may ${owed} pang utang na hindi pa bayad. Kolektahin bago mag-order ulit.`,
       })
     case 'cash_flow':
       return pickCopy(lang, {
-        en: 'Watch the cash: more is going out than coming in. Delay expenses that can wait.',
-        fil: 'Bantayan ang cash: mas maigting ang paglabas kaysa pagpasok. Ipagpaliban ang hindi kailangang gastos.',
+        en: 'Watch the cash: more money is going out than coming in. Move the expenses that can wait.',
+        fil: 'Bantayan ang pera: mas malaki ang lumalabas kaysa pumapasok. Ipagpaliban muna ang gastos na kayang hintayin.',
       })
     case 'profitability':
       return pickCopy(lang, {
-        en: 'Review the price and the cost of each item — profit is thin next to the sales.',
-        fil: 'Repasuhin ang presyo at ang gastos sa bawat paninda — mahina ang kita kumpara sa benta.',
+        en: 'Check the price and the cost of each item — the profit is small next to the sales.',
+        fil: 'Tingnan ang presyo at ang gastos sa bawat paninda — maliit ang kita kumpara sa benta.',
       })
     case 'expense_control':
       return pickCopy(lang, {
-        en: 'Cut expenses, or cut the spoilage and missing stock.',
-        fil: 'Bawasan ang gastos o ang panis/nawawalang paninda.',
+        en: 'Spend less, or waste less — spoilage and missing stock are part of this number.',
+        fil: 'Bawasan ang gastos o ang panis at nawawalang paninda — kasama sila sa bilang na ito.',
       })
     case 'inventory_efficiency':
       return pickCopy(lang, {
-        en: 'Some stock is barely moving. Hold off ordering the slow ones.',
-        fil: 'May panindang mabagal gumalaw. Iwasan munang mag-order ng mabagal ang galaw.',
+        en: 'Some stock is barely selling. Hold off ordering more of the slow ones.',
+        fil: 'May panindang mabagal maubos. Iwasan munang mag-order ng mabagal ang galaw.',
       })
     default:
       return pickCopy(lang, {
-        en: 'The business is scoring low. Look at each part below.',
-        fil: 'Mababa ang marka ng negosyo. Tingnan ang bawat bahagi sa ibaba.',
+        en: 'The score is low. The six parts below show which one is pulling it down.',
+        fil: 'Mababa ang marka. Makikita sa anim na bahagi sa ibaba kung alin ang humihila nito pababa.',
       })
   }
 }

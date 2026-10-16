@@ -91,12 +91,12 @@ export function describeSpeechError(raw: string, lang: Lang = getLang()): AsrFai
 
   const COPY: Record<Exclude<AsrErrorCode, 'unknown'>, Bilingual> = {
     permission: {
-      en: 'Microphone permission is needed. Allow it in the address bar, then tap the mic again.',
-      fil: 'Kailangan ng pahintulot sa mikropono. Payagan ito sa address bar, tapos pindutin ulit ang mic.',
+      en: 'The app needs your permission to use the microphone. Tap Allow when the phone asks, then tap the mic again.',
+      fil: 'Kailangan ng app ang pahintulot mong gamitin ang mikropono. Pindutin ang Allow kapag nagtanong ang phone, tapos pindutin ulit ang mic.',
     },
     blocked: {
-      en: 'The browser blocked the speech service. Use Chrome or Edge, or switch to the offline model below.',
-      fil: 'Hinadlangan ng browser ang speech service. Gumamit ng Chrome o Edge, o lumipat sa offline model sa baba.',
+      en: 'This browser is blocking the Google speech service. Open the app in Chrome, or use the offline voice below.',
+      fil: 'Hinaharang ng browser na ito ang speech service ng Google. Buksan ang app sa Chrome, o gamitin ang boses na offline sa ibaba.',
     },
     'no-speech': {
       en: 'Nothing was heard. Tap the mic and speak as soon as it turns red.',
@@ -110,12 +110,12 @@ export function describeSpeechError(raw: string, lang: Lang = getLang()): AsrFai
      * fail here — a silent dead end unless we name it.
      */
     network: {
-      en: 'This browser could not reach Google\u2019s speech service. Chrome or Edge on a desktop can; a browser built into another app usually cannot. Voice still works offline once the model below is downloaded.',
-      fil: 'Hindi naabot ng browser na ito ang speech service ng Google. Gumagana ito sa Chrome o Edge sa desktop; sa browser na kasama ng ibang app, kadalasan hindi. Gumagana pa rin ang boses offline kapag na-download ang modelo sa baba.',
+      en: 'This browser cannot use the Google speech service. Chrome or Edge on a computer can. Voice still works offline once the offline voice below is downloaded.',
+      fil: 'Hindi magamit ng browser na ito ang speech service ng Google. Gumagana ito sa Chrome o Edge sa computer. Gumagana pa rin ang boses offline kapag na-download na ang boses na offline sa ibaba.',
     },
     language: {
-      en: 'This browser cannot recognize Filipino speech. Use Chrome or Edge, or switch to the offline model below.',
-      fil: 'Hindi kayang kilalanin ng browser na ito ang Tagalog na pananalita. Gumamit ng Chrome o Edge, o lumipat sa offline model sa baba.',
+      en: 'This browser cannot understand Tagalog speech. Open the app in Chrome, or use the offline voice below.',
+      fil: 'Hindi maintindihan ng browser na ito ang Tagalog. Buksan ang app sa Chrome, o gamitin ang boses na offline sa ibaba.',
     },
     'no-microphone': {
       en: 'No microphone was found. Check that one is connected, then try again.',
@@ -127,9 +127,11 @@ export function describeSpeechError(raw: string, lang: Lang = getLang()): AsrFai
   if (!code) {
     return {
       code: 'unknown',
+      // The first sentence is for the owner; the code at the end is for whoever
+      // is helping them, and the test asserts it is kept.
       message: pick(lang, {
-        en: `Speech recognition failed (${raw}).`,
-        fil: `Nabigo ang speech recognition (${raw}).`,
+        en: `The voice stopped and we are not sure why. Please try again. (detail: ${raw})`,
+        fil: `Tumigil ang boses at hindi namin sigurado kung bakit. Subukan muli. (detalye: ${raw})`,
       }),
     }
   }
@@ -245,10 +247,10 @@ export function createWebSpeechEngine(): AsrEngine {
 
   return {
     id: 'web-speech',
-    label: { en: 'Browser (Google)', fil: 'Browser (Google)' },
+    label: { en: 'Internet voice', fil: 'Boses sa internet' },
     note: {
-      en: 'Most accurate for Taglish. Needs internet. Free — nothing is charged per word.',
-      fil: 'Pinakatumpak para sa Taglish. Kailangan ng internet. Libre — walang bayad kada salita.',
+      en: 'Best for Taglish, but it needs internet. Free — you are never charged per word.',
+      fil: 'Pinakatumpak sa Taglish, pero kailangan ng internet. Libre — walang bayad kada salita.',
     },
     available: getRecognitionCtor() !== null,
     start(onResult, onError, onStatus, onEnd) {
@@ -256,8 +258,8 @@ export function createWebSpeechEngine(): AsrEngine {
       if (!Ctor) {
         onError(
           say(
-            'Speech recognition is not available in this browser.',
-            'Hindi available ang speech recognition sa browser na ito.',
+            'You cannot use voice in this browser. Type what was said instead.',
+            'Hindi magagamit ang boses sa browser na ito. I-type na lang ang sinabi.',
           ),
           'unknown',
         )
@@ -390,7 +392,7 @@ export function createWebSpeechEngine(): AsrEngine {
 export function createTypedEngine(): AsrEngine {
   return {
     id: 'typed',
-    label: { en: 'Type it (no microphone)', fil: 'I-type (Walang mikropono)' },
+    label: { en: 'Type it instead', fil: 'I-type na lang' },
     note: {
       en: 'Works with no internet and no microphone.',
       fil: 'Gumagana kahit walang internet at walang mikropono.',
@@ -399,8 +401,8 @@ export function createTypedEngine(): AsrEngine {
     start(_onResult, onError, _onStatus, onEnd) {
       onError(
         say(
-          'Typed input does not use the microphone.',
-          'Ang typed na input ay hindi gumagamit ng mikropono.',
+          'Typing does not use the microphone — just write what was said.',
+          'Hindi gumagamit ng mikropono ang pag-i-type — isulat lang ang sinabi.',
         ),
         'unknown',
       )

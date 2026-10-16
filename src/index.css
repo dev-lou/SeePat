@@ -1,11 +1,20 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
- * SeePat — a Philippine-flag fintech surface.
+ * SeePat — a modern product surface.
  *
- * Navy for structure, gold for accent, flag red for anything that needs
- * attention — the three colours of the flag, and the three colours of the brand
- * lockup: "See" in navy, "Pat" in gold, the sun in gold on navy.
+ * THE DIRECTION, in one line: a 2026 fintech app, not a ledger book. Near-black
+ * ink for structure, one electric blue for brand and interaction, a soft yellow
+ * for accent, flag red kept for anything that needs attention — which is also
+ * the three colours of the brand lockup ("See" in navy-blue, "Pat" in gold, the
+ * sun in gold on blue).
+ *
+ * What that means concretely, because it is mostly about what NOT to do: white
+ * cards on a cool light canvas, generous corner radii, soft wide shadows, pill
+ * controls and hairlines. No warm paper, no ruled lines, no serif, no pressed
+ * stamps — those were the previous pass, and they read as an older product.
+ * Contrast is the one thing that never moves: the ink ramp below still clears
+ * 4.5:1 on all three light surfaces, verified pair by pair.
  *
  * Light canvas, one deep-navy jewel card per screen carrying the numbers that
  * matter, gold reserved for premium and for lit data on that navy surface, and
@@ -19,96 +28,141 @@
  * top of the page. Figures are set in a geometric display face at an
  * unapologetic size — the money is the interface.
  *
- * Type: Sora for headlines and every figure (geometric, confident at 3rem+);
- * Plus Jakarta Sans for UI copy, which stays crisp at 0.62rem and has real
- * tabular figures. The brand wordmark is not type at all — it is the official
- * lockup image, imported so its letterforms cannot drift from the brand.
+ * Type: two families with one job each. Space Grotesk sets every heading and
+ * every figure — its quirks (the single-storey g, the cut terminals) are what
+ * make a balance look designed rather than defaulted. Plus Jakarta Sans sets
+ * the interface itself: labels, buttons, sentences. Both were checked
+ * glyph-by-glyph in-browser and both ship ₱, so a peso amount is set entirely
+ * in one face — with Manrope kept in both stacks as the offline safety net for
+ * anything neither face carries.
+ *
+ * Self-hosted variable woff2, latin subsets with U+20B1 added back in. The
+ * stock latin range omits the peso sign, which would silently hand every ₱ to
+ * the fallback face — one mismatched character per figure, the exact bug the
+ * single-family pass was built to kill. ~75KB total for the pair.
+ *
+ * The brand wordmark is not type at all — it is the official lockup image,
+ * imported so its letterforms cannot drift from the brand.
  * ------------------------------------------------------------------------- */
 
 /* Self-hosted so the type survives a dead network: Workbox precaches **\/*.woff2.
- * latin-ext is NOT optional — the peso sign (U+20B1) lives inside U+20AD-20C0,
- * and without it every ₱ falls back to a mismatched system glyph. */
+ * U+20B1 is added to both latin ranges on purpose — the stock fontsource latin
+ * subset omits the peso sign, and without it every ₱ falls back to a mismatched
+ * system glyph. Manrope stays declared as the safety net behind both stacks. */
 @font-face {
-  font-family: 'Sora';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 100 800;
+  font-weight: 300 700;
   font-display: swap;
-  src: url('/fonts/sora-latin-wght-normal.woff2') format('woff2');
+  src: url('/fonts/space-grotesk-latin-wght-normal.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
-    U+FEFF, U+FFFD;
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+20B1, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Sora';
+  font-family: 'Plus Jakarta Sans';
   font-style: normal;
-  font-weight: 100 800;
-  font-display: swap;
-  src: url('/fonts/sora-latin-ext-wght-normal.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
-    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
-    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Jakarta';
-  font-style: normal;
-  font-weight: 100 800;
+  font-weight: 200 800;
   font-display: swap;
   src: url('/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+20B1, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
     U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Jakarta';
+  font-family: 'Manrope';
   font-style: normal;
-  font-weight: 100 800;
+  font-weight: 200 800;
   font-display: swap;
-  src: url('/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2') format('woff2');
+  src: url('/fonts/manrope-latin-ext-wght-normal.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
     U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
     U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
+/*
+ * One italic, synthesized rather than shipped. Manrope has no italic file, and
+ * pulling one in would cost another 25KB of precache for a handful of quoted
+ * lines — the browser's oblique of a grotesque is close enough that nobody has
+ * ever asked a synthetic slant what face it is.
+ */
 
 @theme {
-  --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: 'Jakarta', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Space Grotesk', 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  /* Brand — navy. The flag's blue, darkened at the top of the ramp so white
-     text on a button clears 9:1 and navy text on white clears 11:1. */
-  --color-brand-50: #eef3fc;
-  --color-brand-100: #dce7fa;
-  --color-brand-200: #bbd0f5;
-  --color-brand-300: #8fb0ec;
-  --color-brand-400: #5c87de;
-  --color-brand-500: #2f5fc9;
-  --color-brand-600: #1b45a6;
-  --color-brand-700: #12357f;
-  --color-brand-800: #0c2760;
-  --color-brand-900: #081b44;
-  --color-brand-950: #050f28;
+  /*
+   * Brand — electric blue. The flag's blue pushed to the temperature a modern
+   * product uses, and darkened at the top of the ramp so white text on a filled
+   * button clears 9:1 while brand-700 as *text* on white still clears 8:1.
+   */
+  --color-brand-50: #eff1ff;
+  --color-brand-100: #e1e5ff;
+  --color-brand-200: #c6ccff;
+  --color-brand-300: #9ba6ff;
+  --color-brand-400: #6b7bff;
+  --color-brand-500: #3d51f0;
+  --color-brand-600: #2a3ad6;
+  --color-brand-700: #232fae;
+  --color-brand-800: #1d2788;
+  --color-brand-900: #171e63;
+  --color-brand-950: #0d1136;
 
-  /* Gold — the flag's yellow. Bright gold is a *surface and graphic* colour: it
-     is what the sun, the premium material and the lit data on a navy card are
-     made of. It is never small text on white (1.7:1); gold-700 exists for that
-     and reads as antique gold rather than as UI chrome. */
-  --color-gold-50: #fff9e6;
-  --color-gold-100: #fef0bf;
-  --color-gold-200: #fde38a;
-  --color-gold-300: #fbd350;
-  --color-gold-400: #f5c21d;
-  --color-gold-500: #dda60c;
-  --color-gold-600: #b07f08;
+  /*
+   * Ink — the near-black the whole product is built on. Modern interfaces of
+   * this kind are black and white first and coloured second, so the darkest step
+   * is a real near-black rather than a very dark blue, and it is what the hero
+   * card, the primary button and every heading are made of.
+   */
+  --color-ink-900: #0b0b0f;
+  --color-ink-800: #17171e;
+  --color-ink-700: #2a2a33;
+
+  /*
+   * Accent — a soft modern yellow. Bright yellow is a *surface and graphic*
+   * colour: the sun in the lockup, the premium material, the one warm shape in a
+   * cool layout. It is never small text on white; gold-700 exists for that and
+   * reads as ink-mixed yellow rather than as UI chrome.
+   */
+  --color-gold-50: #fffbea;
+  --color-gold-100: #fff4c9;
+  --color-gold-200: #ffe68d;
+  --color-gold-300: #ffd54a;
+  --color-gold-400: #f7c22b;
+  --color-gold-500: #ddaa12;
+  --color-gold-600: #b0830a;
   --color-gold-700: #8a6206;
 
-  /* Surfaces. A touch of warmth in the neutrals so the cool navy does not make
-     the page feel like a spreadsheet. */
-  --color-page: #f5f7fb;
+  /*
+   * Surfaces — a cool, very light canvas under white cards.
+   *
+   * The canvas is a hair darker than white so white cards have something to sit
+   * on, and it is cool rather than warm: on this product a warm canvas reads as
+   * paper, and paper is the aesthetic the last pass was built on. Every step of
+   * the ink ramp is audited against the *darkest* card stop and against the
+   * sunken well, not against pure white, so the layering is never bought with
+   * contrast.
+   */
+  --color-page: #f2f2f5;
   --color-card: #ffffff;
   /* The foot of every card's fill. A card whose fill is *exactly* one flat
-     colour has nothing to catch the light, which is why white cards on a white
+     colour has nothing to catch the light, which is why white cards on a light
      page look like wireframes however good the shadows are. */
-  --color-card-deep: #f7f9fd;
-  --color-sunken: #eef1f8;
+  --color-card-deep: #fafafc;
+  --color-sunken: #ececf1;
+  /* The fine grid behind the interface (see `.canvas-grid`). Decoration, kept
+     far under any contrast floor — but present: a blank canvas is the plainest
+     thing this product can look like. */
+  --color-rule: rgb(11 11 15 / 0.062);
 
   /* Hairlines as ALPHA navy rather than an opaque grey. An opaque border is a
      stroke that sits on top of the surface and reads as a box; a 5% navy ring
@@ -117,21 +171,22 @@
   --color-hairline: rgb(10 22 34 / 0.06);
   --color-hairline-strong: rgb(10 22 34 / 0.1);
 
-  /* Hairlines — soft, never structural */
-  --color-line: #e5eaf3;
-  --color-line-strong: #d2dae8;
+  /* Rules — soft, never structural, and neutral so a card edge belongs to the
+     surface instead of reading as a stroke drawn around it. */
+  --color-line: #e7e7ee;
+  --color-line-strong: #d5d5df;
 
   /* Text ramp — navy-black rather than pure grey, so the type sits in the same
      family as the brand. Every step clears 4.5:1 on all three light surfaces
      (page, card AND sunken), which a pair-by-pair audit verifies. */
-  --color-fg: #0a1428;
-  --color-fg-muted: #3a4761;
-  --color-fg-subtle: #58657f;
-  --color-fg-faint: #5f6c86;
+  --color-fg: #0b0b0f;
+  --color-fg-muted: #45454f;
+  --color-fg-subtle: #585862;
+  --color-fg-faint: #67676f;
 
   /* Overlays */
-  --color-veil: rgb(255 255 255 / 0.72);
-  --color-scrim: rgb(10 22 34 / 0.5);
+  --color-veil: rgb(255 255 255 / 0.74);
+  --color-scrim: rgb(11 11 15 / 0.5);
 
   /* Semantic states: kita / bantayan / utang. */
   --color-emerald-50: #ecfdf5;
@@ -177,25 +232,33 @@
   --color-slate-500: #64748b;
   --color-slate-900: #0f172a;
 
-  /* Radii — 20px cards, 28px sheets, 999px pills. */
-  --radius-card: 1.25rem;
-  --radius-sheet: 1.75rem;
+  /* Radii — generous, the way modern app surfaces are: 24px cards, 30px sheets,
+     14px tags, 999px pills and circles. */
+  --radius-card: 1.5rem;
+  --radius-sheet: 1.875rem;
+  --radius-tag: 0.875rem;
 
   /* Elevation. Shadows are tinted with the ink navy and stacked in two parts
      (a tight contact shadow + a wide ambient one) so cards sit *above* the page
      instead of being outlined on it. */
-  /* Elevation is three layers, never one: a 1px contact shadow (the card
-     touching the page), a mid layer that does the modelling, and a wide ambient
-     pool that suggests height. A single flat shadow is the tell of a template;
-     three stacked ones are what makes white-on-white read as stacked paper. */
-  --shadow-e1: 0 1px 1px rgb(10 22 34 / 0.035), 0 3px 8px -2px rgb(10 22 34 / 0.05);
-  --shadow-e2: 0 1px 1px rgb(10 22 34 / 0.03), 0 4px 10px -3px rgb(10 22 34 / 0.05),
-    0 16px 34px -14px rgb(10 22 34 / 0.1);
-  --shadow-e3: 0 1px 1px rgb(10 22 34 / 0.03), 0 8px 20px -6px rgb(10 22 34 / 0.06),
-    0 30px 64px -22px rgb(10 22 34 / 0.18);
-  --shadow-dock: 0 2px 4px rgb(10 22 34 / 0.06), 0 16px 40px -12px rgb(10 22 34 / 0.26);
-  --shadow-jewel: 0 6px 14px -6px rgb(6 78 59 / 0.5), 0 26px 50px -18px rgb(6 78 59 / 0.45);
-  --shadow-pop: 0 4px 10px -4px rgb(4 120 87 / 0.5), 0 16px 32px -12px rgb(4 120 87 / 0.4);
+  /*
+   * Elevation is three layers, never one: a 1px contact shadow (the card
+   * touching the page), a mid layer that does the modelling, and a wide ambient
+   * pool that suggests height. A single flat shadow is the tell of a template;
+   * three stacked ones are what makes paper-on-paper read as stacked paper.
+   *
+   * The jewel and pop shadows are navy rather than the emerald they used to be:
+   * a green cast under a navy card is a colour nobody chose, and it read as a
+   * slightly dirty edge along the bottom of the hero.
+   */
+  --shadow-e1: 0 1px 2px rgb(11 11 15 / 0.04), 0 6px 18px -12px rgb(11 11 15 / 0.14);
+  --shadow-e2: 0 2px 4px rgb(11 11 15 / 0.035), 0 12px 28px -16px rgb(11 11 15 / 0.16),
+    0 28px 56px -32px rgb(11 11 15 / 0.16);
+  --shadow-e3: 0 2px 6px rgb(11 11 15 / 0.04), 0 20px 44px -22px rgb(11 11 15 / 0.18),
+    0 48px 90px -40px rgb(11 11 15 / 0.22);
+  --shadow-dock: 0 4px 10px -4px rgb(11 11 15 / 0.1), 0 20px 50px -18px rgb(11 11 15 / 0.28);
+  --shadow-jewel: 0 10px 24px -12px rgb(11 11 15 / 0.45), 0 40px 80px -34px rgb(11 11 15 / 0.4);
+  --shadow-pop: 0 6px 16px -8px rgb(42 58 214 / 0.45), 0 18px 36px -16px rgb(42 58 214 / 0.35);
 
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out-back: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -203,6 +266,25 @@
 
 :root {
   color-scheme: light;
+  --color-rule: rgb(11 11 15 / 0.075);
+}
+
+/*
+ * Reading size. Three steps, applied to the root font size only — every length
+ * in the interface is in `rem`, so this one value enlarges the words, the
+ * spacing, the buttons and the charts together, which is what makes "bigger
+ * text" actually readable rather than a cramped screen with larger letters in
+ * it. The step is stored in localStorage and set as `data-read` on <html> by
+ * src/reading.ts, so it survives a reload and applies before the first paint.
+ */
+html {
+  font-size: 100%;
+}
+html[data-read='big'] {
+  font-size: 112.5%;
+}
+html[data-read='bigger'] {
+  font-size: 125%;
 }
 
 html,
@@ -212,84 +294,108 @@ body,
 }
 
 /*
- * Atmosphere. Three light sources bleeding in from above — navy, gold, flag red
- * — plus a floor glow at the bottom so the page is lit from both ends and the
- * middle never goes flat. Fixed to the viewport so the light stays put while the
- * sheet scrolls, which is what makes it read as a room rather than a background.
+ * Atmosphere. Fixed viewport multi-layer technical blueprint and radiant
+ * lighting. Two vibrant ambient light sources (electric blue and golden sun)
+ * bleed across the top corners, complemented by a soft bottom ambient wash.
  */
 body {
   margin: 0;
-  background-color: var(--color-page);
+  background-color: #f2f2f5;
   background-image:
-    radial-gradient(900px 420px at 12% -12%, rgb(27 69 166 / 0.14), transparent 60%),
-    radial-gradient(760px 400px at 104% -6%, rgb(245 194 29 / 0.16), transparent 58%),
-    radial-gradient(680px 380px at 60% -22%, rgb(206 17 38 / 0.07), transparent 62%),
-    radial-gradient(820px 460px at -6% 108%, rgb(27 69 166 / 0.09), transparent 62%),
-    radial-gradient(760px 420px at 106% 104%, rgb(221 166 12 / 0.1), transparent 60%);
-  background-repeat: no-repeat;
+    linear-gradient(133deg, rgb(61 81 240 / 0.09) 0 24%, transparent 24%),
+    linear-gradient(313deg, rgb(255 213 74 / 0.19) 0 16%, transparent 16%),
+    radial-gradient(circle at 1px 1px, rgb(42 58 214 / 0.14) 1.5px, transparent 1.5px),
+    repeating-linear-gradient(90deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(180deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+    radial-gradient(920px 460px at 84% -10%, rgb(61 81 240 / 0.24), transparent 62%),
+    radial-gradient(760px 420px at 4% -6%, rgb(255 213 74 / 0.28), transparent 60%),
+    radial-gradient(900px 520px at 50% 100%, rgb(61 81 240 / 0.14), transparent 65%);
+  background-size:
+    auto,
+    auto,
+    44px 44px,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
   background-attachment: fixed;
   color: var(--color-fg);
   font-family: var(--font-sans);
+  /* 16px body */
+  font-size: 1rem;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   overscroll-behavior-y: none;
 }
 
 /*
- * The dot grid — the one piece of texture that answers "what is missing".
- *
- * A micro dot grid at 22px, at barely-visible alpha, *dissolving downward*: it
- * is strongest behind the header and gone by mid-page. That is the opposite of
- * how a grid is usually misused — run across a whole canvas it becomes graph
- * paper and competes with the data; faded out it reads as a drafting surface
- * under the interface, which is the "engineered" quality people mean when they
- * say a finance UI feels premium.
- *
- * Crucially it sits BEHIND the cards (z-index -1), not inside them. Texture in a
- * card fill is 2021 dribbble work: it puts a pattern under the numbers and makes
- * them harder to read. The cards get light instead — gradient, hairline ring,
- * stacked shadow.
+ * The technical draughting grid from the loading screen, persisting across the
+ * entire page with full viewport fidelity so the canvas never turns into plain
+ * dull grey or flat white on any mobile or desktop screen.
  */
 .canvas-grid {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: radial-gradient(rgb(10 22 34 / 0.16) 1px, transparent 1.3px);
-  background-size: 22px 22px;
-  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.5) 30%, transparent 64%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.5) 30%, transparent 64%);
+  background-color: #f2f2f5;
+  background-image:
+    linear-gradient(133deg, rgb(61 81 240 / 0.09) 0 24%, transparent 24%),
+    linear-gradient(313deg, rgb(255 213 74 / 0.19) 0 16%, transparent 16%),
+    radial-gradient(circle at 1px 1px, rgb(42 58 214 / 0.14) 1.5px, transparent 1.5px),
+    repeating-linear-gradient(90deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(180deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+    radial-gradient(920px 460px at 84% -10%, rgb(61 81 240 / 0.24), transparent 62%),
+    radial-gradient(760px 420px at 4% -6%, rgb(255 213 74 / 0.28), transparent 60%),
+    radial-gradient(900px 520px at 50% 100%, rgb(61 81 240 / 0.14), transparent 65%);
+  background-size:
+    auto,
+    auto,
+    44px 44px,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
 }
 
 /* --- Surfaces ------------------------------------------------------------ */
 
 /*
- * One physics for every light surface in the app: a vertical fill gradient so
- * the card has a top and a bottom, an inset hairline ring, a 1px light catch on
- * the top edge, and the three-layer elevation. The jewel card has had this
- * treatment since it was built; the ordinary cards had a flat fill and a grey
- * outline, which is exactly why they read as wireframes.
+ * State-of-the-art 2026 frosted glassmorphism: translucent pearl white that allows
+ * the technical blueprint grid and ambient radial lighting to shimmer beneath,
+ * paired with specular inner highlights, subtle borders, and multi-layer elevation.
  */
 .surface {
-  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-card-deep) 100%);
+  background-color: rgb(255 255 255 / 0.80);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgb(255 255 255 / 0.90);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    inset 0 0 0 1px var(--color-hairline),
-    var(--shadow-e2);
+    inset 0 1px 1px 0 rgb(255 255 255 / 1),
+    0 2px 8px -2px rgb(11 11 15 / 0.04),
+    0 12px 32px -4px rgb(42 58 214 / 0.06);
 }
 
 /* Interactive cards: lifts on hover, settles on press. */
 .surface-raise {
   transition:
     transform 220ms var(--ease-spring),
-    box-shadow 220ms var(--ease-spring);
+    box-shadow 220ms var(--ease-spring),
+    border-color 220ms var(--ease-spring);
 }
 .surface-raise:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgb(255 255 255 / 1);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    inset 0 0 0 1px var(--color-hairline),
-    var(--shadow-e3);
+    inset 0 1px 1px 0 rgb(255 255 255 / 1),
+    0 4px 14px -2px rgb(11 11 15 / 0.06),
+    0 20px 44px -8px rgb(42 58 214 / 0.12);
 }
 .surface-raise:active {
   transform: translateY(0) scale(0.995);
@@ -302,60 +408,138 @@ body {
  * different tint, so they read as one family.
  */
 .surface-gold {
-  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-gold-50) 100%);
+  background-color: rgb(255 251 234 / 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgb(253 230 138 / 0.6);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    inset 0 0 0 1px rgb(176 127 8 / 0.16),
+    inset 0 1px 1px 0 rgb(255 255 255 / 0.8),
     var(--shadow-e2);
 }
 .surface-brand {
-  background-image: linear-gradient(177deg, var(--color-card) 0%, var(--color-brand-50) 100%);
+  background-color: rgb(239 241 255 / 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgb(198 204 255 / 0.6);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    inset 0 0 0 1px rgb(27 69 166 / 0.14),
+    inset 0 1px 1px 0 rgb(255 255 255 / 0.8),
     var(--shadow-e2);
 }
-/* Same edge and shadow, no gradient — for cards that carry their own state
-   fill, since a background-image paints over a background-colour. */
+/* Same edge and shadow, no fill — for cards that carry their own state fill
+   (`bg-amber-50`, `bg-emerald-50`). */
 .surface-flat {
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.7),
     inset 0 0 0 1px var(--color-hairline),
     var(--shadow-e2);
 }
 
 .surface-inset {
-  background-image: linear-gradient(
-    180deg,
-    var(--color-sunken) 0%,
-    color-mix(in srgb, var(--color-sunken) 62%, white) 100%
-  );
-  box-shadow:
-    inset 0 1px 2px rgb(10 22 34 / 0.05),
-    inset 0 0 0 1px rgb(10 22 34 / 0.03);
+  background-color: var(--color-sunken);
+  box-shadow: inset 0 1px 2px rgb(11 11 15 / 0.04);
+}
+
+/* Custom rounded dropdown popup animation */
+@keyframes dropdown-menu-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dropdown-menu-enter {
+  animation: dropdown-menu-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Dynamic Island floating capsule animations */
+@keyframes dynamic-island-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.85);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes dynamic-island-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+}
+.dynamic-island-enter {
+  animation: dynamic-island-in 280ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+.dynamic-island-exit {
+  animation: dynamic-island-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Toast Countdown Progress Bar Animation */
+@keyframes toast-progress {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
 }
 
 /* --- Type roles ---------------------------------------------------------- */
 
+/*
+ * Headings are the heaviest thing in the interface and the tightest tracked —
+ * that contrast between an 800-weight heading and 500-weight body copy is what
+ * carries the hierarchy here, because there is only one typeface to do it with.
+ */
 .headline {
   font-family: var(--font-display);
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-weight: 800;
+  letter-spacing: -0.022em;
 }
 
-/* Money. Tight tracking and tabular figures so columns line up to the centavo. */
+/*
+ * Money. Tabular figures so columns line up to the centavo, the heaviest weight
+ * in the ramp so a figure outranks everything around it, and `nowrap`.
+ *
+ * `nowrap` is a hard rule, not a preference. A money figure that wraps breaks
+ * between two digits and prints ₱38,998.9 on one line and 5 on the next: the
+ * reader sees a number a hundred times smaller, and no amount of clever layout
+ * makes that better than the alternative. The alternative is that the figure has
+ * to be sized to fit, which is what every `clamp()` in the interface and the
+ * collapse rules in `.fit-grid-*` are for.
+ *
+ * The serif also made this urgent rather than theoretical: Newsreader's figures
+ * are about 8% wider per digit than the geometric sans they replaced, so a
+ * thirteen-character amount (₱1,234,567.89) needs a wider column than it used
+ * to. The narrowest column this app renders is the third of a three-up rail on a
+ * 280px phone at the largest reading size — 122px — and a 0.875rem figure fits
+ * thirteen characters there with room to spare.
+ */
 .figure-xl {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
 }
 
 .figure-lg {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-weight: 800;
+  letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
 }
 
 .num {
@@ -363,16 +547,57 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Small caps-ish label above a value. */
+/*
+ * The aside — the app's second voice: the tagline, Pat's spoken lines, the
+ * sentence under a figure that explains what the figure means.
+ *
+ * In this direction the second voice is not a different typeface, it is weight
+ * and colour: 500 against the 800 of every heading and figure, in the secondary
+ * ink step. That is how a single-family product separates commentary from data,
+ * and it is why this class no longer switches family or slants.
+ */
+.aside {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/*
+ * The stamp: a small tinted pill for a state that is a fact about the page
+ * itself — DEMO DATA, SIMULATED, VOID. The tint is derived from the current text
+ * colour (`text-red-700` gets a red pill, `text-emerald-700` a green one), so a
+ * caller sets one class and both halves stay in step.
+ */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-radius: 9999px;
+  padding: 0.25rem 0.6rem;
+  font-family: var(--font-sans);
+  /* 12px, not 11px: this is the app's floor (see `.eyebrow`) and an uppercase
+     label at 11px is the one nobody would be able to read. */
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, currentColor 12%, white);
+}
+
+/* Small caps-ish label above a value. 12px, not 10.2px — uppercase at 10px is
+   the single hardest thing on the screen to read, and it is always a label
+   someone needs to understand a number underneath it. Letterspacing eases off
+   as the size grows, or the word falls apart on the phone. */
 .eyebrow {
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.085em;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .meta {
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -386,8 +611,8 @@ body {
   align-items: center;
   gap: 0.3em;
   border-radius: 9999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.66rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -404,20 +629,28 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.32;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 140px 140px;
 }
 
-/* The jewel card: navy lit from the top-left, falling to near-black at the
-   bottom-right, plus a diagonal sheen that sweeps once on mount.
+/* The jewel card: deep navy lit from the top-right, drawn like a blueprint — a
+   faint draughting grid etched into the blue — plus a diagonal sheen that
+   sweeps once on mount.
 
-   The lightest stop (#12357f-ish) is the worst case for the white text on top of
-   it, so the gradient starts there rather than at a brighter blue. */
+   The lightest stop (#12245c) is the worst case for the white text on top of
+   it, and white still clears 12:1 there. The grid is 5.5% white: visible as
+   craft, far below anything that could compete with the figures.
+ */
 .jewel {
+  background-color: #0a1638;
   background-image:
-    linear-gradient(148deg, #123f8f 0%, #0c2760 40%, #071a3d 74%, #050f28 100%);
+    radial-gradient(122% 94% at 88% -12%, rgb(61 81 240 / 0.55), transparent 58%),
+    radial-gradient(84% 72% at 0% 108%, rgb(255 213 74 / 0.12), transparent 60%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.055) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.055) 0 1px, transparent 1px 34px),
+    linear-gradient(158deg, #12245c 0%, #0a1638 52%, #060d24 100%);
 }
 .jewel::before {
   content: '';
@@ -454,7 +687,7 @@ body {
    has thickness rather than being a coloured rectangle — and on navy it wants a
    warm gold line rather than white, which is how the brand lockup reads too. */
 .edge-light {
-  box-shadow: inset 0 1px 0 0 rgb(253 227 138 / 0.35);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.14);
 }
 
 /* --- Motion -------------------------------------------------------------- */
@@ -499,6 +732,47 @@ body {
 }
 .enter > *:nth-child(n + 7) {
   animation-delay: 330ms;
+}
+
+/*
+ * The voice swap. Picking "Type it instead" mounts the type card above the
+ * mic hero (and back below when leaving it) — both mount fresh on the switch,
+ * so this replays once per swap. A reorder that moves without animating reads
+ * as a jump cut, which is exactly what made the old layout feel broken.
+ */
+.swap-mount {
+  animation: rise 0.45s var(--ease-spring) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap-mount {
+    animation: none;
+  }
+}
+
+/* The weekly report prints alone: on screen the pre is hidden, on paper the
+   app is. One page a coop manager can file — the printable half of PRO. */
+.print-only {
+  display: none;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #seepat-weekly-report,
+  #seepat-weekly-report * {
+    visibility: visible;
+  }
+  #seepat-weekly-report {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
 }
 
 @keyframes ring-in {
@@ -904,6 +1178,105 @@ body {
   }
 }
 
+/* --- Fitting a real phone ------------------------------------------------ */
+
+/*
+ * Two rules keep everything visible on a small phone, and both exist because
+ * the app used to hide things instead of fitting them:
+ *
+ * 1. **Nothing that carries information is truncated.** A label or a figure
+ *    that does not fit wraps. An ellipsis on a peso amount does not look like a
+ *    bug, it looks like a smaller number — "₱38,9…" silently deletes digits,
+ *    which is the worst thing a money screen can do to someone who is checking
+ *    her own numbers.
+ * 2. **Money scales with the shell, not the shell with the phone.** Every figure
+ *    size is a `clamp()` against the viewport width, so one screen works on a
+ *    280px Galaxy Fold cover, a 320px SE, a 360px Android and the 448px desktop
+ *    shell. The app is never wider than 28rem, so viewport-relative sizing is
+ *    the same thing as container-relative sizing here.
+ */
+
+/*
+ * Two-up and three-up money grids.
+ *
+ * Three columns of "EXPENSES" and "₱38,998.95" need roughly 95px each. Below
+ * 380px these grids drop to two columns and let the last figure span the full
+ * width — which is also the right reading order, since the third number in both
+ * grids (cash on hand) is the one that summarises the other two.
+ *
+ * Unlayered, so it beats a `grid-cols-3` utility without `!important`.
+ */
+@media (max-width: 379px) {
+  .fit-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fit-grid-3 > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+ * A money cell sizes its own figure.
+ *
+ * This is the piece that makes the whole responsive story hold. A peso amount
+ * cannot wrap (`white-space: nowrap` on `.figure-*`), so its font size has to be
+ * the thing that gives way — but the same figure appears in a 95px three-up rail
+ * cell on a tablet, a 153px two-up cell on a phone and a full-width cell on a
+ * small one. A viewport `clamp()` cannot know any of that; a CONTAINER can. So
+ * the cell declares itself a query container and the figure is measured against
+ * the cell, not the phone.
+ *
+ * The formula is calibrated against the widest realistic amount: thirteen
+ * characters (₱1,234,567.89) at 6.2cqw plus a 13px floor comes to 88px in a 95px
+ * cell — inside, with room. A ten-character amount gets a visibly larger figure
+ * in the same cell because the arithmetic is proportional in both directions.
+ *
+ * Unlayered on purpose: it has to beat the `text-[clamp(...)]` utility the
+ * components would otherwise apply.
+ */
+.money-cell {
+  container-type: inline-size;
+}
+
+.money-cell .figure-lg {
+  font-size: clamp(0.8125rem, calc(6.2cqw + 0.45rem), 1.375rem);
+}
+
+/*
+ * The column chart's own axis (see `MiniBars` in src/ui/components.tsx).
+ *
+ * Eight columns have to work at two very different widths: across a phone-crad
+ * card for the real chart, and inside the ~130px Sipat preview behind the lock.
+ * Below 175px of *container* width — not viewport width, which is why this is a
+ * container query rather than another media query — a row of two-digit dates is
+ * wider than the chart and the last two labels are cut off by the card's
+ * `overflow-hidden`. Showing only the current column's label keeps the axis
+ * honest without cutting any of it.
+ */
+.mini-bars {
+  container-type: inline-size;
+}
+
+@container (max-width: 175px) {
+  .mini-bars__col:not(:last-child) .mini-bars__label {
+    visibility: hidden;
+  }
+}
+
+/* Label-beside-amount lists (capital provenance): two 120px columns cannot show
+   "Minus: still owed to suppliers" and "₱15,307.90" together, so below 384px the
+   two lists stack and every row gets the full width. */
+@media (max-width: 383px) {
+  .fit-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Long words and long numbers break rather than push the layout sideways. */
+body {
+  overflow-wrap: break-word;
+}
+
 /* --- Shell --------------------------------------------------------------- */
 
 /* Respect the notch and home indicator so the shell feels native. */
@@ -921,8 +1294,420 @@ body {
   scrollbar-width: none;
 }
 
-/* Visible focus for keyboard users, invisible for touch. */
+/* Visible focus for keyboard users, invisible for touch. 3px rather than 2px:
+   a thin ring on a filled navy button is hard to find, and the people who need
+   to find it are the ones least able to hunt for it. */
 :focus-visible {
-  outline: 2px solid var(--color-brand-700);
-  outline-offset: 2px;
+  outline: 3px solid var(--color-brand-700);
+  outline-offset: 3px;
 }
+
+/*
+ * If the device is set to raise contrast, take the hint: the faint ink step
+ * moves up the ramp, hairlines get real, and the surfaces stay where they are.
+ * Cheap to honour and it is exactly the setting a person with ageing eyes turns
+ * on before they go looking for a font-size control.
+ */
+@media (prefers-contrast: more) {
+  :root {
+    --color-fg-muted: #202b44;
+    --color-fg-subtle: #2c3853;
+    --color-fg-faint: #333f5c;
+    --color-line: #c7c7d2;
+    --color-line-strong: #8a8a98;
+    --color-sunken: #e4e4ea;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Controls: the button, the tag and the dock.
+ *
+ * The rule for all three is the same, and it is the rule this class of product
+ * is actually built on: **flat fills, generous radii, soft wide shadows, and a
+ * press that is a small move.** No gradients, no bevels, no hard offset edge,
+ * no drop-shadow pretending to be thickness — those are the tells of an older
+ * interface, and they read as decoration rather than as a control.
+ *
+ * Hierarchy comes from weight instead: the primary button is near-black ink, a
+ * secondary is white with a hairline, the accent is the soft yellow, and a
+ * danger action is the flag red on its own tint.
+ *
+ * These live in `@layer components` on purpose. Unlayered CSS beats every
+ * Tailwind utility, so an unlayered `.btn { min-height: 2.75rem }` would quietly
+ * ignore a `min-h-14` passed in through `className` — a bigger primary button on
+ * the welcome deck asking to be bigger and being refused. Inside the layer, the
+ * class is the default and any utility a caller passes still wins, which is how
+ * the rest of this codebase already reads.
+ * ------------------------------------------------------------------------- */
+
+@layer components {
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* 48px, not 44: the primary action should be the easiest thing on the screen
+     to hit, and it is the one control that is often the only control. */
+  min-height: 3rem;
+  padding: 0.85rem 1.35rem;
+  /* A full pill, always: squarer keys read as system UI, and this product's one
+     custom control shape is the pill it shares with the dock, the chips and the
+     wordmark lockup. Flat fills only — a gradient on a button is the fastest
+     way to look generated. */
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  transition:
+    transform 140ms var(--ease-spring),
+    box-shadow 160ms linear,
+    background-color 160ms linear,
+    border-color 160ms linear;
+}
+.btn:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  transform: none;
+}
+
+/* The ink key. brand-800 with white text is the audited pair; the deeper
+   filled near-black IS the audited pair, and the shadow under it is a soft one
+   rather than a pretend edge. */
+.btn-ink {
+  background-color: var(--color-ink-900);
+  color: #fff;
+  box-shadow: var(--shadow-e1);
+}
+.btn-ink:hover:not(:disabled) {
+  background-color: var(--color-ink-700);
+}
+.btn-ink:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: none;
+}
+
+/* The brand key: electric blue, for the one action in a flow that is the brand
+   itself — the voice screen's main control, an upgrade. White on brand-600 is
+   the audited pair. */
+.btn-brand {
+  background-color: var(--color-brand-600);
+  color: #fff;
+  box-shadow: var(--shadow-pop);
+}
+.btn-brand:hover:not(:disabled) {
+  background-color: var(--color-brand-500);
+}
+.btn-brand:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: none;
+}
+
+/* The accent key, for premium actions. Near-black on the soft yellow is the
+   audited pair, and it is the one warm shape on a cool screen — which is what
+   makes it read as an offer rather than as another button. */
+.btn-gold {
+  background-color: var(--color-gold-300);
+  color: var(--color-ink-900);
+  box-shadow: var(--shadow-e1);
+}
+.btn-gold:hover:not(:disabled) {
+  background-color: var(--color-gold-400);
+}
+.btn-gold:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: none;
+}
+
+/* The quiet key: white on a hairline, the shape most of this app is made of. */
+.btn-quiet {
+  background-color: var(--color-card);
+  color: var(--color-fg);
+  border: 1px solid var(--color-line-strong);
+  box-shadow: var(--shadow-e1);
+}
+.btn-quiet:hover:not(:disabled) {
+  background-color: var(--color-card-deep);
+  border-color: var(--color-fg-faint);
+}
+.btn-quiet:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: none;
+}
+
+.btn-danger {
+  background-color: var(--color-red-50);
+  color: var(--color-red-700);
+  border: 1px solid var(--color-red-200);
+  box-shadow: var(--shadow-e1);
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-red-100);
+}
+.btn-danger:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: none;
+}
+
+/*
+ * A pill. Selected is near-black on white, which is the whole idea of a
+ * segmented control in this direction: the chosen thing is the dark thing, and
+ * the contrast between chosen and unchosen carries the state without a tick or a
+ * coloured fill.
+ */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg-muted);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  transition:
+    background-color 160ms linear,
+    color 160ms linear,
+    border-color 160ms linear,
+    transform 130ms var(--ease-spring);
+}
+.tag:hover:not(:disabled):not([aria-pressed='true']):not(.is-on) {
+  border-color: var(--color-fg-faint);
+  color: var(--color-fg);
+}
+.tag:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.tag[aria-pressed='true'],
+.tag.is-on {
+  background-color: var(--color-ink-900);
+  border-color: var(--color-ink-900);
+  color: #ffffff !important;
+  box-shadow: var(--shadow-e1);
+}
+.tag[aria-pressed='true']:hover,
+.tag[aria-pressed='true']:focus,
+.tag[aria-pressed='true']:focus-visible,
+.tag.is-on:hover,
+.tag.is-on:focus,
+.tag.is-on:focus-visible {
+  background-color: var(--color-ink-800);
+  border-color: var(--color-ink-800);
+  color: #ffffff !important;
+}
+
+/* --- The dock ------------------------------------------------------------- */
+
+/*
+ * A frosted bar floating over the content: translucent white, blurred behind,
+ * one soft wide shadow. It is deliberately not a solid tray — the content
+ * scrolling underneath it is what tells an owner the app is a page she can
+ * move, not a machine with panels.
+ */
+.dock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  border-radius: 9999px;
+  padding: 0.35rem 0.65rem;
+  background-color: rgb(255 255 255 / 0.85);
+  border: 1px solid rgb(255 255 255 / 0.95);
+  box-shadow:
+    0 12px 40px -10px rgb(11 11 15 / 0.16),
+    0 4px 16px -4px rgb(42 58 214 / 0.12),
+    inset 0 1px 1px 0 rgb(255 255 255 / 1);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* Every destination displays an icon on top with its text label below.
+   The active tab is highlighted with a brand pill fill, while inactive tabs
+   remain quiet and readable. */
+.dock-tab {
+  display: inline-flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 68px;
+  min-width: 48px;
+  height: 48px;
+  padding: 4px 6px;
+  flex: 1 1 0px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 16px;
+  color: var(--color-fg-faint);
+  background-color: transparent;
+  transition:
+    background-color 200ms var(--ease-spring),
+    color 200ms var(--ease-spring),
+    transform 160ms var(--ease-spring);
+}
+.dock-tab:hover {
+  color: var(--color-fg-muted);
+  background-color: rgb(11 11 15 / 0.04);
+}
+.dock-tab:active {
+  transform: scale(0.95);
+}
+.dock-tab.is-on {
+  background-color: var(--color-brand-600);
+  background-image: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-700));
+  color: #fff;
+  box-shadow: 0 4px 14px -3px rgb(42 58 214 / 0.5);
+}
+.dock-tab.is-on:hover {
+  background-color: var(--color-brand-700);
+  color: #fff;
+}
+.dock-label,
+.dock-active-label {
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* The centre key is the primary Voice action: direct navigation to mic screen */
+.dock-fab {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  margin-top: -27px;
+  border-radius: 9999px;
+  background-color: var(--color-brand-600);
+  background-image: linear-gradient(135deg, #3d51f0 0%, #232fae 100%);
+  color: #fff;
+  box-shadow:
+    0 0 0 5px rgb(255 255 255 / 0.95),
+    0 14px 30px -6px rgb(42 58 214 / 0.65);
+  transition:
+    transform 180ms var(--ease-spring),
+    box-shadow 180ms var(--ease-spring);
+}
+.dock-fab:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 0 0 5px rgb(255 255 255 / 0.98),
+    0 18px 36px -6px rgb(42 58 214 / 0.75);
+}
+.dock-fab:active {
+  transform: translateY(0) scale(0.96);
+}
+.dock-fab svg {
+  transition: transform 220ms var(--ease-spring);
+}
+.dock-fab.is-active {
+  background-image: linear-gradient(135deg, #2a3ad6 0%, #171e63 100%);
+  box-shadow:
+    0 0 0 5px rgb(255 255 255 / 1),
+    0 18px 36px -6px rgb(42 58 214 / 0.75);
+  transform: translateY(-2px);
+}
+
+/* Below 380px the bar padding and the circles step down one notch — the same
+ * design, with 4×42 + 54 + gaps + padding ≈ 256px so all five destinations
+ * stay on a 280px phone. */
+/* The logo halo: a soft brand-tinted glow plus a paper ring behind the lockup,
+   so the mark reads as lit rather than pasted on. */
+.logo-halo {
+  position: relative;
+  display: inline-block;
+  border-radius: 1.6rem;
+  padding: 3px;
+  background-color: rgb(255 255 255 / 0.85);
+  box-shadow:
+    0 0 0 1px var(--color-hairline),
+    0 0 22px 2px rgb(61 81 240 / 0.22),
+    var(--shadow-e2);
+}
+
+/* The page indicator: a small centred line above the content naming where you
+   are — a live dot in the active colour plus the section name. It is the shell
+   saying the page's name out loud, so no screen needs its own title row. */
+.page-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+}
+.page-eyebrow .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background-color: var(--color-brand-600);
+  box-shadow: 0 0 0 3px var(--color-brand-100);
+}
+.page-eyebrow .name {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-faint);
+}
+
+@media (max-width: 379px) {
+  .dock {
+    padding: 5px 6px;
+    gap: 0.15rem;
+  }
+  .dock-tab {
+    min-width: 42px;
+    max-width: 58px;
+    height: 44px;
+    padding: 3px 2px;
+    border-radius: 14px;
+    gap: 1px;
+  }
+  .dock-tab svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .dock-label,
+  .dock-active-label {
+    font-size: 0.625rem;
+    display: block;
+  }
+  .dock-fab {
+    width: 52px;
+    height: 52px;
+    margin-top: -24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled),
+  .btn-quiet:active:not(:disabled),
+  .btn-danger:active:not(:disabled),
+  .dock-fab:active,
+  .dock-tab:active {
+    transform: none;
+  }
+}
+
+/*
+ * A plain hairline divider. It replaced a printed double rule: two weights of
+ * line is a masthead, and a masthead is exactly the older-product signal this
+ * direction removes.
+ */
+.rule-set {
+  height: 1px;
+  background-color: var(--color-line);
+}
+
+} /* @layer components */

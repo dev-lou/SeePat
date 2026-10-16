@@ -44,9 +44,11 @@ export default defineConfig(({ mode }) => ({
         // Both match the page canvas, not the brand navy. The header is a light
         // translucent bar, so a navy status bar on top of it reads as a seam;
         // these values make the splash screen and the Android status bar
-        // disappear into the app instead of framing it.
-        theme_color: '#f5f7fb',
-        background_color: '#f5f7fb',
+        // disappear into the app instead of framing it. They are the cool canvas
+        // of `--color-page`, so the installed app has no seam anywhere: OS
+        // splash, boot splash and screen all read as one surface.
+        theme_color: '#f2f2f5',
+        background_color: '#f2f2f5',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

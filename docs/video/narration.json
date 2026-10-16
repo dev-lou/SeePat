@@ -1,0 +1,38 @@
+{
+  "note": "Narration for the SeePat demo. Each line is anchored to a recorded beat plus an offset, so the voice follows the actual take instead of a guessed timeline. Offsets are chosen so no line overlaps the next (tools/build-video.mjs reports overlaps). 'max' is the window the line has to fit; tools/make-narration-kokoro.mjs synthesizes, measures, and speeds up only as much as that window requires.",
+  "voice": "Kokoro-82M af_heart (onnx-community/Kokoro-82M-v1.0-ONNX, q8, CPU)",
+  "title": { "duration": 4.5 },
+  "howto": { "duration": 6.2 },
+  "end": { "duration": 9.5 },
+  "steps": [
+    { "beat": "dashboard", "chip": "THE MONEY, TODAY", "card": "The money, today - real profit, not sales" },
+    { "beat": "ledger", "chip": "WHERE EVERY PESO LANDS", "card": "The ledger - every benta, utang, gastos" },
+    { "beat": "voice-sale", "chip": "SPEAK IT, THEN CONFIRM", "card": "Speaking a sale in Taglish" },
+    { "beat": "ask-capital", "chip": "ASK IN TAGLISH", "card": "Asking the ledger in your own words" },
+    { "beat": "sipat-score", "chip": "THE SCORE", "card": "The Sipat Score, and why" },
+    { "beat": "settings", "chip": "ALREADY ON THE PHONE", "card": "The voice model on the phone" },
+    { "beat": "offline", "chip": "NO SIGNAL, STILL WORKS", "card": "With no signal at all" }
+  ],
+  "lines": [
+    { "id": 1, "beat": "title", "offset": 0.55, "max": 2.6, "caption": false, "text": "SeePat." },
+    { "id": 2, "beat": "title", "offset": 2.15, "max": 3.6, "caption": false, "text": "Don't just record your tindahan. Understand it." },
+    { "id": 3, "beat": "howto", "offset": 2.2, "max": 2.6, "caption": false, "text": "So how does it work?" },
+    { "id": 4, "beat": "howto", "offset": 4.1, "max": 2.4, "caption": false, "text": "Seven steps, end to end." },
+    { "id": 5, "beat": "dashboard", "offset": 1.6, "max": 5.2, "caption": true, "text": "In the Philippines, over a million sari-sari stores run on memory and guesswork." },
+    { "id": 6, "beat": "dashboard", "offset": 7.0, "max": 3.4, "caption": true, "text": "It opens on today's real profit, not today's sales." },
+    { "id": 7, "beat": "ledger", "offset": 0.8, "max": 4.6, "caption": true, "text": "Every benta, utang and gastos is recorded in one ledger." },
+    { "id": 8, "beat": "ledger", "offset": 5.7, "max": 3.9, "caption": true, "text": "Sale, utang, gastos, capital: all first-class entries." },
+    { "id": 9, "beat": "voice-sale", "offset": 0.9, "max": 3.0, "caption": true, "text": "Sipat, nakabenta ako ng sampung Coke." },
+    { "id": 10, "beat": "voice-sale", "offset": 3.9, "max": 3.4, "caption": true, "text": "Speak the sale in Taglish. No forms, no typing." },
+    { "id": 11, "beat": "voice-sale", "offset": 7.7, "max": 3.9, "caption": true, "text": "SeePat prices it from your history and drafts it. You confirm." },
+    { "id": 12, "beat": "ask-capital", "offset": 0.8, "max": 2.6, "caption": true, "text": "Then ask in your own words." },
+    { "id": 13, "beat": "ask-capital", "offset": 3.4, "max": 3.2, "caption": true, "text": "Nasaan ang puhunan ko? Where is my capital?" },
+    { "id": 14, "beat": "ask-capital", "offset": 7.0, "max": 4.2, "caption": true, "text": "Every figure comes from your own ledger, not from a language model." },
+    { "id": 15, "beat": "sipat-score", "offset": 1.0, "max": 4.4, "caption": true, "text": "The Sipat Score grades the business out of one hundred." },
+    { "id": 16, "beat": "sipat-score", "offset": 6.0, "max": 3.6, "caption": true, "text": "Every point is explained, in your own numbers." },
+    { "id": 17, "beat": "settings", "offset": 0.9, "max": 3.8, "caption": true, "text": "The voice model downloads once, then it lives on the phone." },
+    { "id": 18, "beat": "offline", "offset": 0.6, "max": 3.4, "caption": true, "text": "No signal? It still records, and it still answers." },
+    { "id": 19, "beat": "end", "offset": 0.52, "max": 4.6, "caption": false, "text": "Voice runs on the phone itself, and your data never leaves it." },
+    { "id": 20, "beat": "end", "offset": 5.32, "max": 4.0, "caption": false, "text": "SeePat. Don't just record it. Understand it." }
+  ]
+}

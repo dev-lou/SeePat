@@ -3,19 +3,20 @@ import {
   Button,
   Card,
   Chip,
+  CustomSelect,
   Field,
   HeroShell,
   LockedCard,
-  Pill,
   SectionTitle,
   inputClass,
 } from './components.tsx'
+import { useToast } from './Toast.tsx'
 import { Pat, moodForVoice } from './Pat.tsx'
 import { SAMPLE_UTTERANCES, getEngines } from '../asr.ts'
 import type { AsrErrorCode, AsrStatus } from '../asr.ts'
 import { OFFLINE_ENGINE_ID, RUNTIME_APPROX_MB, WHISPER_MODEL, useVoiceModel } from '../asr-offline.ts'
 import { formatPHP, parseSpoken, pesos } from '../engine/index.ts'
-import type { Sku } from '../engine/index.ts'
+import type { Sku, Transaction } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
 import type { Negosyo } from '../store.ts'
 import type { Billing } from '../billing.ts'
@@ -59,9 +60,11 @@ export function VoiceScreen({
   onUpgrade: () => void
   onOpenOffline: () => void
 }) {
-  const { ledger, add } = negosyo
+  const { ledger, add, removeTransaction } = negosyo
   const lang = useLang()
   const t = useT()
+  const toast = useToast()
+  const undoLabel = lang === 'fil' ? 'I-undo' : 'Undo'
   const voiceModel = useVoiceModel()
 
   // Rebuilt when a model lands, so the Offline chip stops reporting itself as
@@ -94,6 +97,11 @@ export function VoiceScreen({
   // the browser does the recognizing at no cost to us. If that ever changes,
   // the gate changes in billing.ts and this screen follows automatically.
   const voiceAllowed = billing.can('voice_capture')
+
+  // Typed mode lifts the type card above the mic hero: when typing is the job,
+  // the keyboard surface leads and the mic waits below. The screen stays where
+  // it is — no auto-scroll — so the swap itself is what the owner sees.
+  const typedMode = engineId === 'typed'
 
   function buildDraft(text: string) {
     const draft = parseSpoken(text, ledger, lang)
@@ -199,7 +207,7 @@ export function VoiceScreen({
     const total = lines.reduce((s, l) => s + l.qty * l.unitPriceCentavos, 0)
 
     if (draftKind === 'credit_sale') {
-      add({
+      const txn: Transaction = {
         id: newTxnId('utang'),
         at,
         kind: 'credit_sale',
@@ -207,10 +215,23 @@ export function VoiceScreen({
         customerId: draftCustomer ?? 'walk_in',
         note: draftText,
         source: 'voice',
+      }
+      add(txn)
+      const msg = t('voice.posted.utang', { amount: formatPHP(total) })
+      setPosted(msg)
+      toast.show({
+        title: msg,
+        tone: 'success',
+        undoLabel,
+        onUndo: () => {            removeTransaction(txn.id)
+          toast.show({
+            title: lang === 'fil' ? 'Na-undo ang utang' : 'Credit sale undone',
+            tone: 'info',
+          })
+        },
       })
-      setPosted(t('voice.posted.utang', { amount: formatPHP(total) }))
     } else if (draftKind === 'purchase') {
-      add({
+      const txn: Transaction = {
         id: newTxnId('pur'),
         at,
         kind: 'purchase',
@@ -222,18 +243,44 @@ export function VoiceScreen({
         paidCentavos: total,
         note: draftText,
         source: 'voice',
+      }
+      add(txn)
+      const msg = t('voice.posted.purchase', { amount: formatPHP(total) })
+      setPosted(msg)
+      toast.show({
+        title: msg,
+        tone: 'success',
+        undoLabel,
+        onUndo: () => {            removeTransaction(txn.id)
+          toast.show({
+            title: lang === 'fil' ? 'Na-undo ang bili' : 'Purchase undone',
+            tone: 'info',
+          })
+        },
       })
-      setPosted(t('voice.posted.purchase', { amount: formatPHP(total) }))
     } else {
-      add({
+      const txn: Transaction = {
         id: newTxnId('sal'),
         at,
         kind: 'cash_sale',
         lines,
         note: draftText,
         source: 'voice',
+      }
+      add(txn)
+      const msg = t('voice.posted.sale', { amount: formatPHP(total) })
+      setPosted(msg)
+      toast.show({
+        title: msg,
+        tone: 'success',
+        undoLabel,
+        onUndo: () => {            removeTransaction(txn.id)
+          toast.show({
+            title: lang === 'fil' ? 'Na-undo ang benta' : 'Sale undone',
+            tone: 'info',
+          })
+        },
       })
-      setPosted(t('voice.posted.sale', { amount: formatPHP(total) }))
     }
     setEdited(null)
     setTranscript('')
@@ -277,11 +324,61 @@ export function VoiceScreen({
     return sum + toBaseQty(sku, Number(l.qtyDisplay)) * pesos(Number(l.priceDisplay))
   }, 0)
 
+  /*
+   * The type-it surface, rendered above or below the mic hero depending on the
+   * picked engine (see the swap below). Brand-tinted while typing is the job,
+   * plain otherwise — the tint is how the screen says "this one is live".
+   * Samples are frosted suggestion slips with a quotation mark, not flat grey
+   * chips: each is a sentence to SAY, one tap fills the box and builds the
+   * draft in the same motion.
+   */
+  const typeCard = (
+    <div className="swap-mount">
+      <Card material={typedMode ? 'brand' : 'plain'}>
+        <SectionTitle hint={t('voice.typeHint')}>{t('voice.typeTitle')}</SectionTitle>
+        <textarea
+          className={`${inputClass} min-h-24 resize-none`}
+          placeholder={t('voice.placeholder')}
+          value={draftText}
+          onChange={(e) => setDraftText(e.target.value)}
+          rows={3}
+        />
+        <Button className="mt-3 w-full" onClick={() => buildDraft(draftText)} disabled={!draftText.trim()}>
+          {t('voice.makeDraft')}
+        </Button>
+        <div className="mt-4">
+          <div className="eyebrow text-fg-faint">{t('voice.samples')}</div>
+          <div className="mt-2 space-y-2">
+            {SAMPLE_UTTERANCES.map((sample) => (
+              <button
+                key={sample}
+                type="button"
+                className="aside flex min-h-11 w-full items-center gap-2.5 rounded-2xl border border-white/80 bg-white/70 px-3.5 py-2.5 text-left text-[0.875rem] leading-snug text-fg-subtle shadow-xs backdrop-blur-md transition hover:border-brand-500/40 hover:text-fg active:scale-[0.99]"
+                onClick={() => {
+                  setDraftText(sample)
+                  buildDraft(sample)
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600/10 text-[0.9375rem] font-black text-brand-700"
+                >
+                  &ldquo;
+                </span>
+                <span className="min-w-0 flex-1">{sample}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       <Card>
         <SectionTitle hint={t('voice.engineLabel')}>{t('voice.title')}</SectionTitle>
-        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 shadow-xs">
           {engines.map((e) => (
             <Chip key={e.id} active={engineId === e.id} onClick={() => setEngineId(e.id)}>
               {pick(lang, e.label)}
@@ -290,7 +387,9 @@ export function VoiceScreen({
           ))}
         </div>
         {engine ? (
-          <p className="mt-2 text-[0.7rem] text-fg-subtle">{pick(lang, engine.note)}</p>
+          <p className="mt-3 text-[0.8125rem] leading-relaxed text-fg-subtle">
+            {pick(lang, engine.note)}
+          </p>
         ) : null}
       </Card>
 
@@ -303,10 +402,12 @@ export function VoiceScreen({
         />
       ) : null}
 
-      {/* The mic lives on the jewel surface: a white button on emerald reads as
-          the primary action from across the room. */}
-      <HeroShell className={voiceAllowed ? '' : 'opacity-45'}>
-        <div className="pointer-events-none absolute -right-14 -top-20 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+      {/* In typed mode the draft surface leads: the mic hero drops below it.
+          Both mount fresh on the switch, so the reorder arrives with animation
+          rather than a jump cut. */}
+      {typedMode ? typeCard : null}
+
+      <HeroShell key={typedMode ? 'typed' : 'mic'} className={`swap-mount p-6 shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)] ${voiceAllowed ? '' : 'opacity-45'}`}>
         <div className="relative flex flex-col items-center">
           <Pat mood={voiceMood} wardrobe="ears" tone="dark" size={132} className="-mb-2" />
           <button
@@ -314,9 +415,9 @@ export function VoiceScreen({
             onClick={listening ? stopListening : startListening}
             disabled={!engine?.available || !voiceAllowed}
             className={`relative flex h-24 w-24 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-40 ${
-              // red-600, not red-500: the white mic glyph needs 4.5:1, and flag
-              // red at full strength is the first step that gives it.
-              listening ? 'mic-ring bg-red-600' : 'bg-white'
+              listening
+                ? 'mic-ring bg-red-600 shadow-[0_0_35px_rgba(220,38,38,0.7)]'
+                : 'bg-white shadow-[0_10px_30px_-5px_rgba(255,255,255,0.4)] hover:scale-105'
             }`}
             aria-label={listening ? t('voice.stopListening') : t('voice.startListening')}
           >
@@ -347,7 +448,7 @@ export function VoiceScreen({
             ))}
           </div>
 
-          <p className="mt-4 text-center text-[0.78rem] font-semibold text-white">
+          <p className="mt-4 text-center text-[0.9375rem] font-semibold text-white">
             {status === 'transcribing'
               ? t('voice.status.transcribing')
               : listening
@@ -355,28 +456,37 @@ export function VoiceScreen({
                 : t('voice.status.prompt')}
           </p>
           {voiceModel.installed ? (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="rounded-full bg-white/15 px-2.5 py-1 text-[0.66rem] font-semibold text-white backdrop-blur-sm">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <span className="rounded-full bg-white/15 px-3 py-1.5 text-[0.8125rem] font-semibold text-white backdrop-blur-sm">
                 {t('voice.offlineWorks')}
               </span>
-              <span className="num text-[0.66rem] font-semibold text-white/90">
+              <span className="num text-[0.8125rem] font-semibold text-white/90">
                 {voiceModel.megabytes}MB
               </span>
             </div>
           ) : null}
           {transcript ? (
-            <p className="mt-3.5 text-center text-sm font-medium text-white">
+            /*
+             * What the owner said is a QUOTATION, so it is set as one: the app's
+             * second voice (weight 500 against the 800 of every figure), in white
+             * on the dark card, inside real quotation marks. It is the only thing
+             * on this screen that came out of a person rather than out of a
+             * calculation, and the type has to say so.
+             */
+            <p className="aside mt-4 text-center text-[1.0625rem] leading-snug text-white">
               &ldquo;{transcript}&rdquo;
             </p>
           ) : null}
           {error ? (
-            <p className="mt-3 text-center text-[0.72rem] leading-relaxed text-red-100">{error}</p>
+            <p className="mt-3 text-center text-[0.875rem] leading-relaxed text-red-100">{error}</p>
           ) : null}
           {offlineRoute ? (
+            /* A white pill on the dark card: it is an action, and on this surface
+               a light control is the one that reads as pressable. */
             <button
               type="button"
               onClick={offlineRoute.action}
-              className="mt-3 rounded-full bg-white px-4 py-2 text-[0.72rem] font-semibold text-brand-700 transition active:scale-95"
+              className="btn btn-quiet mt-4"
             >
               {offlineRoute.label}
             </button>
@@ -386,9 +496,11 @@ export function VoiceScreen({
 
 
       {!voiceModel.installed ? (
-        <Card className="border-dashed">
+        /* Dashed rather than solid: this card is an invitation to set something
+           up, and a dashed edge says "not yet" without a single word. */
+        <Card className="border-y border-dashed border-line-strong">
           <SectionTitle hint={t('offline.onceHint')}>{t('voice.offlineTitle')}</SectionTitle>
-          <p className="text-[0.7rem] leading-relaxed text-fg-subtle">
+          <p className="text-[0.8125rem] leading-relaxed text-fg-subtle">
             {/* Weights plus runtime, computed from the catalogue so the figure
                 quoted here cannot drift from the one the Offline screen shows. */}
             {t('voice.offlineIntro', { mb: WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB })}
@@ -399,81 +511,64 @@ export function VoiceScreen({
         </Card>
       ) : null}
 
-      <Card>
-        <SectionTitle hint={t('voice.typeHint')}>{t('voice.typeTitle')}</SectionTitle>
-        <textarea
-          className={`${inputClass} min-h-20 resize-none`}
-          placeholder={t('voice.placeholder')}
-          value={draftText}
-          onChange={(e) => setDraftText(e.target.value)}
-        />
-        <Button className="mt-3 w-full" onClick={() => buildDraft(draftText)} disabled={!draftText.trim()}>
-          {t('voice.makeDraft')}
-        </Button>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SAMPLE_UTTERANCES.map((sample) => (
-            <button
-              key={sample}
-              type="button"
-              className="rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] text-fg-subtle"
-              onClick={() => {
-                setDraftText(sample)
-                buildDraft(sample)
-              }}
-            >
-              {sample.length > 38 ? `${sample.slice(0, 38)}…` : sample}
-            </button>
-          ))}
-        </div>
-      </Card>
+      {typedMode ? null : typeCard}
 
       {edited && edited.length > 0 ? (
-        <Card flat className="border-brand-600/40 bg-brand-50">
-          <div className="flex items-center justify-between">
-            <SectionTitle>{t('voice.draftTitle')}</SectionTitle>
-            <Pill tone="warn">{t('voice.draftUnposted')}</Pill>
+        <Card flat className="border-brand-500/40 bg-gradient-to-br from-brand-50/90 to-white/90 backdrop-blur-md shadow-e2">
+          {/*
+           * Wraps, and the stamp may take its own line: at 280px in the largest
+           * reading size the title and a stamp cannot share a row, and a stamp
+           * squeezed narrow reads as a smudge rather than as a label.
+           */}
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
+            <h2 className="headline min-w-0 text-[1.0625rem] leading-snug text-fg">
+              {t('voice.draftTitle')}
+            </h2>
+            <span className="stamp text-amber-700">{t('voice.draftUnposted')}</span>
           </div>
-          <p className="mb-3 text-[0.7rem] text-fg-subtle">
+          <p className="mb-3.5 text-[0.8125rem] leading-relaxed text-fg-subtle">
             {t('voice.confirmIntro')}
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {edited.map((line) => {
               const sku = ledger.skus.find((s) => s.id === line.skuId)
               return (
                 <div
                   key={line.key}
-                  className="rounded-2xl border border-brand-300 bg-sunken p-3"
+                  className="rounded-2xl border border-brand-200/80 bg-white/80 backdrop-blur-md p-4 shadow-xs"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-fg">{line.skuName}</span>
-                    <select
-                      className="rounded-xl border border-line bg-line px-2 py-1 text-[0.7rem] text-fg-muted"
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 text-base leading-snug font-medium text-fg">
+                      {line.skuName}
+                    </span>
+                    <CustomSelect
                       value={line.skuId}
-                      onChange={(e) =>
+                      size="sm"
+                      mt={false}
+                      className="w-44 shrink-0"
+                      onChange={(val) =>
                         setEdited((current) =>
                           (current ?? []).map((l) =>
                             l.key === line.key
                               ? {
                                   ...l,
-                                  skuId: e.target.value,
+                                  skuId: val,
                                   skuName:
-                                    ledger.skus.find((s) => s.id === e.target.value)?.name ??
+                                    ledger.skus.find((s) => s.id === val)?.name ??
                                     l.skuName,
                                 }
                               : l,
                           ),
                         )
                       }
-                    >
-                      {ledger.skus.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
+                      options={ledger.skus.map((s) => ({ value: s.id, label: s.name }))}
+                    />
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
+                  {/* `fit-grid-2`: on a small phone the quantity and price stack,
+                      so the two numbers being confirmed stay legible and easy to
+                      tap rather than becoming 68px boxes. */}
+                  <div className="fit-grid-2 mt-3 grid grid-cols-2 gap-3.5">
                     <Field
                       label={t('record.field.qty')}
                       hint={sku?.baseUnit === 'g' ? t('voice.hintPerKilo') : sku?.unit}
@@ -518,34 +613,37 @@ export function VoiceScreen({
           {draftKind === 'credit_sale' ? (
             <div className="mt-3">
               <Field label={t('voice.field.customerUtang')}>
-                <select
-                  className={inputClass}
+                <CustomSelect
                   value={draftCustomer ?? ''}
-                  onChange={(e) => setDraftCustomer(e.target.value || undefined)}
-                >
-                  <option value="">{t('record.walkIn')}</option>
-                  {ledger.customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setDraftCustomer(val || undefined)}
+                  placeholder={t('record.walkIn')}
+                  options={ledger.customers.map((c) => ({ value: c.id, label: c.name }))}
+                />
               </Field>
             </div>
           ) : null}
 
-          <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-            <span className="text-sm text-fg-muted">{t('voice.total')}</span>
-            <span className="text-lg font-semibold tabular-nums text-fg">
-              {formatPHP(draftTotal)}
-            </span>
+          <div className="rule-set mt-4" aria-hidden />
+          {/*
+           * The total closes the draft. `money-cell` sizes the figure against
+           * this row rather than the viewport, and the row WRAPS: the label is
+           * short in English and longer in Tagalog, while the figure beside it is
+           * `nowrap` — so without wrapping, a long label would squeeze a peso
+           * amount that is not allowed to break.
+           */}
+          <div className="money-cell mt-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="eyebrow text-fg-subtle">{t('voice.total')}</span>
+            <span className="figure-lg num leading-none text-fg">{formatPHP(draftTotal)}</span>
           </div>
 
-          <div className="mt-3 flex gap-2">
-            <Button variant="ghost" className="flex-1" onClick={() => setEdited(null)}>
+          {/* Stacked, always: two side-by-side buttons at 280px leave the words
+              "Confirm and record" no room, and this is the button that saves the
+              money. */}
+          <div className="mt-3.5 flex flex-col gap-2.5">
+            <Button variant="ghost" className="min-h-12 flex-1" onClick={() => setEdited(null)}>
               {t('voice.cancel')}
             </Button>
-            <Button className="flex-1" onClick={confirm}>
+            <Button className="min-h-12 flex-1" onClick={confirm}>
               {t('voice.confirmAndRecord')}
             </Button>
           </div>
@@ -554,7 +652,7 @@ export function VoiceScreen({
 
       {posted ? (
         <Card flat className="border-emerald-200 bg-emerald-50">
-          <p className="text-sm text-emerald-700">{posted}</p>
+          <p className="text-base leading-relaxed text-emerald-700">{posted}</p>
         </Card>
       ) : null}
     </div>

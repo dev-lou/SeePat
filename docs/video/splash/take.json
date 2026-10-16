@@ -1,0 +1,21 @@
+{
+  "fps_estimate": 32.552222111392865,
+  "duration_estimate": 3.532784938812256,
+  "frames": 115,
+  "bytes": 3346430,
+  "firstDeviceSize": {
+    "w": 540,
+    "h": 960
+  },
+  "preRollFrames": 1,
+  "preRollSeconds": 0.056,
+  "beats": [
+    {
+      "name": "splash",
+      "videoStart": 0,
+      "videoEnd": 3.53,
+      "wallStart": 0.4,
+      "wallEnd": 6.01
+    }
+  ]
+}

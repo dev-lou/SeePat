@@ -1,0 +1,16 @@
+{
+  "fps_estimate": 24.11956782919314,
+  "duration_estimate": 3.2753489017486572,
+  "frames": 79,
+  "bytes": 8660452,
+  "firstDeviceSize": {
+    "w": 540,
+    "h": 960
+  },
+  "marks": [],
+  "taps": [],
+  "heldFrames": 0,
+  "preRollFrames": 7,
+  "preRollSeconds": 0.213,
+  "beats": []
+}

@@ -54,6 +54,66 @@ export function clearWelcomeSeen(): void {
   removePersisted(STORAGE)
 }
 
+/**
+ * The home-screen starter checklist: three steps, resumable, dismissible.
+ *
+ * A new owner should not have to read a report before her first sale, so the
+ * dashboard opens with at most one job per step. State is a small JSON object
+ * under its own key — pure helpers, so the rules are testable without storage.
+ */
+
+export const CHECKLIST_STEPS = ['sale', 'voice', 'score'] as const
+export type ChecklistStep = (typeof CHECKLIST_STEPS)[number]
+
+export interface ChecklistState {
+  done: ChecklistStep[]
+  dismissed: boolean
+}
+
+const CHECKLIST_STORAGE = { key: 'seepat.checklist.v1' }
+
+export function emptyChecklist(): ChecklistState {
+  return { done: [], dismissed: false }
+}
+
+export function parseChecklist(raw: string | null): ChecklistState {
+  if (!raw) return emptyChecklist()
+  try {
+    const parsed = JSON.parse(raw) as Partial<ChecklistState>
+    const done = Array.isArray(parsed.done)
+      ? parsed.done.filter((s): s is ChecklistStep => (CHECKLIST_STEPS as readonly string[]).includes(s as string))
+      : []
+    return { done, dismissed: parsed.dismissed === true }
+  } catch {
+    return emptyChecklist()
+  }
+}
+
+export function getChecklist(): ChecklistState {
+  return parseChecklist(readPersisted(CHECKLIST_STORAGE))
+}
+
+function saveChecklist(state: ChecklistState): void {
+  writePersisted(CHECKLIST_STORAGE, JSON.stringify(state))
+}
+
+export function markChecklistStep(state: ChecklistState, step: ChecklistStep): ChecklistState {
+  if (state.done.includes(step)) return state
+  const next = { ...state, done: [...state.done, step] }
+  saveChecklist(next)
+  return next
+}
+
+export function dismissChecklist(state: ChecklistState): ChecklistState {
+  const next = { ...state, dismissed: true }
+  saveChecklist(next)
+  return next
+}
+
+export function checklistVisible(state: ChecklistState): boolean {
+  return !state.dismissed && state.done.length < CHECKLIST_STEPS.length
+}
+
 /** Clamped so a stray key press can never index off the end of the deck. */
 export function stepSlide(index: number, delta: number, total = welcomeSlideCount()): number {
   if (total <= 0) return 0

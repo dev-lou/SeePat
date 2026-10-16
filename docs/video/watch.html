@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SeePat promo — review</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        padding: 28px;
+        background: #050f28;
+        color: #e8eefc;
+        font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+      }
+      h1 { font-size: 20px; margin: 0 0 4px; color: #fff; }
+      .meta { color: #9fb0d0; font-size: 13px; margin-bottom: 20px; }
+      .gold { color: #dda60c; }
+      .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+      video {
+        width: 360px;
+        border-radius: 14px;
+        background: #000;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+      }
+      .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; flex: 1; }
+      figure { margin: 0; }
+      img { width: 100%; border-radius: 8px; display: block; border: 1px solid #1d2b4d; }
+      figcaption { font-size: 11px; color: #9fb0d0; margin-top: 4px; }
+      code { color: #dda60c; }
+    </style>
+  </head>
+  <body>
+    <h1>SeePat — how it works <span class="gold">1080 × 1920</span></h1>
+    <div class="meta">
+      90s · seven steps · h264 + aac · vertical, for reels and the pitch deck · a camera that pushes in on
+      each step, a touch marker where the app is pressed, and burned-in captions
+    </div>
+    <div class="row">
+      <!-- Not autoplaying: a muted autoplay would hide the new narration, and the
+           point of this page is to hear it. -->
+      <!-- poster: the video opens on a fade from white, so frame 0 is blank and the
+           player would look broken before it is played. -->
+      <video src="SeePat_promo_1080x1920.mp4" poster="build/f_title.png" controls playsinline></video>
+      <div style="margin-top: 14px; font-size: 12px; color: #9fb0d0">16:9 cut for projection</div>
+      <video src="SeePat_promo_1920x1080.mp4" poster="build/f_title.png" controls playsinline style="width: 360px; margin-top: 6px"></video>
+      <div class="shots">
+        <figure><img src="build/f_title.png" alt="app boot screen" /><figcaption>0:02 · app boot screen (intro)</figcaption></figure>
+        <figure><img src="build/f_howto.png" alt="chapter card" /><figcaption>0:07 · the seven steps</figcaption></figure>
+        <figure><img src="build/f_dash.png" alt="dashboard" /><figcaption>0:13 · step 1 · the money, today</figcaption></figure>
+        <figure><img src="build/f_ledger.png" alt="ledger" /><figcaption>0:25 · step 2 · the ledger (with a touch marker)</figcaption></figure>
+        <figure><img src="build/f_voice.png" alt="voice" /><figcaption>0:38 · step 3 · speak the sale</figcaption></figure>
+        <figure><img src="build/f_ask.png" alt="ask" /><figcaption>0:51 · step 4 · ask in Taglish</figcaption></figure>
+        <figure><img src="build/f_score.png" alt="score" /><figcaption>1:02 · step 5 · the Sipat Score</figcaption></figure>
+        <figure><img src="build/f_offline.png" alt="offline" /><figcaption>1:18 · steps 6–7 · on the phone, then no signal</figcaption></figure>
+        <figure><img src="build/f_end.png" alt="app boot screen" /><figcaption>1:27 · boot screen (outro)</figcaption></figure>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SILENCE_DEFAULTS, createSilenceTracker, speechDurationMs } from './audio.ts'
+import { SILENCE_DEFAULTS, createSilenceTracker, normalisePeak, speechDurationMs } from './audio.ts'
 
 /**
  * When does a take end?
@@ -123,3 +123,107 @@ describe('the take ends when the talking does', () => {
     expect(gap).toBeLessThan(620)
   })
 })
+
+/**
+ * Quiet speech, and the silence it must not be confused with.
+ *
+ * These cases come from measurement rather than from imagination. Four clean
+ * FLEURS `fil_ph` recordings run through the real browser pipeline arrived at
+ * 0.018–0.029 RMS — so the absolute 0.02 floor credited barely half of each take —
+ * and the same audio 20 dB down credited **0ms**, which the engine turns into "No
+ * words were heard" for audio it could have transcribed fine.
+ */
+function alternating(level: number, ms: number): Float32Array {
+  // An alternating ±A waveform has RMS exactly A, which keeps these assertions
+  // about levels rather than about a particular waveform.
+  const length = Math.round((16000 * ms) / 1000)
+  const out = new Float32Array(length)
+  for (let i = 0; i < length; i += 1) out[i] = i % 2 === 0 ? level : -level
+  return out
+}
+
+function concat(parts: Float32Array[]): Float32Array {
+  const total = parts.reduce((sum, p) => sum + p.length, 0)
+  const out = new Float32Array(total)
+  let offset = 0
+  for (const part of parts) {
+    out.set(part, offset)
+    offset += part.length
+  }
+  return out
+}
+
+describe('a quiet take is heard, and a silent one is still refused', () => {
+  // 20 dB down: 0.005 during speech, 0.0005 between phrases.
+  const quietSpeech = concat([alternating(0.005, 3000), alternating(0.001, 2000)])
+  // A room with no one in it: steady hum at a level the absolute floor ignores.
+  const roomNoise = alternating(0.018, 5000)
+
+  it('counts speech that the old absolute floor alone would have refused', () => {
+    expect(speechDurationMs(quietSpeech)).toBeGreaterThanOrEqual(2500)
+  })
+
+  it('still refuses a take that is nothing but room noise', () => {
+    // Every frame is room, so the noise floor and the "speech" are the same level
+    // and the relative test cannot pass either — which is the whole reason the
+    // absolute floor stays.
+    expect(speechDurationMs(roomNoise)).toBe(0)
+  })
+
+  it('still refuses digital silence', () => {
+    expect(speechDurationMs(new Float32Array(16000 * 5))).toBe(0)
+  })
+})
+
+describe('software gain (the AGC the browser may not have applied)', () => {
+  const quiet = alternating(0.02, 1000)
+
+  const peakOf = (samples: Float32Array): number => {
+    let peak = 0
+    for (const sample of samples) peak = Math.max(peak, Math.abs(sample))
+    return peak
+  }
+
+  it('lifts a quiet take by a bounded amount', () => {
+    // 0.02 would need 15× to reach the 0.3 target; MAX_GAIN caps it at 8×.
+    expect(peakOf(normalisePeak(quiet))).toBeCloseTo(0.16, 5)
+  })
+
+  it('leaves alone the level real recordings actually arrive at', () => {
+    /*
+     * These are the measured peaks of the four FLEURS `fil_ph` clips, and leaving
+     * them alone is the whole point: normalizing them to full scale made the
+     * shipped model *worse* — 35.6% → 45.2% across the corpus, and 27.3% → 72.7%
+     * on one clip. Hence a threshold, not a target alone.
+     */
+    for (const measured of [0.147, 0.375, 0.181, 0.199]) {
+      const clip = alternating(measured, 1000)
+      expect(normalisePeak(clip)).toBe(clip)
+    }
+  })
+
+  it('never attenuates', () => {
+    const loud = alternating(0.95, 1000)
+    expect(normalisePeak(loud)).toBe(loud)
+  })
+
+  it('cannot amplify a silent take into something the gate accepts', () => {
+    // The cap is what buys this: uncapped, a 0.002 peak would be lifted to the 0.3
+    // target and every frame would clear the floor, handing Whisper room noise to
+    // invent a sentence from.
+    const silent = alternating(0.002, 3000)
+    expect(speechDurationMs(silent)).toBe(0)
+    expect(speechDurationMs(normalisePeak(silent))).toBe(0)
+  })
+
+  it('lifts a quiet utterance over the gate that used to refuse it', () => {
+    // `silent` above is refused outright, so the refusal here cannot be the gate
+    // rejecting a level: it is the gate rejecting audibly empty audio.
+    expect(speechDurationMs(normalisePeak(concatenatedQuietUtterance()))).toBeGreaterThanOrEqual(2500)
+  })
+})
+
+/** 20 dB down, with the pauses a real sentence has. */
+function concatenatedQuietUtterance(): Float32Array {
+  return concat([alternating(0.004, 3000), alternating(0.0008, 2000)])
+}

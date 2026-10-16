@@ -44,7 +44,7 @@ const PUBLIC = join(ROOT, 'public')
 mkdirSync(PUBLIC, { recursive: true })
 
 const BRAND_NAVY = '#0c2760'
-const CANVAS = '#f5f7fb'
+const CANVAS = '#f2f2f5'
 
 const report = []
 function write(name, buffer) {

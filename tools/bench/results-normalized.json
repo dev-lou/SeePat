@@ -1,0 +1,271 @@
+{
+  "ranAt": "2026-10-14T15:10:47.080Z",
+  "base": "http://localhost:5173/",
+  "plan": {
+    "models": [
+      "onnx-community/whisper-base",
+      "onnx-community/whisper-small"
+    ],
+    "langs": [
+      "tl"
+    ],
+    "variants": [
+      "normalized"
+    ],
+    "clips": [
+      "fil-1",
+      "fil-2",
+      "fil-3",
+      "fil-4",
+      "en-jfk"
+    ]
+  },
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "hardwareConcurrency": 4,
+  "modelFiles": {
+    "onnx-community/whisper-base": [
+      "onnx-community/whisper-base"
+    ],
+    "onnx-community/whisper-small": [
+      "onnx-community/whisper-small"
+    ]
+  },
+  "summary": [
+    {
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "variant": "normalized",
+      "clips": 5,
+      "corpusWer": 0.4521,
+      "errors": 33,
+      "words": 73,
+      "meanMs": 13065,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 0.727,
+          "ms": 14026,
+          "gateMs": 4920,
+          "rms": 0.11851767176196842,
+          "text": "karamiyan sabu ay nang pamilyalang hebrio ay nangyari sa lebas"
+        },
+        {
+          "clip": "fil-2",
+          "wer": 0.583,
+          "ms": 14303,
+          "gateMs": 4260,
+          "rms": 0.07287881325804046,
+          "text": "Sinabi ng polisat, naman ang isang arawan ang naman ang katawan."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 0.692,
+          "ms": 13523,
+          "gateMs": 5460,
+          "rms": 0.102175106136747,
+          "text": "Sinimulan naman ispanul ang panang pananako, nato magalang tatlong siglo."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.6,
+          "ms": 12147,
+          "gateMs": 5760,
+          "rms": 0.11023447533954668,
+          "text": "Kapag tumawa kasi sa mtaong libeli pang meel ang layo, gumagamit kanang satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 11324,
+          "gateMs": 7440,
+          "rms": 0.17247168094707055,
+          "text": "...and so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "variant": "normalized",
+      "clips": 5,
+      "corpusWer": 0.2329,
+      "errors": 17,
+      "words": 73,
+      "meanMs": 38817,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 0.182,
+          "ms": 40495,
+          "gateMs": 4920,
+          "rms": 0.11851767176196842,
+          "text": "Karamigyan sa buhay ng Pamila ng Hebreo ay nangyari sa labas."
+        },
+        {
+          "clip": "fil-2",
+          "wer": 0.5,
+          "ms": 40044,
+          "gateMs": 4260,
+          "rms": 0.07287881325804046,
+          "text": "Sinabi ng polis syat na makang mga isang araw ng naro ng katawan."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 0.385,
+          "ms": 40236,
+          "gateMs": 5460,
+          "rms": 0.102175106136747,
+          "text": "Sinimula ng mga Espanyol ang panahan ng pananako na tumagal ng 3 siglo."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.267,
+          "ms": 36752,
+          "gateMs": 5760,
+          "rms": 0.11023447533954668,
+          "text": "Kapag tumawag ka sa isang tao ang libo libo mil ang layo, gumagamit ka ng satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 36559,
+          "gateMs": 7440,
+          "rms": 0.17247168094707055,
+          "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country."
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "karamiyan sabu ay nang pamilyalang hebrio ay nangyari sa lebas",
+      "error": null,
+      "ms": 14026,
+      "gateMs": 4920,
+      "rms": 0.11851767176196842,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Karamigyan sa buhay ng Pamila ng Hebreo ay nangyari sa labas.",
+      "error": null,
+      "ms": 40495,
+      "gateMs": 4920,
+      "rms": 0.11851767176196842,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Sinabi ng polisat, naman ang isang arawan ang naman ang katawan.",
+      "error": null,
+      "ms": 14303,
+      "gateMs": 4260,
+      "rms": 0.07287881325804046,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Sinabi ng polis syat na makang mga isang araw ng naro ng katawan.",
+      "error": null,
+      "ms": 40044,
+      "gateMs": 4260,
+      "rms": 0.07287881325804046,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Sinimulan naman ispanul ang panang pananako, nato magalang tatlong siglo.",
+      "error": null,
+      "ms": 13523,
+      "gateMs": 5460,
+      "rms": 0.102175106136747,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Sinimula ng mga Espanyol ang panahan ng pananako na tumagal ng 3 siglo.",
+      "error": null,
+      "ms": 40236,
+      "gateMs": 5460,
+      "rms": 0.102175106136747,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Kapag tumawa kasi sa mtaong libeli pang meel ang layo, gumagamit kanang satellite.",
+      "error": null,
+      "ms": 12147,
+      "gateMs": 5760,
+      "rms": 0.11023447533954668,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Kapag tumawag ka sa isang tao ang libo libo mil ang layo, gumagamit ka ng satellite.",
+      "error": null,
+      "ms": 36752,
+      "gateMs": 5760,
+      "rms": 0.11023447533954668,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "...and so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 11324,
+      "gateMs": 7440,
+      "rms": 0.17247168094707055,
+      "peak": 0.949999988079071
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "normalized",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country.",
+      "error": null,
+      "ms": 36559,
+      "gateMs": 7440,
+      "rms": 0.17247168094707055,
+      "peak": 0.949999988079071
+    }
+  ]
+}

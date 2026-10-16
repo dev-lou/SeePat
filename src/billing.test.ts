@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AI_QUESTION_LIMIT,
   FEATURES,
+  PRO_ANNUAL_CENTAVOS,
   TIERS,
   aiQuestionsUsed,
   cancel,
@@ -11,13 +12,16 @@ import {
   effectiveTier,
   formatPlanPrice,
   isActive,
+  liveFeatures,
   nextTier,
+  priceFor,
   purchase,
   recordAiQuestion,
   remainingAiQuota,
   requiredTier,
   resume,
   tierById,
+  visibleTiers,
 } from './billing.ts'
 import { pesos } from './engine/money.ts'
 
@@ -157,6 +161,52 @@ describe('cancelling cannot leave the owner holding a paid asset', () => {
     expect(back.renewsAt).toBeNull()
     expect(back.invoices).toHaveLength(1)
     expect(can(back, 'multi_user')).toBe(false)
+  })
+})
+
+describe('the honesty rule: never sell vapor', () => {
+  it('lists only live features on the pricing page', () => {
+    const live = liveFeatures()
+    // Receipt OCR, staff access, forecasting, benchmarking, supplier intel
+    // and bulk reports have no working code — they must stay planned.
+    for (const key of [
+      'receipt_ocr',
+      'multi_user',
+      'forecasting',
+      'supplier_intelligence',
+      'benchmarking',
+      'reports_export',
+    ] as const) {
+      expect(
+        live.some((f) => f.key === key),
+        `${key} must not be listed for sale before it is built`,
+      ).toBe(false)
+    }
+    // And what IS sold at PRO is real: AI narration, history, backup.
+    for (const key of ['ai_narration', 'score_history', 'cloud_backup'] as const) {
+      expect(
+        live.some((f) => f.key === key),
+        `${key} is the honest PRO bundle`,
+      ).toBe(true)
+    }
+  })
+
+  it('hides NEGOSYO from the pricing page until staff access is built', () => {
+    expect(visibleTiers().map((t) => t.id)).toEqual(['free', 'pro'])
+  })
+
+  it('prices PRO annual below twelve months, in whole pesos', () => {
+    expect(PRO_ANNUAL_CENTAVOS).toBe(pesos(999))
+    expect(priceFor('pro', 'annual')).toBe(pesos(999))
+    expect(priceFor('pro', 'monthly')).toBe(pesos(99))
+    expect(PRO_ANNUAL_CENTAVOS).toBeLessThan(pesos(99 * 12))
+  })
+
+  it('bills the annual receipt once and renews in a year', () => {
+    const ent = purchase(createEntitlement(AT), 'pro', 'gcash', AT, undefined, 'annual')
+    expect(ent.invoices[0].amountCentavos).toBe(pesos(999))
+    expect(ent.invoices[0].period).toBe('annual')
+    expect(ent.renewsAt).toBe('2027-09-15T08:00:00.000Z')
   })
 })
 

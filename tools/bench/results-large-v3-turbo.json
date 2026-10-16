@@ -1,0 +1,84 @@
+{
+  "ranAt": "2026-10-14T15:51:02.426Z",
+  "base": "http://localhost:5173/",
+  "plan": {
+    "models": [
+      "onnx-community/whisper-large-v3-turbo"
+    ],
+    "langs": [
+      "tl"
+    ],
+    "variants": [
+      "raw"
+    ],
+    "clips": [
+      "fil-1",
+      "fil-2"
+    ]
+  },
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "hardwareConcurrency": 4,
+  "modelFiles": {
+    "onnx-community/whisper-large-v3-turbo": [
+      "onnx-community/whisper-large-v3-turbo"
+    ]
+  },
+  "summary": [
+    {
+      "model": "onnx-community/whisper-large-v3-turbo",
+      "lang": "tl",
+      "variant": "raw",
+      "clips": 2,
+      "corpusWer": 0.1304,
+      "errors": 3,
+      "words": 23,
+      "meanMs": 96799,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 0.091,
+          "ms": 108661,
+          "gateMs": 1560,
+          "rms": 0.01831244980464631,
+          "text": "Karamihan sa buhay ng pamilya ng Hebreyo ay nangyari sa labas."
+        },
+        {
+          "clip": "fil-2",
+          "wer": 0.167,
+          "ms": 84937,
+          "gateMs": 2700,
+          "rms": 0.028805152528080077,
+          "text": "Sinabi ng polisya na mukhang mga isang araw nang naroon ng katawan."
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-large-v3-turbo",
+      "lang": "tl",
+      "text": "Karamihan sa buhay ng pamilya ng Hebreyo ay nangyari sa labas.",
+      "error": null,
+      "ms": 108661,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-large-v3-turbo",
+      "lang": "tl",
+      "text": "Sinabi ng polisya na mukhang mga isang araw nang naroon ng katawan.",
+      "error": null,
+      "ms": 84937,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    }
+  ]
+}

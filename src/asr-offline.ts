@@ -113,21 +113,32 @@ export interface OfflineModelInfo {
 
 export const WHISPER_MODEL: OfflineModelInfo = {
   key: 'whisper-base',
-  label: { en: 'Whisper Base (multilingual)', fil: 'Whisper Base (multilingual)' },
+  // The label is read on the Settings screen, where "Whisper Base
+  // (multilingual)" is a name for engineers. What the owner needs to know is
+  // what it understands, and that it works with no signal.
+  label: {
+    en: 'Offline voice — Tagalog, Taglish and English',
+    fil: 'Boses na offline — Tagalog, Taglish at English',
+  },
   repo: VOICE_MODEL_REPO,
   // Measured from the browser cache after a real install: 76MB of weights. (The
   // library's own progress events under-report this, which is why the number
   // comes from the cache rather than from the download callback.)
   approxMB: 76,
   languages: {
-    en: 'Tagalog, Taglish, English — over 90 languages',
-    fil: 'Tagalog, Taglish, English — mahigit 90 wika',
+    en: 'Tagalog, Taglish and English, plus more than 90 other languages',
+    fil: 'Tagalog, Taglish at English, at mahigit 90 pang wika',
   },
-  license: { en: 'Model: MIT · Runtime: Apache-2.0', fil: 'Modelo: MIT · Runtime: Apache-2.0' },
+  // The licence line is the one place the real product name belongs: it is an
+  // attribution, not a description of a feature.
+  license: {
+    en: 'Built on Whisper. Open source, and free to use in a business.',
+    fil: 'Gawa mula sa Whisper. Open source, at libreng gamitin sa negosyo.',
+  },
   installable: true,
   why: {
-    en: 'Runs entirely on your phone and is licensed for commercial use. Twice the size of the smallest Whisper and noticeably better on short Taglish — but still behind the browser engine, so it is the fallback.',
-    fil: 'Tumatakbo nang tuluyan sa phone mo at legal gamitin sa komersyo. Doble ang laki sa pinakamaliit na Whisper at mas matino sa maikling Taglish — pero nasa likod pa rin ng browser engine, kaya pang-fallback ito.',
+    en: 'It stays on your phone, and you may use it in your business. It hears short Taglish better than the smallest option, but the voice that uses the internet is still more accurate — so this is the one to use when there is no signal.',
+    fil: 'Nananatili ito sa phone mo, at puwede mong gamitin sa negosyo. Mas nakakarinig ito ng maikling Taglish kaysa sa pinakamaliit na bersyon, pero mas tumpak pa rin ang boses na gumagamit ng internet — kaya ito ang gamitin kapag walang signal.',
   },
 }
 
@@ -159,33 +170,43 @@ export function explainOfflineFailure(error: unknown): string {
 
   if (/Can't create a session|qdq_actions|TransposeDQWeights/i.test(raw)) {
     return say(
-      'The on-device runtime failed to load. This usually happens when the runtime version changes while the app is open, so the cached model no longer matches. Reload the app and try again — if it persists, remove the model and download it again.',
-      'Nabigo ang pag-load ng on-device na runtime. Karaniwan itong nangyayari kapag nagbago ang bersyon ng runtime habang bukas ang app, kaya hindi na tugma ang naka-cache na modelo. I-reload ang app at subukan muli — kung magpatuloy, alisin muna ang modelo at i-download muli.',
+      'The offline voice could not start. This usually happens when the app was updated while it was open. Close it, open it again, and try once more — if it still happens, remove the offline voice and download it again.',
+      'Hindi masimulan ang boses na offline. Karaniwang nangyayari ito kapag nag-update ang app habang bukas ito. Isara, buksan muli, at subukan ulit — kung ganito pa rin, alisin ang boses na offline at i-download muli.',
     )
   }
   if (/Could not locate file|Failed to fetch|NetworkError|404/i.test(raw)) {
     return say(
-      'The model download failed. Check the connection and try again.',
-      'Hindi na-download ang modelo. Suriin ang koneksyon at subukan muli.',
+      'The download did not finish. Check that you have internet, then try again.',
+      'Hindi natapos ang download. Siguraduhing may internet, tapos subukan muli.',
     )
   }
   return say(
-    `The offline model did not load: ${raw.slice(0, 150)}`,
-    `Hindi na-load ang offline na modelo: ${raw.slice(0, 150)}`,
+    `The offline voice did not start: ${raw.slice(0, 150)}`,
+    `Hindi nasimulan ang boses na offline: ${raw.slice(0, 150)}`,
   )
 }
 
 export const VOSK_MODEL: OfflineModelInfo = {
   key: 'vosk-tl-ph',
-  label: { en: 'Vosk Filipino (tl-PH)', fil: 'Vosk Filipino (tl-PH)' },
+  label: {
+    en: 'Offline voice — Tagalog only (Vosk)',
+    fil: 'Boses offline — Tagalog lamang (Vosk)',
+  },
   repo: 'vosk-model-tl-ph-generic-0.6',
   approxMB: 320,
   languages: { en: 'Tagalog only', fil: 'Tagalog lamang' },
-  license: { en: 'CC-BY-NC-SA — non-commercial', fil: 'CC-BY-NC-SA — hindi pangkomersyo' },
+  // The licence identifier is dropped from the sentence a person reads: what
+  // matters here is only that it cannot be used in an app people pay for, and
+  // the identifier itself lives in README.md's licence table where a developer
+  // looks for it.
+  license: {
+    en: 'Vosk. Its licence does not allow an app that people pay for.',
+    fil: 'Vosk. Hindi pinapayagan ng lisensya nito ang app na may bayad.',
+  },
   installable: false,
   why: {
-    en: 'The only pure-Tagalog offline model, and its 320MB size is accurate — but its licence forbids use in a paid product. That is why it is not offered here.',
-    fil: 'Ito ang tanging dalisay na Tagalog na offline na modelo, at tama ang 320MB na sukat nito — pero bawal itong gamitin sa produktong may bayad. Kaya hindi ito inaalok dito.',
+    en: 'This is the only offline voice here that is Tagalog alone — but to use it, this app would have to be free to everyone, because the licence does not allow a paid product. That is the only reason it is not offered.',
+    fil: 'Ito lang ang boses offline dito na Tagalog lamang — pero para magamit ito, kailangang libre ang app para sa lahat, dahil hindi pinapayagan ng lisensya nito ang produktong may bayad. Iyon lang ang dahilan kung bakit hindi ito inaalok.',
   },
 }
 
@@ -452,8 +473,8 @@ async function downloadAndWarm(
   if (typeof navigator !== 'undefined' && navigator.onLine === false && !snapshot) {
     throw new VoiceError(
       say(
-        'Internet is needed for the first model download.',
-        'Kailangan ng internet para sa unang pag-download ng modelo.',
+        'You need internet for the first download. After that it works with no signal.',
+        'Kailangan ng internet sa unang download. Pagkatapos, gagana ito kahit walang signal.',
       ),
     )
   }
@@ -564,11 +585,11 @@ export function createWhisperOfflineEngine(): AsrEngine {
 
   return {
     id: OFFLINE_ENGINE_ID,
-    label: { en: 'Offline (Whisper Base)', fil: 'Offline (Whisper Base)' },
+    label: { en: 'Offline voice (no internet)', fil: 'Boses offline (walang internet)' },
     note: model
       ? {
-          en: `Installed (${megabytes > 0 ? `${megabytes}MB` : 'small'}). Works with no internet — but it is weak on Taglish, so confirm the numbers.`,
-          fil: `Naka-install (${megabytes > 0 ? `${megabytes}MB` : 'maliit'}). Gumagana kahit walang internet — pero mahina sa Taglish, kaya kumpirmahin ang mga numero.`,
+          en: `Ready, and it needs no signal${megabytes > 0 ? ` — about ${megabytes}MB on your phone` : ''}. It is less accurate than the internet voice, so check the numbers before you save.`,
+          fil: `Handa na, at hindi ito kailangan ng signal${megabytes > 0 ? ` — mga ${megabytes}MB sa phone mo` : ''}. Mas mahina ito kaysa sa boses na may internet, kaya suriin ang mga numero bago i-save.`,
         }
       : {
           // Computed from the catalogue rather than written twice: this note used
@@ -576,8 +597,8 @@ export function createWhisperOfflineEngine(): AsrEngine {
           // owner has to spend data on is not a good place for two answers. Model
           // plus runtime is the figure that matches what they actually download,
           // which is what the Voice screen and the Offline card both quote.
-          en: `Not downloaded yet. Go to Settings → Offline and Voice to install it (~${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB, once).`,
-          fil: `Hindi pa naka-download. Pumunta sa Settings → Offline at Boses para i-install (~${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB, isang beses lang).`,
+          en: `Not set up yet. Open Settings → Offline voice and download it once (about ${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB) — after that it works with no signal.`,
+          fil: `Hindi pa naka-set up. Buksan ang Settings → Boses offline at i-download ito nang isang beses (mga ${WHISPER_MODEL.approxMB + RUNTIME_APPROX_MB}MB) — pagkatapos, gagana ito kahit walang signal.`,
         },
     available: model !== null,
     start(onResult, onError, onStatus, onEnd) {
@@ -595,8 +616,8 @@ export function createWhisperOfflineEngine(): AsrEngine {
           if (!getInstalledVoiceModel()) {
             onError(
               say(
-                'The offline model is not installed yet. Download it in Settings first.',
-                'Hindi pa naka-install ang offline na modelo. I-download muna sa Settings.',
+                'The offline voice is not installed yet. Open Settings and download it first — then it works with no signal.',
+                'Hindi pa naka-install ang boses na offline. Buksan ang Settings at i-download muna ito — pagkatapos, gagana ito kahit walang signal.',
               ),
               'unknown',
             )

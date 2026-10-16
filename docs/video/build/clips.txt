@@ -1,0 +1,7 @@
+file 'clip-dashboard.mp4'
+file 'clip-ledger.mp4'
+file 'clip-voice-sale.mp4'
+file 'clip-ask-capital.mp4'
+file 'clip-sipat-score.mp4'
+file 'clip-settings.mp4'
+file 'clip-offline.mp4'

@@ -1,0 +1,286 @@
+{
+  "fps_estimate": 5.725786651410811,
+  "duration_estimate": 71.43123292922974,
+  "frames": 409,
+  "bytes": 77293071,
+  "firstDeviceSize": {
+    "w": 540,
+    "h": 960
+  },
+  "marks": [
+    {
+      "name": "profit-card",
+      "videoTime": 2.9,
+      "rect": {
+        "x": 62,
+        "y": 89.9,
+        "w": 416,
+        "h": 342.3
+      }
+    },
+    {
+      "name": "score-ring",
+      "videoTime": 8.44,
+      "rect": {
+        "x": 62,
+        "y": 693.8,
+        "w": 416,
+        "h": 111.7
+      }
+    },
+    {
+      "name": "ledger-form",
+      "videoTime": 14.18,
+      "rect": {
+        "x": 62,
+        "y": 141.9,
+        "w": 416,
+        "h": 399
+      }
+    },
+    {
+      "name": "ledger-recent",
+      "videoTime": 20.27,
+      "rect": {
+        "x": 62,
+        "y": 416.8,
+        "w": 416,
+        "h": 414.9
+      }
+    },
+    {
+      "name": "sample-button",
+      "videoTime": 26.58,
+      "rect": {
+        "x": 62,
+        "y": 614,
+        "w": 416,
+        "h": 333.9
+      }
+    },
+    {
+      "name": "draft-card",
+      "videoTime": 29.17,
+      "rect": {
+        "x": 62,
+        "y": 249.9,
+        "w": 416,
+        "h": 581.9
+      }
+    },
+    {
+      "name": "ask-input",
+      "videoTime": 37.88,
+      "rect": {
+        "x": 62,
+        "y": 89.9,
+        "w": 416,
+        "h": 202.3
+      }
+    },
+    {
+      "name": "capital-answer",
+      "videoTime": 42.62,
+      "rect": {
+        "x": 62,
+        "y": 489.4,
+        "w": 416,
+        "h": 342.5
+      }
+    },
+    {
+      "name": "capital-breakdown",
+      "videoTime": 47.38,
+      "rect": {
+        "x": 62,
+        "y": 489.4,
+        "w": 416,
+        "h": 342.5
+      }
+    },
+    {
+      "name": "score-card",
+      "videoTime": 51.38,
+      "rect": {
+        "x": 62,
+        "y": 274.5,
+        "w": 416,
+        "h": 574.6
+      }
+    },
+    {
+      "name": "score-why",
+      "videoTime": 56.69,
+      "rect": {
+        "x": 62,
+        "y": 274.5,
+        "w": 416,
+        "h": 574.6
+      }
+    },
+    {
+      "name": "settings-row",
+      "videoTime": 62.35,
+      "rect": {
+        "x": 75,
+        "y": 421.8,
+        "w": 390,
+        "h": 61.5
+      }
+    },
+    {
+      "name": "offline-card",
+      "videoTime": 68.41,
+      "rect": {
+        "x": 62,
+        "y": 306.6,
+        "w": 416,
+        "h": 303.9
+      }
+    }
+  ],
+  "taps": [
+    {
+      "name": "tap-nav-ledger",
+      "videoTime": 11.24,
+      "point": {
+        "x": 326.6,
+        "y": 925.8
+      }
+    },
+    {
+      "name": "tap-utang",
+      "videoTime": 14.84,
+      "point": {
+        "x": 155.5,
+        "y": 107.9
+      }
+    },
+    {
+      "name": "tap-nav-voice",
+      "videoTime": 22.47,
+      "point": {
+        "x": 373,
+        "y": 925.8
+      }
+    },
+    {
+      "name": "tap-sample",
+      "videoTime": 27.54,
+      "point": {
+        "x": 202.5,
+        "y": 848.1
+      }
+    },
+    {
+      "name": "tap-confirm",
+      "videoTime": 33.12,
+      "point": {
+        "x": 367.5,
+        "y": 788.8
+      }
+    },
+    {
+      "name": "tap-nav-ask",
+      "videoTime": 36.03,
+      "point": {
+        "x": 419.4,
+        "y": 925.8
+      }
+    },
+    {
+      "name": "tap-ask-input",
+      "videoTime": 39.62,
+      "point": {
+        "x": 238,
+        "y": 224.8
+      }
+    },
+    {
+      "name": "tap-ask",
+      "videoTime": 41.08,
+      "point": {
+        "x": 432,
+        "y": 220.8
+      }
+    },
+    {
+      "name": "tap-nav-score",
+      "videoTime": 48.59,
+      "point": {
+        "x": 465.8,
+        "y": 925.8
+      }
+    },
+    {
+      "name": "tap-settings",
+      "videoTime": 60.13,
+      "point": {
+        "x": 460,
+        "y": 34.4
+      }
+    },
+    {
+      "name": "tap-offline-row",
+      "videoTime": 66.13,
+      "point": {
+        "x": 270,
+        "y": 452.5
+      }
+    }
+  ],
+  "heldFrames": 62,
+  "preRollFrames": 4,
+  "preRollSeconds": 0.294,
+  "beats": [
+    {
+      "name": "dashboard",
+      "videoStart": 1.63,
+      "videoEnd": 11.24,
+      "wallStart": 4.22,
+      "wallEnd": 13.82
+    },
+    {
+      "name": "ledger",
+      "videoStart": 12.87,
+      "videoEnd": 22.47,
+      "wallStart": 15.43,
+      "wallEnd": 25.39
+    },
+    {
+      "name": "voice-sale",
+      "videoStart": 24.93,
+      "videoEnd": 36.03,
+      "wallStart": 27.51,
+      "wallEnd": 38.59
+    },
+    {
+      "name": "ask-capital",
+      "videoStart": 37.88,
+      "videoEnd": 48.59,
+      "wallStart": 40.45,
+      "wallEnd": 51.15
+    },
+    {
+      "name": "sipat-score",
+      "videoStart": 50.72,
+      "videoEnd": 60.13,
+      "wallStart": 53.27,
+      "wallEnd": 62.69
+    },
+    {
+      "name": "settings",
+      "videoStart": 61.52,
+      "videoEnd": 66.13,
+      "wallStart": 64.15,
+      "wallEnd": 68.99
+    },
+    {
+      "name": "offline",
+      "videoStart": 67.73,
+      "videoEnd": 71.43,
+      "wallStart": 70.3,
+      "wallEnd": 74.22
+    }
+  ]
+}

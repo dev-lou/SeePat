@@ -1,0 +1,711 @@
+{
+  "ranAt": "2026-10-14T14:50:49.933Z",
+  "base": "http://localhost:5173/",
+  "plan": {
+    "models": [
+      "onnx-community/whisper-base",
+      "onnx-community/whisper-small"
+    ],
+    "langs": [
+      "tl",
+      "en",
+      "auto"
+    ],
+    "variants": [
+      "raw"
+    ],
+    "clips": [
+      "fil-1",
+      "fil-2",
+      "fil-3",
+      "fil-4",
+      "en-jfk"
+    ]
+  },
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "hardwareConcurrency": 4,
+  "modelFiles": {
+    "onnx-community/whisper-base": [
+      "onnx-community/whisper-base"
+    ],
+    "onnx-community/whisper-small": [
+      "onnx-community/whisper-small"
+    ]
+  },
+  "summary": [
+    {
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.3562,
+      "errors": 26,
+      "words": 73,
+      "meanMs": 5047,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 0.273,
+          "ms": 4795,
+          "gateMs": 1560,
+          "text": "karamiyan sa buhay ng pamilya ng hebbrio ay nangyari sa lebas"
+        },
+        {
+          "clip": "fil-2",
+          "wer": 0.5,
+          "ms": 5155,
+          "gateMs": 2700,
+          "text": "Sinabi ng polisat, naman ang isang araw ng narawan ang katawan."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 0.615,
+          "ms": 4388,
+          "gateMs": 1560,
+          "text": "Sinimulan naman ispanul ang panang pananako na to magalang tatlong siglo."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.6,
+          "ms": 5256,
+          "gateMs": 2460,
+          "text": "Kapag tumawa kasi sa'y sa-tawang libeli pang meed ang layo, kumagamit ka ng satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 5640,
+          "gateMs": 7100,
+          "text": "...and so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.8767,
+      "errors": 64,
+      "words": 73,
+      "meanMs": 4779,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 1.727,
+          "ms": 4539,
+          "gateMs": 1560,
+          "text": "there is a lot of people who are just friends, that's why it's a lot of fun"
+        },
+        {
+          "clip": "fil-2",
+          "wer": 1,
+          "ms": 4974,
+          "gateMs": 2700,
+          "text": "I'm sorry that I'm not a good person."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 1.462,
+          "ms": 4506,
+          "gateMs": 1560,
+          "text": "I'm not a fan of the word \"spanel\" but I'm just a fan of the word \"single\""
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.933,
+          "ms": 4594,
+          "gateMs": 2460,
+          "text": "When you're done with the same color, you can use the satellite"
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 5281,
+          "gateMs": 7100,
+          "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.8767,
+      "errors": 64,
+      "words": 73,
+      "meanMs": 5406,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 1.727,
+          "ms": 4939,
+          "gateMs": 1560,
+          "text": "there is a lot of people who are just friends, that's why it's a lot of fun"
+        },
+        {
+          "clip": "fil-2",
+          "wer": 1,
+          "ms": 4522,
+          "gateMs": 2700,
+          "text": "I'm sorry that I'm not a good person."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 1.462,
+          "ms": 4821,
+          "gateMs": 1560,
+          "text": "I'm not a fan of the word \"spanel\" but I'm just a fan of the word \"single\""
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.933,
+          "ms": 4613,
+          "gateMs": 2460,
+          "text": "When you're done with the same color, you can use the satellite"
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 8133,
+          "gateMs": 7100,
+          "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.2466,
+      "errors": 18,
+      "words": 73,
+      "meanMs": 17791,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 0.182,
+          "ms": 16015,
+          "gateMs": 1560,
+          "text": "Karamiyan sa buhay ng Pamila ng Hebreo ay nangyari sa labas."
+        },
+        {
+          "clip": "fil-2",
+          "wer": 0.5,
+          "ms": 17481,
+          "gateMs": 2700,
+          "text": "Sinabi ng polis syat na mokong mga isang araw ng naro ng katawan."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 0.462,
+          "ms": 15177,
+          "gateMs": 1560,
+          "text": "Sinimula na mga Espanyol ang panahan ng pananako na tumagal ng 3 siglo."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.267,
+          "ms": 17212,
+          "gateMs": 2460,
+          "text": "Kapag tumawag ka sa isang tao ang libo libo mil ang layo, gumagamit ka ng satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 23069,
+          "gateMs": 7100,
+          "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.7671,
+      "errors": 56,
+      "words": 73,
+      "meanMs": 16075,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 1,
+          "ms": 15210,
+          "gateMs": 1560,
+          "text": "A lot of the Hebrew family has happened outside."
+        },
+        {
+          "clip": "fil-2",
+          "wer": 1,
+          "ms": 16439,
+          "gateMs": 2700,
+          "text": "The police said that one day, the body was burned."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 1.462,
+          "ms": 16122,
+          "gateMs": 1560,
+          "text": "Spanish people started their worship service in the city of Palenacos, which was a great place for three idols."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.933,
+          "ms": 15838,
+          "gateMs": 2460,
+          "text": "When you call a person who doesn't believe in the distance, use the satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 16767,
+          "gateMs": 7100,
+          "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    },
+    {
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "variant": "raw",
+      "clips": 5,
+      "corpusWer": 0.7671,
+      "errors": 56,
+      "words": 73,
+      "meanMs": 15346,
+      "perClip": [
+        {
+          "clip": "fil-1",
+          "wer": 1,
+          "ms": 15320,
+          "gateMs": 1560,
+          "text": "A lot of the Hebrew family has happened outside."
+        },
+        {
+          "clip": "fil-2",
+          "wer": 1,
+          "ms": 14323,
+          "gateMs": 2700,
+          "text": "The police said that one day, the body was burned."
+        },
+        {
+          "clip": "fil-3",
+          "wer": 1.462,
+          "ms": 17640,
+          "gateMs": 1560,
+          "text": "Spanish people started their worship service in the city of Palenacos, which was a great place for three idols."
+        },
+        {
+          "clip": "fil-4",
+          "wer": 0.933,
+          "ms": 15126,
+          "gateMs": 2460,
+          "text": "When you call a person who doesn't believe in the distance, use the satellite."
+        },
+        {
+          "clip": "en-jfk",
+          "wer": 0,
+          "ms": 14319,
+          "gateMs": 7100,
+          "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "karamiyan sa buhay ng pamilya ng hebbrio ay nangyari sa lebas",
+      "error": null,
+      "ms": 4795,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "text": "there is a lot of people who are just friends, that's why it's a lot of fun",
+      "error": null,
+      "ms": 4539,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "text": "there is a lot of people who are just friends, that's why it's a lot of fun",
+      "error": null,
+      "ms": 4939,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Karamiyan sa buhay ng Pamila ng Hebreo ay nangyari sa labas.",
+      "error": null,
+      "ms": 16015,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "text": "A lot of the Hebrew family has happened outside.",
+      "error": null,
+      "ms": 15210,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-1",
+      "ref": "karamihan sa buhay ng pamilya ng hebreo ay nangyari sa labas",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "text": "A lot of the Hebrew family has happened outside.",
+      "error": null,
+      "ms": 15320,
+      "gateMs": 1560,
+      "rms": 0.01831244980464631,
+      "peak": 0.14678677916526794
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Sinabi ng polisat, naman ang isang araw ng narawan ang katawan.",
+      "error": null,
+      "ms": 5155,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "text": "I'm sorry that I'm not a good person.",
+      "error": null,
+      "ms": 4974,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "text": "I'm sorry that I'm not a good person.",
+      "error": null,
+      "ms": 4522,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Sinabi ng polis syat na mokong mga isang araw ng naro ng katawan.",
+      "error": null,
+      "ms": 17481,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "text": "The police said that one day, the body was burned.",
+      "error": null,
+      "ms": 16439,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-2",
+      "ref": "sinabi ng pulisya na mukhang mga isang araw nang naroon ang katawan",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "text": "The police said that one day, the body was burned.",
+      "error": null,
+      "ms": 14323,
+      "gateMs": 2700,
+      "rms": 0.028805152528080077,
+      "peak": 0.3754849135875702
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Sinimulan naman ispanul ang panang pananako na to magalang tatlong siglo.",
+      "error": null,
+      "ms": 4388,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "text": "I'm not a fan of the word \"spanel\" but I'm just a fan of the word \"single\"",
+      "error": null,
+      "ms": 4506,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "text": "I'm not a fan of the word \"spanel\" but I'm just a fan of the word \"single\"",
+      "error": null,
+      "ms": 4821,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Sinimula na mga Espanyol ang panahan ng pananako na tumagal ng 3 siglo.",
+      "error": null,
+      "ms": 15177,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "text": "Spanish people started their worship service in the city of Palenacos, which was a great place for three idols.",
+      "error": null,
+      "ms": 16122,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-3",
+      "ref": "sinimulan ng mga espanyol ang panahon ng pananakop na tumagal nang tatlong siglo",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "text": "Spanish people started their worship service in the city of Palenacos, which was a great place for three idols.",
+      "error": null,
+      "ms": 17640,
+      "gateMs": 1560,
+      "rms": 0.019434172145322726,
+      "peak": 0.1806943416595459
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "Kapag tumawa kasi sa'y sa-tawang libeli pang meed ang layo, kumagamit ka ng satellite.",
+      "error": null,
+      "ms": 5256,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "text": "When you're done with the same color, you can use the satellite",
+      "error": null,
+      "ms": 4594,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "text": "When you're done with the same color, you can use the satellite",
+      "error": null,
+      "ms": 4613,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "Kapag tumawag ka sa isang tao ang libo libo mil ang layo, gumagamit ka ng satellite.",
+      "error": null,
+      "ms": 17212,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "text": "When you call a person who doesn't believe in the distance, use the satellite.",
+      "error": null,
+      "ms": 15838,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "fil-4",
+      "ref": "kapag tumawag ka sa isang taong libo-libong milya ang layo gumagamit ka ng satellite",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "text": "When you call a person who doesn't believe in the distance, use the satellite.",
+      "error": null,
+      "ms": 15126,
+      "gateMs": 2460,
+      "rms": 0.0230487626094123,
+      "peak": 0.1986340880393982
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "tl",
+      "text": "...and so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 5640,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "en",
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 5281,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-base",
+      "lang": "auto",
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 8133,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "tl",
+      "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country.",
+      "error": null,
+      "ms": 23069,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "en",
+      "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 16767,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    },
+    {
+      "clip": "en-jfk",
+      "ref": "and so my fellow americans ask not what your country can do for you ask what you can do for your country",
+      "variant": "raw",
+      "model": "onnx-community/whisper-small",
+      "lang": "auto",
+      "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "error": null,
+      "ms": 14319,
+      "gateMs": 7100,
+      "rms": 0.1421032610584453,
+      "peak": 0.7827261686325073
+    }
+  ]
+}

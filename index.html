@@ -2,11 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#f5f7fb" />
+    <!--
+      Pinch-to-zoom is deliberately NOT disabled. `user-scalable=no` is the
+      common shortcut for making a web app feel native, and it takes away the one
+      zoom every low-vision reader already knows how to use. The app ships its
+      own text-size setting (Settings → Text size), but that is not a substitute
+      for being able to zoom into a single figure when you need to.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f3ea" />
     <meta name="description" content="SeePat — ang financial copilot ng bawat Filipino negosyo." />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <!-- iOS takes the icon from here, not from the manifest, and it will not
@@ -54,12 +58,19 @@
 
     <!-- The mark and the display face are both needed by the splash itself, so
          they start downloading before the bundle is even parsed. -->
-    <link rel="preload" as="image" href="/seepat-wordmark.png" />
+    <link rel="preload" as="image" href="/new_logo.png" />
     <link
       rel="preload"
       as="font"
       type="font/woff2"
-      href="/fonts/sora-latin-wght-normal.woff2"
+      href="/fonts/plus-jakarta-sans-latin-wght-normal.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/space-grotesk-latin-wght-normal.woff2"
       crossorigin
     />
 
@@ -85,35 +96,62 @@
     -->
     <style>
       @font-face {
-        font-family: 'Sora';
+        font-family: 'Space Grotesk';
         font-style: normal;
-        font-weight: 100 800;
+        font-weight: 300 700;
         font-display: swap;
-        src: url('/fonts/sora-latin-wght-normal.woff2') format('woff2');
+        src: url('/fonts/space-grotesk-latin-wght-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Plus Jakarta Sans';
+        font-style: normal;
+        font-weight: 200 800;
+        font-display: swap;
+        src: url('/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
       }
 
       html,
       body {
         margin: 0;
-        background-color: #f5f7fb;
+        background-color: #f2f2f5;
       }
 
       /* The splash carries the app's own canvas — the same base colour and the
          same top light — so the handoff to the interface is a fade, not a jump
          from one look to another. */
+      /*
+       * The splash wears the app's own paper: same warm base, same top light,
+       * same ruled field — so the handoff to the interface is a fade between two
+       * states of one surface rather than a jump from one design to another.
+       */
       #boot {
         position: fixed;
         inset: 0;
         z-index: 2147483647;
         display: grid;
         place-items: center;
-        background-color: #f5f7fb;
+        background-color: #f2f2f5;
         background-image:
-          radial-gradient(900px 420px at 12% -12%, rgb(27 69 166 / 0.16), transparent 60%),
-          radial-gradient(760px 400px at 104% -6%, rgb(245 194 29 / 0.18), transparent 58%);
-        background-repeat: no-repeat;
-        color: #0a1428;
-        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+          linear-gradient(133deg, rgb(61 81 240 / 0.09) 0 24%, transparent 24%),
+          linear-gradient(313deg, rgb(255 213 74 / 0.19) 0 16%, transparent 16%),
+          radial-gradient(circle at 1px 1px, rgb(42 58 214 / 0.14) 1.5px, transparent 1.5px),
+          repeating-linear-gradient(90deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+          repeating-linear-gradient(180deg, rgb(11 11 15 / 0.07) 0 1px, transparent 1px 44px),
+          radial-gradient(920px 460px at 84% -10%, rgb(61 81 240 / 0.24), transparent 62%),
+          radial-gradient(760px 420px at 4% -6%, rgb(255 213 74 / 0.28), transparent 60%),
+          radial-gradient(900px 520px at 50% 100%, rgb(61 81 240 / 0.14), transparent 65%);
+        background-size:
+          auto,
+          auto,
+          44px 44px,
+          auto,
+          auto,
+          auto,
+          auto,
+          auto;
+        background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
+        color: #0b0b0f;
+        font-family: 'Plus Jakarta Sans', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
         opacity: 1;
         transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1);
       }
@@ -137,15 +175,17 @@
       }
       .boot-lockup img {
         display: block;
-        width: min(74vw, 262px);
+        width: min(48vw, 168px);
         height: auto;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        filter: drop-shadow(0 10px 20px rgba(11, 11, 15, 0.09));
       }
 
       /*
-       * The sheen. `overlay` is the trick that makes a highlight work on a light
-       * canvas: white over the navy and gold ink lifts those pixels sharply,
-       * while white over the transparent (page-coloured) parts changes almost
-       * nothing — so the light appears to travel along the letters themselves.
+       * The sheen travels directly across the transparent logo silhouette
+       * using mask-image so no rectangular background shape or card appears.
        */
       .boot-sheen {
         position: absolute;
@@ -153,6 +193,12 @@
         overflow: hidden;
         pointer-events: none;
         mix-blend-mode: overlay;
+        -webkit-mask-image: url('/new_logo.png');
+        mask-image: url('/new_logo.png');
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
       }
       .boot-sheen::after {
         content: '';
@@ -170,16 +216,6 @@
         animation: boot-sheen 1.9s cubic-bezier(0.45, 0, 0.25, 1) 0.3s infinite;
       }
 
-      .boot-tag {
-        margin: 14px 0 0;
-        font-size: 0.66rem;
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #58657f;
-        animation: boot-up 520ms cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
-      }
-
       .boot-bar {
         position: relative;
         margin-top: 26px;
@@ -194,7 +230,7 @@
         inset: 0 auto 0 0;
         width: 0;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #12357f, #dda60c);
+        background: #2a3ad6;
         /* Matched to the 2000ms hold so the bar completes exactly as the app
            takes over, instead of finishing and then sitting full. */
         animation: boot-fill 1.85s cubic-bezier(0.3, 0.9, 0.2, 1) forwards;
@@ -239,7 +275,6 @@
          it is the app's first paint — but it holds still and leaves sooner. */
       @media (prefers-reduced-motion: reduce) {
         .boot-lockup,
-        .boot-tag,
         .boot-sheen::after,
         .boot-bar i {
           animation: none;
@@ -256,10 +291,9 @@
     <div id="boot" role="status" aria-label="Loading SeePat">
       <div class="boot-inner">
         <div class="boot-lockup">
-          <img src="/seepat-wordmark.png" alt="SeePat" width="660" height="175" />
+          <img src="/new_logo.png" alt="SeePat" width="512" height="512" />
           <span class="boot-sheen" aria-hidden="true"></span>
         </div>
-        <p class="boot-tag">See Your Business Clearly.</p>
         <span class="boot-bar" aria-hidden="true"><i></i></span>
       </div>
     </div>

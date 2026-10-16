@@ -717,6 +717,27 @@ path.
 
 ## 16. Accessibility
 
+- **Text size is a setting, not a browser trick.** Settings → Text size offers Normal, Big (112.5%)
+  and Biggest (125%) in words rather than an A/A+/A++ glyph strip. It scales the root font size, so
+  words, spacing, buttons and charts enlarge together (see `src/reading.ts`), it is persisted on the
+  device, and it is applied before the first paint so nobody watches the app open small and then
+  jump. 125% is the documented "large print" step: past it the ledger rows wrap and the money stops
+  lining up.
+- **Pinch-to-zoom is deliberately not disabled.** `user-scalable=no` was removed from the viewport
+  meta — it is the usual shortcut to make a web app feel native, and it takes away the one zoom a
+  low-vision reader already knows how to use. The setting above is not a substitute for it.
+- **Nothing is set below 12px.** Chart ticks are 12px, UI copy is 13-16px, and the CSS roles
+  (`.eyebrow`, `.meta`, `.badge`) moved up with it. An uppercase label at 10px reads as dust on a
+  phone in daylight, and it is always the label that explains the number beneath it.
+- **Every control is at least 44px tall** — chips, tabs, icon buttons, checkboxes and the plan chip
+  in the header. Verified by measuring the rendered box of every interactive element on all five
+  screens at the largest text size, not by reading the classes.
+- **`prefers-contrast: more` is honoured**: the ink ramp darkens and the hairlines strengthen, with
+  no JavaScript toggle to find.
+- **Copy is written to be understood in one read.** No accounting or computer vocabulary is shown to
+  the owner — no COGS, no "net margin", no "service worker", no "model", no internal ids in a
+  warning — every figure carries its unit in words ("₱20 out of every ₱100", not "20%"), and money is
+  always formatted with thousands separators.
 - **Language of the page** is set before first paint and updated on switch, so screen readers
   pronounce copy correctly in both languages.
 - **`prefers-reduced-motion` is honoured everywhere**: the splash shortens to 800ms, and every

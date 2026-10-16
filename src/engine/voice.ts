@@ -273,7 +273,10 @@ export function parseSpoken(
     const window = words.slice(from, aliasWordIndex)
 
     let qty: number | null = null
-    let qtySource = pickCopy(lang, { en: 'assumed 1', fil: 'default 1' })
+    let qtySource = pickCopy(lang, {
+      en: 'used 1 — no number was heard',
+      fil: '1 ang ginamit — walang narinig na numero',
+    })
     for (let i = window.length - 1; i >= 0; i -= 1) {
       const candidate = parseSpokenNumber(window.slice(i).join(' '))
       if (candidate !== null && candidate > 0 && candidate < 1000) {
@@ -323,8 +326,8 @@ export function parseSpoken(
           fil: 'Walang nakilalang paninda sa sinabi.',
         })
       : pickCopy(lang, {
-          en: `${quantityList} — needs confirmation.`,
-          fil: `${quantityList} — kailangan ng kumpirmasyon.`,
+          en: `${quantityList} — check the numbers before recording.`,
+          fil: `${quantityList} — suriin ang numero bago itala.`,
         })
 
   return {

@@ -35,31 +35,45 @@ export function PatSays({
   const mood: PatMood = sources.warnings.length > 0 ? 'concerned' : moodForBand(band)
 
   return (
-    <div className="relative flex items-center gap-2 pr-7">
-      {/* Pat is deliberately large here: at 100px the blink and the float are
-          legible on a phone, and the character reads as the app's, not as an
-          icon in a list. The negative margin lets it sit on the bubble's line
-          rather than inside a box of its own. */}
-      <div className="shrink-0 -my-1 -ml-1">
-        <Pat mood={mood} wardrobe="books" tone={tone} size={100} />
+    <div className="relative flex items-center gap-2 pr-12">
+      {/*
+       * Pat is deliberately large here: at 100px the blink and the float are
+       * legible on a phone, and the character reads as the app's, not as an icon
+       * in a list.
+       *
+       * The size is a clamp rather than a fixed 100px, because the 100px bird plus
+       * a 48px dismiss target left the sentence in a 92px bubble on a 280px phone —
+       * about four words per line for the one sentence that carries the advice. The
+       * wrapper is a square that shrinks to 56px at the narrowest, and Pat fills it
+       * (`className="h-full w-full"` beats the SVG's width/height attributes), so
+       * the drawing scales instead of the component changing shape.
+       *
+       * The negative margin lets it sit on the bubble's line rather than inside a
+       * box of its own.
+       */}
+      <div className="-my-1 -ml-1 h-[clamp(3.5rem,20vw,6.25rem)] w-[clamp(3.5rem,20vw,6.25rem)] shrink-0">
+        <Pat mood={mood} wardrobe="books" tone={tone} size={100} className="h-full w-full" />
       </div>
 
-      <div className="relative min-w-0 flex-1 rounded-card border border-line bg-card p-3 shadow-e1">
-        {/* The bubble tail: one rotated square tucked under the card's edge, so
-            Pat is visibly the one speaking. */}
+      <div className="relative min-w-0 flex-1 rounded-3xl border border-brand-500/20 bg-gradient-to-br from-white/95 to-brand-50/50 p-4 shadow-e2 backdrop-blur-xl">
+        {/* The bubble tail */}
         <span
           aria-hidden
-          className="absolute -left-1.5 top-1/2 size-3 -translate-y-1/2 rotate-45 rounded-[2px] border-b border-l border-line bg-card"
+          className="absolute -left-1.5 top-1/2 size-3 -translate-y-1/2 rotate-45 rounded-[2px] border-b border-l border-brand-500/20 bg-white"
         />
-        <div className="eyebrow text-gold-700">{t('pat.says')}</div>
-        <p className="mt-1 text-[0.78rem] leading-snug text-fg-muted">{tip}</p>
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2.5 py-0.5 text-[0.65rem] font-black uppercase tracking-wider text-gold-800 border border-gold-400/30">
+          <span className="h-1.5 w-1.5 rounded-full bg-gold-500 shadow-[0_0_6px_rgba(234,179,8,0.8)]" />
+          <span>{t('pat.says')}</span>
+        </div>
+        <p className="mt-2 text-[0.875rem] font-medium leading-relaxed text-fg">{tip}</p>
         {onOpenScore ? (
           <button
             type="button"
             onClick={onOpenScore}
-            className="mt-2 text-[0.7rem] font-bold text-brand-700 underline decoration-brand-200 underline-offset-2 transition hover:decoration-brand-600"
+            className="mt-2.5 inline-flex items-center gap-1 text-[0.8125rem] font-extrabold text-brand-700 transition hover:text-brand-900 group"
           >
-            {t('dash.scoreTitle')}
+            <span>{t('dash.scoreTitle')}</span>
+            <span className="transition-transform group-hover:translate-x-0.5">→</span>
           </button>
         ) : null}
       </div>
@@ -68,9 +82,9 @@ export function PatSays({
         type="button"
         onClick={() => setDismissed(true)}
         aria-label={t('pat.tipClose')}
-        className="absolute right-0 top-1 grid size-7 place-items-center rounded-full text-fg-faint transition hover:bg-sunken hover:text-fg"
+        className="absolute top-1/2 right-0 grid size-11 -translate-y-1/2 place-items-center rounded-full text-fg-faint transition hover:bg-sunken hover:text-fg"
       >
-        <span aria-hidden className="text-[0.9rem] leading-none">
+        <span aria-hidden className="text-[1.15rem] leading-none">
           ×
         </span>
       </button>

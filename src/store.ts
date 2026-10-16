@@ -89,8 +89,14 @@ export interface Negosyo {
   provenance: CapitalProvenance
   add(txn: Transaction): void
   voidTransaction(id: TxnId): void
+  /** Permanently remove a transaction (and its void record, if any). */
+  removeTransaction(id: TxnId): void
+  /** Put a removed transaction back at its position — the delete-undo path. */
+  restoreTransaction(txn: Transaction, index?: number): void
   resetToDemo(): void
   clearAll(): void
+  /** Replace the whole ledger — used only by backup restore. */
+  restore(ledger: Ledger): void
 }
 
 export function useNegosyo(): Negosyo {
@@ -148,6 +154,31 @@ export function useNegosyo(): Negosyo {
     })
   }, [])
 
+  const removeTransaction = useCallback((id: TxnId) => {
+    setLedger((current) => {
+      const next: Ledger = {
+        ...current,
+        transactions: current.transactions.filter((t) => t.id !== id),
+        voids: current.voids.filter((v) => v.txnId !== id),
+      }
+      persist(next)
+      return next
+    })
+  }, [])
+
+  const restoreTransaction = useCallback((txn: Transaction, index?: number) => {
+    setLedger((current) => {
+      if (current.transactions.some((t) => t.id === txn.id)) return current
+      const transactions =
+        typeof index === 'number'
+          ? [...current.transactions.slice(0, index), txn, ...current.transactions.slice(index)]
+          : [...current.transactions, txn]
+      const next: Ledger = { ...current, transactions }
+      persist(next)
+      return next
+    })
+  }, [])
+
   const resetToDemo = useCallback(() => {
     update(seedLedger(new Date()))
   }, [update])
@@ -159,6 +190,13 @@ export function useNegosyo(): Negosyo {
       return next
     })
   }, [])
+
+  const restore = useCallback(
+    (ledger: Ledger) => {
+      update(ledger)
+    },
+    [update],
+  )
 
   return {
     ledger,
@@ -173,7 +211,10 @@ export function useNegosyo(): Negosyo {
     provenance,
     add,
     voidTransaction,
+    removeTransaction,
+    restoreTransaction,
     resetToDemo,
     clearAll,
+    restore,
   }
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { explainAnswer } from '../ai.ts'
 import { Button, Card, LockedCard, Pill, SectionTitle, inputClass } from './components.tsx'
 import { ask } from '../engine/index.ts'
 import type { Answer } from '../engine/index.ts'
@@ -81,17 +82,22 @@ export function AskScreen({
         {/* Pat in the reading glasses: this is the screen where the app looks at
             the books and tells you what it sees. */}
         <div className="flex items-start gap-1">
-          <div className="shrink-0 -mb-2 -ml-2 -mt-1">
+          <div className="-mt-1 -mb-2 -ml-2 shrink-0">
             <Pat wardrobe="reading" mood="steady" size={82} />
           </div>
           <div className="min-w-0 flex-1">
-            <SectionTitle hint={t('ask.noLlm')}>{t('ask.title')}</SectionTitle>
-            <p className="mb-3 text-[0.7rem] text-fg-subtle">{t('ask.intro')}</p>
+            <SectionTitle>{t('ask.title')}</SectionTitle>
+            <span className="mb-2.5 inline-block max-w-full rounded-full border border-brand-500/20 bg-brand-50/70 px-3 py-1 text-[0.8125rem] leading-snug font-bold text-brand-800">
+              {t('ask.noLlm')}
+            </span>
+            <p className="mb-3 text-[0.8125rem] leading-relaxed text-fg-subtle">
+              {t('ask.intro')}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-stretch gap-2">
           <input
-            className={`${inputClass} mt-0`}
+            className={`${inputClass} mt-0 min-w-0 flex-1 bg-white/80 backdrop-blur-md rounded-2xl`}
             placeholder={t('ask.placeholder')}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -99,9 +105,11 @@ export function AskScreen({
               if (e.key === 'Enter') send(question)
             }}
           />
-          <Button onClick={() => send(question)}>{t('ask.ask')}</Button>
+          <Button className="min-h-12 shrink-0 px-6 font-bold shadow-pop" onClick={() => send(question)}>
+            {t('ask.ask')}
+          </Button>
         </div>
-        <p className="mt-2 text-[0.65rem] text-fg-faint">{t('ask.free')}</p>
+        <p className="aside mt-2.5 text-[0.9375rem] leading-snug text-fg-subtle">{t('ask.free')}</p>
       </Card>
 
       {/* Until something is asked, the screen would otherwise be a card over a
@@ -109,34 +117,34 @@ export function AskScreen({
       {history.length === 0 ? (
         <Card>
           <SectionTitle hint={t('ask.startHint')}>{t('ask.startTitle')}</SectionTitle>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="fit-grid-2 grid grid-cols-2 gap-3">
             {STARTERS.map((starter) => (
               <button
                 key={starter.qKey}
                 type="button"
                 onClick={() => send(t(starter.qKey))}
-                className="flex items-start gap-2.5 rounded-2xl border border-line bg-gradient-to-br from-card to-sunken/50 p-3 text-left shadow-e1 transition-all duration-200 active:scale-[0.97] active:border-brand-700/40"
+                className="surface-raise flex min-h-20 items-start gap-3 rounded-2xl border border-white/80 bg-white/70 backdrop-blur-md p-3.5 text-left shadow-xs transition-all duration-200 hover:border-brand-500/30 active:scale-[0.98]"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-700/10 text-brand-700">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 text-white shadow-[0_4px_12px_-2px_rgba(42,58,214,0.35)]">
                   <svg
                     viewBox="0 0 24 24"
                     className="h-4 w-4"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.9"
+                    strokeWidth="2.2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
                     <path d={starter.icon} />
                   </svg>
                 </span>
-                <span className="text-[0.72rem] leading-snug font-semibold text-fg-muted">
+                <span className="text-[0.875rem] leading-snug font-bold text-fg">
                   {t(starter.labelKey)}
                 </span>
               </button>
             ))}
           </div>
-          <p className="mt-3.5 border-t border-line pt-3.5 text-[0.68rem] leading-relaxed text-fg-faint">
+          <p className="mt-3.5 border-t border-line pt-3.5 text-[0.8125rem] leading-relaxed text-fg-faint">
             {t('ask.startFooter')}
           </p>
         </Card>
@@ -146,19 +154,20 @@ export function AskScreen({
         <AiNarrationCard answer={history[0]} billing={billing} onUpgrade={onUpgrade} />
       ) : null}
 
-      {/* Answers are readings the engine produced from the ledger, so the newest
-          one takes the navy tint — the same "computed, not guessed" material the
-          AI card uses when it is locked. Older answers stay plain so the newest
-          reading is the one that stands out. */}
+      {/* Answers are readings the engine produced from the ledger */}
       {history.map((answer, index) => (
         <Card key={`${answer.intent}-${index}`} material={index === 0 ? 'brand' : 'plain'}>
-          <div className="text-[0.7rem] text-fg-faint">{answer.question}</div>
-          <p className="mt-1 text-base font-medium text-fg">{answer.headline}</p>
+          {/* The question is the owner's own words, so it takes the second voice
+              (weight 500, secondary ink); the reading underneath is the app's, so
+              it is set in the headline weight it shares with every figure. One
+              glance tells you who said what. */}
+          <div className="aside text-[0.9375rem] leading-snug text-fg-subtle">{answer.question}</div>
+          <p className="headline mt-1.5 text-[1.0625rem] leading-snug text-fg">{answer.headline}</p>
 
           {answer.detail.length > 0 ? (
-            <ul className="mt-3 space-y-1 border-t border-line pt-3">
+            <ul className="mt-3 space-y-1.5 border-t border-line pt-3">
               {answer.detail.map((line) => (
-                <li key={line} className="text-xs text-fg-muted">
+                <li key={line} className="text-[0.875rem] leading-relaxed text-fg-muted">
                   {line}
                 </li>
               ))}
@@ -169,9 +178,17 @@ export function AskScreen({
             <div className="mt-3 space-y-1 border-t border-line pt-3">
               <div className="eyebrow text-brand-700">{t('ask.evidence')}</div>
               {answer.evidence.map((item, i) => (
-                <div key={`${item.label}-${i}`} className="flex justify-between gap-3 text-xs">
-                  <span className="text-fg-subtle">{item.label}</span>
-                  <span className="text-right text-fg-muted">{item.value}</span>
+                <div
+                  key={`${item.label}-${i}`}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[0.875rem]"
+                >
+                  {/* Both sides may wrap: these values are sentences, not peso
+                      figures, so a `shrink-0` value squeezed the label into a
+                      single vertical column of letters on a phone. The row keeps
+                      its label-left/value-right shape when both fit, and the
+                      value drops to its own line when they do not. */}
+                  <span className="min-w-0 leading-snug text-fg-subtle">{item.label}</span>
+                  <span className="min-w-0 text-right leading-snug text-fg-muted">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -181,7 +198,7 @@ export function AskScreen({
             <div className="mt-3 space-y-1 border-t border-line pt-3">
               <div className="eyebrow text-amber-700">{t('ask.actions')}</div>
               {answer.actions.map((action) => (
-                <div key={action} className="text-xs text-amber-800">
+                <div key={action} className="text-[0.875rem] leading-relaxed text-amber-800">
                   {action}
                 </div>
               ))}
@@ -217,18 +234,31 @@ function AiNarrationCard({
   onUpgrade: () => void
 }) {
   const t = useT()
+  const lang = useLang()
   const [requested, setRequested] = useState(false)
+  const [aiText, setAiText] = useState<string | null>(null)
+  const [aiBusy, setAiBusy] = useState(false)
 
+  // Light ink on a light card: this same evidence block is previewed inside the
+  // dark vault (LockedCard frosts it), but here it sits on paper — white text
+  // on white was unreadable, which is the bug being fixed.
   const evidence = (
-    <ul className="space-y-1">
-      <li className="text-xs text-fg-muted">{answer.headline}</li>
-      {answer.evidence.map((item) => (
-        <li key={item.label} className="flex justify-between gap-3 text-xs">
-          <span className="text-fg-subtle">{item.label}</span>
-          <span className="text-fg-muted">{item.value}</span>
+    <div className="rounded-xl border border-line bg-card p-3">
+      <ul className="space-y-2">
+        <li className="text-[0.875rem] leading-relaxed font-semibold text-fg">
+          {answer.headline}
         </li>
-      ))}
-    </ul>
+        {answer.evidence.map((item) => (
+          <li
+            key={item.label}
+            className="flex items-baseline justify-between gap-3 text-[0.875rem]"
+          >
+            <span className="min-w-0 leading-snug text-fg-muted">{item.label}</span>
+            <span className="num shrink-0 text-right font-medium text-fg">{item.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 
   if (!billing.can('ai_narration')) {
@@ -248,11 +278,11 @@ function AiNarrationCard({
   if (remaining <= 0) {
     return (
       <Card flat className="border-amber-300 bg-amber-50">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="eyebrow text-amber-700">{t('ask.aiTitle')}</h2>
           <Pill tone="warn">{t('ask.aiRemaining', { n: 0 })}</Pill>
         </div>
-        <p className="mt-1.5 text-[0.72rem] leading-relaxed text-fg-subtle">
+        <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-subtle">
           {t('ask.aiExhausted', { n: AI_QUESTION_LIMIT })}
         </p>
         <Button variant="ghost" className="mt-3 w-full" onClick={onUpgrade}>
@@ -264,31 +294,47 @@ function AiNarrationCard({
 
   return (
     <Card flat className="border-brand-600/40 bg-brand-50">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="eyebrow text-brand-700">{t('ask.aiTitle')}</h2>
         <Pill tone={remaining > 60 ? 'good' : 'warn'}>{t('ask.aiRemaining', { n: remaining })}</Pill>
       </div>
 
       {requested ? (
         <>
-          <p className="mt-1.5 text-[0.7rem] leading-relaxed text-fg-subtle">
+          <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-subtle">
             {t('ask.aiWouldSend')}
           </p>
-          <div className="mt-2 rounded-2xl border border-line bg-sunken p-3">{evidence}</div>
-          <p className="mt-2 text-[0.65rem] leading-relaxed text-fg-faint">
-            {t('ask.aiNotWired')}
-          </p>
+          <div className="mt-2.5">{evidence}</div>
+          {aiText ? (
+            <p className="mt-2.5 text-[0.875rem] leading-relaxed text-fg">{aiText}</p>
+          ) : (
+            <p className="mt-2.5 text-[0.8125rem] leading-relaxed text-fg-faint">
+              {t('ask.aiNotWired')}
+            </p>
+          )}
         </>
       ) : (
         <>
-          <p className="mt-1.5 text-[0.72rem] leading-relaxed text-fg-subtle">
+          <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-subtle">
             {t('ask.aiExplainPrompt')}
           </p>
           <Button
-            className="mt-3 w-full"
+            className="mt-3.5 min-h-12 w-full"
+            disabled={aiBusy}
             onClick={() => {
               billing.recordAiQuestion()
               setRequested(true)
+              // One door, currently closed: without a configured provider this
+              // throws AiNotConfigured and the honest note above stands.
+              setAiBusy(true)
+              void explainAnswer({
+                headline: answer.headline,
+                evidence: answer.evidence,
+                lang,
+              })
+                .then((text) => setAiText(text))
+                .catch(() => setAiText(null))
+                .finally(() => setAiBusy(false))
             }}
           >
             {t('ask.explainWithAi')}

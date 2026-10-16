@@ -144,15 +144,34 @@ export function seedLedger(now: Date): Ledger {
     }
 
     // Some utang gets collected.
+    //
+    // The amount is capped at what that customer actually owes at this point in
+    // the history. It used to collect a flat ₱60-300 from a random customer,
+    // which regularly overpaid somebody and left the seeded ledger carrying a
+    // warning the app itself raised — a demo whose first screen showed a mistake
+    // it had invented. The two `rand()` calls happen either way, so the rest of
+    // the generated history is unchanged.
     if (day % 4 === 2) {
       const customer = DEMO_CUSTOMERS[Math.floor(rand() * DEMO_CUSTOMERS.length)]
-      transactions.push({
-        id: id('pay'),
-        at: at(day, 18),
-        kind: 'payment_received',
-        customerId: customer.id,
-        amountCentavos: pesos(Math.round(60 + rand() * 240)),
-      })
+      const wanted = pesos(Math.round(60 + rand() * 240))
+      const owed = transactions.reduce((sum, t) => {
+        if (t.kind === 'credit_sale' && t.customerId === customer.id) {
+          return sum + t.lines.reduce((s, l) => s + l.qty * l.unitPriceCentavos, 0)
+        }
+        if (t.kind === 'payment_received' && t.customerId === customer.id) {
+          return sum - t.amountCentavos
+        }
+        return sum
+      }, 0)
+      if (owed > 0) {
+        transactions.push({
+          id: id('pay'),
+          at: at(day, 18),
+          kind: 'payment_received',
+          customerId: customer.id,
+          amountCentavos: Math.min(wanted, owed),
+        })
+      }
     }
 
     // Operating expenses.

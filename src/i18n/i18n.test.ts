@@ -81,8 +81,8 @@ describe('screen copy is complete in both languages', () => {
   it('keeps brand and product names stable across languages', () => {
     // Intentional exceptions, listed so a future reader knows they are choices
     // rather than gaps: the product's own words do not change language.
-    expect(pick('fil', UI['tab.twin'])).toBe(pick('en', UI['tab.twin']))
     expect(pick('fil', UI['record.walkIn'])).toBe(pick('en', UI['record.walkIn']))
+    expect(pick('fil', UI['pat.name'])).toBe(pick('en', UI['pat.name']))
   })
 })
 
@@ -133,7 +133,11 @@ describe('the engine answers in the language it was asked', () => {
   it('produces identical numbers in both languages', () => {
     const english = ask('How much did I earn this week?', context, 'en')
     const filipino = ask('Magkano kinita ko ngayong linggo?', context, 'fil')
-    const numbers = (text: string) => text.match(/₱[\d,.]+/g) ?? []
+    // Money is always printed with two decimals by formatPHP, so this pattern is
+    // exact — and it matters that it is: a looser `₱[\d,.]+` swallows the full
+    // stop at the end of a sentence, which made a Tagalog line that ends in a
+    // figure look like a different number from the English one that continues.
+    const numbers = (text: string) => text.match(/₱\d{1,3}(?:,\d{3})*\.\d{2}/g) ?? []
 
     // The money is the money: only the words around it may differ.
     expect(numbers(filipino.headline)).toEqual(numbers(english.headline))
