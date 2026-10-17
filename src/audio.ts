@@ -340,11 +340,47 @@ function getAudioContextCtorSafe(): typeof AudioContext | null {
 }
 
 /**
+ * The container to record into, negotiated rather than assumed.
+ *
+ * `new MediaRecorder(stream)` picks the browser default, which is usually
+ * right — until it is not: some Android WebViews default to a container whose
+ * bytes `decodeAudioData` then refuses to parse, and the take dies downstream
+ * as "the recorded audio could not be read". Opus-in-WebM decodes everywhere
+ * it matters; AAC-in-MP4 is what Safari produces anyway; the bare default is
+ * the last resort rather than the first guess.
+ */
+function pickMimeType(): string | undefined {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+    return undefined
+  }
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']
+  for (const candidate of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(candidate)) return candidate
+    } catch {
+      continue
+    }
+  }
+  return undefined
+}
+
+/**
  * Opens the microphone and starts recording. Rejects if permission is denied or
  * the platform has no usable recorder, always with a message the UI can show
  * as-is.
  */
 export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
+  // Plain http has no microphone at all: `mediaDevices` is undefined and the
+  // take would fail below as "no microphone", sending the owner to check a
+  // device that was never the problem. Name the page, not the hardware.
+  if (typeof window !== 'undefined' && (window as unknown as { isSecureContext?: boolean }).isSecureContext === false) {
+    throw new VoiceError(
+      say(
+        'Voice needs a secure page (https). Open the installed app or the https address instead.',
+        'Kailangan ng boses ang secure na page (https). Buksan ang naka-install na app o ang https na address.',
+      ),
+    )
+  }
   if (typeof navigator === 'undefined' || typeof navigator.mediaDevices?.getUserMedia !== 'function') {
     throw new VoiceError(say('This device has no microphone.', 'Walang mikropono sa device na ito.'))
   }
@@ -372,7 +408,8 @@ export async function startCapture(maxMs = DEFAULT_MAX_MS): Promise<Recorder> {
   }
 
   const chunks: Blob[] = []
-  const recorder = new MediaRecorder(stream)
+  const mimeType = pickMimeType()
+  const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
   let stopping = false
   let cancelled = false
   let closeMonitor: (() => void) | null = null

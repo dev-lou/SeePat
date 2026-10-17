@@ -160,6 +160,19 @@ const LISTEN_CAP_MS = 25_000
  */
 const FALLBACK_LOCALE = 'en-PH'
 
+/**
+ * Vocabulary the recognizer should listen for, when the engine can take a hint.
+ *
+ * Only the browser engine uses this: Chrome accepts a JSGF grammar biasing
+ * recognition toward the given phrases, and every engine that cannot take a
+ * hint ignores it. It is optional and last, so existing four-argument callers
+ * keep working unchanged.
+ */
+export interface AsrHints {
+  /** Shop words worth hearing — SKU names and aliases, in any language. */
+  phrases: string[]
+}
+
 export interface AsrEngine {
   id: string
   label: Bilingual
@@ -177,6 +190,7 @@ export interface AsrEngine {
      * silently: a red mic and a waveform that never stop.
      */
     onEnd?: () => void,
+    hints?: AsrHints,
   ): void
   stop(): void
 }
@@ -212,6 +226,8 @@ interface SpeechRecognitionLike {
   continuous: boolean
   interimResults: boolean
   maxAlternatives: number
+  /** A compiled grammar, when the browser accepts one. Absent most of the time. */
+  grammars?: unknown
   start(): void
   stop(): void
   abort(): void
@@ -241,6 +257,122 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
  * sits in the free tier rather than behind the subscription — the paid tier is
  * where actual marginal cost lives.
  */
+/**
+ * A page served over plain http has no working microphone — `getUserMedia`
+ * is undefined and recognition fails — so the failure is named up front
+ * instead of arriving as a misleading "permission" or "network" error.
+ */
+function pageIsInsecure(): boolean {
+  if (typeof window === 'undefined') return false
+  const context = window as unknown as { isSecureContext?: boolean }
+  return context.isSecureContext === false
+}
+
+function insecurePageMessage(): string {
+  return say(
+    'Voice needs a secure page (https). Open the installed app or the https address instead.',
+    'Kailangan ng boses ang secure na page (https). Buksan ang naka-install na app o ang https na address.',
+  )
+}
+
+/** How many hypotheses to ask Google for, so a mangled product name can lose. */
+const MAX_ALTERNATIVES = 3
+
+/**
+ * Picks the hypothesis that sounds most like this shop.
+ *
+ * Google returns its best guess first, and most of the time that is the right
+ * answer. But its best guess was trained on the whole internet, not on a
+ * sari-sari store: when the top hypothesis mangles a product name ("coke" →
+ * "coat") while a lower one hears it, counting shop-vocabulary hits recovers
+ * the take without asking the owner to repeat herself. Ties — including every
+ * take with no hints at all — keep Google's order.
+ *
+ * Votes come from full phrases ("lucky me") and from their long words
+ * ("lucky", "coke"): a bare "Coke" in the transcript must still vote even
+ * when the shelf name is "Coke Mismo". Short words vote only inside their
+ * phrase — "me" is a pronoun as often as a product — so they are excluded
+ * as lone needles.
+ *
+ * Pure and tested without a DOM.
+ */
+export function pickBestAlternative(alternatives: string[], hints?: AsrHints): string {
+  const first = alternatives[0] ?? ''
+  if (alternatives.length < 2 || !hints) return first
+  const needles = Array.from(
+    new Set(
+      hints.phrases.flatMap((phrase) => {
+        const full = normalizeHint(phrase)
+        if (!full) return []
+        return [full, ...full.split(' ').filter((word) => word.length >= 3)]
+      }),
+    ),
+  )
+  if (needles.length === 0) return first
+  let best = first
+  let bestScore = -1
+  for (const alternative of alternatives) {
+    const haystack = normalizeHint(alternative)
+    let score = 0
+    for (const needle of needles) {
+      if (haystack.includes(needle)) score += 1
+    }
+    if (score > bestScore) {
+      bestScore = score
+      best = alternative
+    }
+  }
+  return best
+}
+
+function normalizeHint(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9ñ ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+interface GrammarListLike {
+  addFromString(grammar: string, weight?: number): void
+}
+
+type GrammarListCtor = new () => GrammarListLike
+
+/**
+ * Hands the shop's vocabulary to the recognizer, when the browser takes it.
+ *
+ * Chrome exposes `SpeechGrammarList` (usually prefixed); most other browsers
+ * do not, and Chrome itself is free to ignore the grammar — so this is strictly
+ * a hint, never a dependency. Anything that throws (a missing constructor, a
+ * grammar the browser dislikes) leaves recognition running without it, because
+ * a bias that fails to attach must never fail the take.
+ */
+function attachShopGrammar(recognition: SpeechRecognitionLike, hints?: AsrHints): void {
+  if (!hints || hints.phrases.length === 0 || typeof window === 'undefined') return
+  try {
+    const w = window as unknown as {
+      SpeechGrammarList?: GrammarListCtor
+      webkitSpeechGrammarList?: GrammarListCtor
+    }
+    const Ctor = w.SpeechGrammarList ?? w.webkitSpeechGrammarList
+    if (!Ctor) return
+    const words = Array.from(
+      new Set(
+        hints.phrases
+          .map((phrase) => normalizeHint(phrase))
+          .filter((phrase) => phrase.length > 0),
+      ),
+    ).slice(0, 200)
+    if (words.length === 0) return
+    const list = new Ctor()
+    list.addFromString(`#JSGF V1.0; grammar shop; public <item> = ${words.join(' | ')};`, 1)
+    recognition.grammars = list
+  } catch {
+    // Recognition runs fine without the bias.
+  }
+}
+
 export function createWebSpeechEngine(): AsrEngine {
   let recognition: SpeechRecognitionLike | null = null
   let watchdog: ReturnType<typeof setTimeout> | undefined
@@ -253,7 +385,12 @@ export function createWebSpeechEngine(): AsrEngine {
       fil: 'Pinakatumpak sa Taglish, pero kailangan ng internet. Libre — walang bayad kada salita.',
     },
     available: getRecognitionCtor() !== null,
-    start(onResult, onError, onStatus, onEnd) {
+    start(onResult, onError, onStatus, onEnd, hints) {
+      if (pageIsInsecure()) {
+        onError(insecurePageMessage(), 'unknown')
+        onEnd?.()
+        return
+      }
       const Ctor = getRecognitionCtor()
       if (!Ctor) {
         onError(
@@ -296,16 +433,33 @@ export function createWebSpeechEngine(): AsrEngine {
       instance.lang = SPOKEN_LOCALE
       instance.continuous = false
       instance.interimResults = true
-      instance.maxAlternatives = 1
+      instance.maxAlternatives = MAX_ALTERNATIVES
+      attachShopGrammar(instance, hints)
 
       instance.onresult = (event) => {
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
           const result = event.results[i]
-          const alternative = result[0]
-          if (!alternative) continue
+          if (!result) continue
+          const alternatives: { transcript: string; confidence: number }[] = []
+          for (let a = 0; a < MAX_ALTERNATIVES; a += 1) {
+            const alternative = result[a]
+            if (!alternative) break
+            alternatives.push({
+              transcript: alternative.transcript,
+              confidence: alternative.confidence || 0,
+            })
+          }
+          if (alternatives.length === 0) continue
+          const best = pickBestAlternative(
+            alternatives.map((a) => a.transcript),
+            hints,
+          )
+          const fallback = alternatives[0]
+          if (!fallback) continue
+          const chosen = alternatives.find((a) => a.transcript === best) ?? fallback
           onResult({
-            transcript: alternative.transcript,
-            confidence: alternative.confidence || 0,
+            transcript: chosen.transcript,
+            confidence: chosen.confidence,
             final: result.isFinal,
           })
         }

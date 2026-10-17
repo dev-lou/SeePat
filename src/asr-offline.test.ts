@@ -69,6 +69,42 @@ describe('an installed record is only trusted for the current model', () => {
     expect(reloaded.getInstalledVoiceModel()?.key).toBe(key)
   })
 
+  it('accepts the record for the opt-in larger model too', async () => {
+    const mod = await load()
+    const small = mod.WHISPER_SMALL_MODEL
+    expect(small.installable).toBe(true)
+
+    stubStorage({
+      'seepat.voice.model.v1': JSON.stringify({
+        key: small.key,
+        repo: small.repo,
+        installedAt: '2026-09-15T00:00:00.000Z',
+        bytes: 248_000_000,
+      }),
+    })
+
+    const reloaded = await load()
+    expect(reloaded.getInstalledVoiceModel()?.key).toBe(small.key)
+    // Base and small are different downloads, so the record must name the
+    // repo the runtime will actually load — a key alone is not enough.
+    expect(reloaded.getInstalledVoiceModel()?.repo).toBe(small.repo)
+  })
+
+  it('ignores a record whose repo does not match its key', async () => {
+    const mod = await load()
+    stubStorage({
+      'seepat.voice.model.v1': JSON.stringify({
+        key: mod.WHISPER_MODEL.key,
+        repo: mod.WHISPER_SMALL_MODEL.repo,
+        installedAt: '2026-09-15T00:00:00.000Z',
+        bytes: 248_000_000,
+      }),
+    })
+
+    const reloaded = await load()
+    expect(reloaded.getInstalledVoiceModel()).toBeNull()
+  })
+
   it('ignores a record that is not a record at all', async () => {
     stubStorage({ 'seepat.voice.model.v1': '{"nonsense": true}' })
     const mod = await load()

@@ -313,6 +313,62 @@ describe('constrained voice parsing', () => {
   })
 })
 
+describe('fuzzy voice matching for full-name ledgers', () => {
+  // The owner's real shelf: no short aliases, just the name on the price tag.
+  // Saying "coke" must draft the only Coke rather than reporting no goods.
+  const soloLedger: Ledger = {
+    skus: [
+      { id: 'cz', name: 'Coke Zero', unit: 'pc', baseUnit: 'pc', aliases: [] },
+      { id: 'sr', name: 'Sardinas 555', unit: 'pc', baseUnit: 'pc', aliases: [] },
+    ],
+    customers: [],
+    transactions: [],
+    voids: [],
+  }
+
+  it('drafts the only Coke when just "coke" is said', () => {
+    const draft = parseSpoken('nakabenta ako ng isang coke', soloLedger, 'fil')
+    expect(draft.lines).toHaveLength(1)
+    expect(draft.lines[0]?.skuId).toBe('cz')
+    expect(draft.lines[0]?.qty).toBe(1)
+    expect(draft.unresolved).toEqual([])
+  })
+
+  it('still hears the quantity beside a fuzzy item', () => {
+    const draft = parseSpoken('limang coke', soloLedger, 'fil')
+    expect(draft.lines.find((l) => l.skuId === 'cz')?.qty).toBe(5)
+  })
+
+  it('refuses to guess when two Cokes share the shelf', () => {
+    // "coke" matches both — picking one would invent the wrong sale, so the
+    // words stay unplaced and the owner taps the right item on the sheet.
+    const duet: Ledger = {
+      ...soloLedger,
+      skus: [
+        { id: 'cz', name: 'Coke Zero', unit: 'pc', baseUnit: 'pc', aliases: [] },
+        { id: 'cm', name: 'Coke Mismo', unit: 'pc', baseUnit: 'pc', aliases: [] },
+      ],
+    }
+    const draft = parseSpoken('coke', duet, 'fil')
+    expect(draft.lines).toHaveLength(0)
+    expect(draft.unresolved).toContain('coke')
+  })
+
+  it('never steals the next item\'s number through a short alias', () => {
+    // The fuzzy hit sits on one word ("coke"), so the forward window starts
+    // after it: "at" stops the search and two stays with the sardinas.
+    const draft = parseSpoken('coke at dalawang sardinas', soloLedger, 'fil')
+    expect(draft.lines.find((l) => l.skuId === 'cz')?.qty).toBe(1)
+    expect(draft.lines.find((l) => l.skuId === 'sr')?.qty).toBe(2)
+  })
+
+  it('leaves genuinely unknown words unplaced', () => {
+    const draft = parseSpoken('coke at mansanas', soloLedger, 'fil')
+    expect(draft.lines.find((l) => l.skuId === 'cz')?.qty).toBe(1)
+    expect(draft.unresolved).toContain('mansanas')
+  })
+})
+
 describe('demo data', () => {
   it('never leaves a SKU with negative stock — purchases must keep up with sales', () => {
     for (const [skuId, stock] of Object.entries(twin.inventory)) {

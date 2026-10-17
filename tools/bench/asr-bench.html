@@ -189,13 +189,17 @@
                 let text = ''
                 let error = null
                 try {
+                  // Mirrors `transcribeOffline` in src/asr-offline.ts: short takes
+                  // go through in one pass (chunking a 1–2s clip only pads it
+                  // into hallucination); the `lang` axis still forces chunking
+                  // off so each language setting is compared on the same path.
+                  const short = samples.length / TARGET_SAMPLE_RATE <= 15
                   const output = await pipe(samples, {
                     // `null` is the library's own default and means "detect";
                     // the app passes a hard-coded 'tl' here (see asr-offline.ts).
                     language: lang === 'auto' ? null : lang,
                     task: 'transcribe',
-                    chunk_length_s: 30,
-                    stride_length_s: 5,
+                    ...(short ? {} : { chunk_length_s: 30, stride_length_s: 5 }),
                   })
                   text = Array.isArray(output) ? output.map((o) => o.text).join(' ') : output.text
                 } catch (caught) {

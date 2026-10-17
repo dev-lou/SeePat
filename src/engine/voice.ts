@@ -190,6 +190,14 @@ interface AliasHit {
   index: number
   length: number
   alias: string
+  /**
+   * How many transcript words the hit actually occupies. Exact hits occupy
+   * every word of their alias; a fuzzy hit usually occupies fewer ("coke"
+   * matching the catalogue alias "coke zero" sits on one word, not two).
+   * The quantity windows are measured from this, so a fuzzy hit can never
+   * reach past its own word and steal the next item's number.
+   */
+  spanWords?: number
 }
 
 /** Longest aliases first so "pancit canton" is not shadowed by "lucky". */
@@ -220,6 +228,131 @@ function findAliasHits(transcript: string, ledger: Ledger): AliasHit[] {
   }
 
   return hits.sort((a, b) => a.index - b.index)
+}
+
+/**
+ * Units that carry no item identity on the transcript side of a fuzzy match.
+ *
+ * Most units already live in STOPWORDS; these are the stragglers ('g' from
+ * "2g", metric shorthands) that would otherwise count as a "word" and dilute
+ * the overlap score below.
+ */
+const FUZZY_IGNORED = new Set(['g', 'ml', 'l', 'liter', 'litro', 'gramo'])
+
+/** Transcript words that can vote for an item: not filler, numbers, or units. */
+function significantWords(words: string[]): { word: string; index: number }[] {
+  const out: { word: string; index: number }[] = []
+  words.forEach((raw, index) => {
+    const word = raw.replace(/'t$/, '')
+    if (word.length < 2) return
+    if (STOPWORDS.has(word) || FUZZY_IGNORED.has(word)) return
+    if (/^\d+(\.\d+)?$/.test(word)) return
+    if (wordValue(word) !== null || wordValue(word.replace(/ng$/, '')) !== null) return
+    out.push({ word, index })
+  })
+  return out
+}
+
+/**
+ * Word-overlap matching for ledgers whose aliases are full names.
+ *
+ * The exact matcher needs the catalogue alias to appear verbatim, which holds
+ * for the demo ledger (alias 'coke') but not for a real store whose only Coke
+ * is listed as "Coke Zero": saying "coke" then matches nothing and the draft
+ * reports no goods. This pass runs after the exact one and only over words the
+ * exact pass did not consume: an alias wins when it shares at least one word
+ * with what is left *and* covers at least half of its own words — "coke"
+ * against {coke, zero} scores 1/2, while a stray shared filler cannot reach
+ * the bar on a long name.
+ *
+ * Ambiguity refuses rather than guesses, word by word: when one leftover word
+ * matches two different SKUs ("coke" with both Coke Mismo and Coke Zero on
+ * the shelf), every candidate claiming that word is dropped and it surfaces as
+ * unplaced, exactly as an unknown word would. Candidates claiming disjoint
+ * words ("coke ... sardinas") are independent matches, not a conflict, and
+ * all stand. Picking a conflicted word would invent a sale of the wrong item;
+ * the confirmation sheet already shows the words, so the owner resolves it
+ * by tap.
+ */
+function findFuzzyHits(
+  words: string[],
+  normalized: string,
+  exactHits: AliasHit[],
+  ledger: Ledger,
+): AliasHit[] {
+  const consumed = new Set<number>()
+  for (const hit of exactHits) {
+    const aliasWordIndex = normalized
+      .slice(0, Math.max(0, hit.index - 1))
+      .split(' ')
+      .filter(Boolean).length
+    const aliasWords = hit.spanWords ?? hit.alias.split(' ').filter(Boolean).length
+    for (let i = Math.max(0, aliasWordIndex - 5); i < aliasWordIndex + aliasWords; i += 1) {
+      consumed.add(i)
+    }
+  }
+
+  const remaining = significantWords(words).filter((w) => !consumed.has(w.index))
+  if (remaining.length === 0) return []
+  const remainingSet = new Set(remaining.map((w) => w.word))
+
+  // Char offsets of each word, so a hit can point at its first shared word.
+  const starts: number[] = []
+  let pos = 1 // the padded string starts with a space
+  for (const word of words) {
+    starts.push(pos)
+    pos += word.length + 1
+  }
+
+  const hitSkus = new Set(exactHits.map((h) => h.skuId))
+  const remainingByWord = new Map(remaining.map((w) => [w.word, w.index] as const))
+  const candidates: { hit: AliasHit; claimed: number[] }[] = []
+  for (const sku of ledger.skus) {
+    if (hitSkus.has(sku.id)) continue
+    const aliases = [sku.name, ...sku.aliases].map(normalize).sort((a, b) => b.length - a.length)
+    let best: { alias: string; shared: string[] } | null = null
+    for (const alias of aliases) {
+      const aliasWords = alias.split(' ').filter(Boolean)
+      if (aliasWords.length === 0) continue
+      const shared = aliasWords.filter((w) => remainingSet.has(w))
+      if (shared.length === 0 || shared.length / aliasWords.length < 0.5) continue
+      if (!best || shared.length > best.shared.length) best = { alias, shared }
+    }
+    if (!best) continue
+    const claimed = best.shared
+      .map((word) => remainingByWord.get(word))
+      .filter((index): index is number => index !== undefined)
+    if (claimed.length === 0) continue
+    const firstIndex = Math.min(...claimed)
+    candidates.push({
+      hit: {
+        skuId: sku.id,
+        skuName: sku.name,
+        index: starts[firstIndex] ?? 1,
+        length: words[firstIndex]?.length ?? best.alias.length,
+        alias: best.alias,
+        spanWords: 1,
+      },
+      claimed,
+    })
+  }
+
+  // A word claimed by two SKUs is a conflict: drop every candidate touching
+  // it. What survives claims only words nobody else wants.
+  const claimsByWord = new Map<number, Set<SkuId>>()
+  for (const candidate of candidates) {
+    for (const wordIndex of candidate.claimed) {
+      const set = claimsByWord.get(wordIndex) ?? new Set<SkuId>()
+      set.add(candidate.hit.skuId)
+      claimsByWord.set(wordIndex, set)
+    }
+  }
+  return candidates
+    .filter((candidate) =>
+      candidate.claimed.every((wordIndex) => (claimsByWord.get(wordIndex)?.size ?? 0) <= 1),
+    )
+    .map((candidate) => candidate.hit)
+    .sort((a, b) => a.index - b.index)
 }
 
 /** Most recent unit price this store used for a SKU — offered, then confirmed. */
@@ -267,13 +400,16 @@ export function parseSpoken(
   lang: Lang,
 ): DraftTransaction {
   const kind = detectDraftKind(transcript)
-  const hits = findAliasHits(transcript, ledger)
-  const words = normalize(transcript).split(' ').filter(Boolean)
+  const normalized = normalize(transcript)
+  const words = normalized.split(' ').filter(Boolean)
+  const exactHits = findAliasHits(transcript, ledger)
+  // Exact first, fuzzy only for what exact left on the table — then one order.
+  const hits = [...exactHits, ...findFuzzyHits(words, normalized, exactHits, ledger)].sort(
+    (a, b) => a.index - b.index,
+  )
 
   const lines: DraftLine[] = []
   const consumed = new Set<number>()
-
-  const normalized = normalize(transcript)
 
   for (const hit of hits) {
     // `findAliasHits` indexes into a copy padded with a leading space; undo that here.
@@ -308,7 +444,10 @@ export function parseSpoken(
      * The search stops at a conjunction (see CONJUNCTIONS) and at the next item's
      * own words, so a number spoken for the next item can never be borrowed.
      */
-    const aliasWords = hit.alias.split(' ').filter(Boolean).length
+    // A fuzzy hit sits on fewer transcript words than its catalogue alias
+    // names (see `spanWords`), and the windows below are measured in
+    // transcript words — so they use the span, not the alias length.
+    const aliasWords = hit.spanWords ?? hit.alias.split(' ').filter(Boolean).length
     let qtyEnd = aliasWordIndex
     if (qty === null) {
       const forwardStart = aliasWordIndex + aliasWords

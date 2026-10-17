@@ -126,7 +126,22 @@ export function VoiceScreen({
    * callback, and reading `error`/`transcript` state there would see the values
    * from *before* the update. The ref is what the session actually did.
    */
-  const sessionRef = useRef<{ final: string; failed: boolean }>({ final: '', failed: false })
+  const sessionRef = useRef<{ final: string; partial: string; failed: boolean }>({
+    final: '',
+    partial: '',
+    failed: false,
+  })
+
+  /*
+   * Shop words the recognizer should listen for, rebuilt when the ledger's
+   * items change. Chrome biases recognition toward these (and picks the
+   * hypothesis that hears them); every other browser ignores the hint. Names
+   * and aliases both count, because the owner says what is on the shelf.
+   */
+  const speechHints = useMemo(
+    () => ({ phrases: ledger.skus.flatMap((sku) => [sku.name, ...sku.aliases]) }),
+    [ledger.skus],
+  )
 
   const engine = engines.find((e) => e.id === engineId)
   // Data-driven rather than hardcoded: voice happens to be free today because
@@ -179,9 +194,10 @@ export function VoiceScreen({
     setTranscript('')
     setStatus(null)
     setListening(true)
-    sessionRef.current = { final: '', failed: false }
+    sessionRef.current = { final: '', partial: '', failed: false }
     const instance = getEngines().find((e) => e.id === engineId)
     engineRef.current = instance ?? null
+    const hints = speechHints
     instance?.start(
       (result) => {
         setTranscript(result.transcript)
@@ -190,6 +206,8 @@ export function VoiceScreen({
           setListening(false)
           setStatus(null)
           setDraftText(result.transcript)
+        } else {
+          sessionRef.current.partial = result.transcript
         }
       },
       (message, code) => {
@@ -223,10 +241,25 @@ export function VoiceScreen({
           buildDraft(session.final)
           return
         }
+        /*
+         * The take ended mid-sentence — the 25-second cap cut a long sale, or
+         * the owner tapped stop while Google still held the words as interim.
+         * Those words are still what was said, so they are kept in the box for
+         * finishing by hand or by another tap, exactly as the Ask screen treats
+         * a stopped take. Reporting "nothing heard" over visible words taught
+         * owners the mic was broken; losing the words made it true. Still not
+         * parsed, for the reason above: half a sentence must never become
+         * quantities on its own.
+         */
+        if (session.partial.trim().length > 0 && !session.failed) {
+          setDraftText(session.partial)
+          return
+        }
         // Nothing usable came back. If the engine already explained why, that
         // message stands; if it just died, say so plainly.
         if (!session.failed) setError(t('voice.error.nothingHeard'))
       },
+      hints,
     )
   }
 

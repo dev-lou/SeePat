@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createTypedEngine, createWebSpeechEngine, describeSpeechError } from './asr.ts'
+import { createTypedEngine, createWebSpeechEngine, describeSpeechError, pickBestAlternative } from './asr.ts'
 import { createWhisperOfflineEngine } from './asr-offline.ts'
 import type { AsrEngine } from './asr.ts'
 import { getLang, setLang } from './i18n/index.ts'
@@ -254,6 +254,41 @@ describe('the browser engine always reports the end of a session', () => {
     // Whatever the browser does next is no longer the screen's business.
     instance?.onend?.()
     expect(rec.ends).toBe(0)
+  })
+})
+
+describe('the shop-vocabulary vote over recognition hypotheses', () => {
+  const hints = { phrases: ['Coke Mismo', 'Lucky Me', 'sardinas'] }
+
+  it('keeps Google order when the top hypothesis already hears the shop', () => {
+    expect(
+      pickBestAlternative(['limang Coke bayad cash', 'limang coat bayad cash'], hints),
+    ).toBe('limang Coke bayad cash')
+  })
+
+  it('rescues the take when a lower hypothesis hears the product', () => {
+    // The failure this exists for: the top guess mangles the item ("coat")
+    // while the second hears it. The draft then shows Coke, not a miss.
+    expect(
+      pickBestAlternative(['limang coat bayad cash', 'limang Coke bayad cash'], hints),
+    ).toBe('limang Coke bayad cash')
+  })
+
+  it('is case- and punctuation-blind, like the parser downstream', () => {
+    expect(pickBestAlternative(['COAT!', 'coke.'], hints)).toBe('coke.')
+  })
+
+  it('keeps Google order with no hints, one hypothesis, or a shopless vote', () => {
+    expect(pickBestAlternative(['kamusta ka'], undefined)).toBe('kamusta ka')
+    expect(pickBestAlternative(['isang Coke'], hints)).toBe('isang Coke')
+    expect(pickBestAlternative(['kamusta ka', 'kumusta ka'], hints)).toBe('kamusta ka')
+    expect(pickBestAlternative([], hints)).toBe('')
+  })
+
+  it('asks the recognizer for more than one hypothesis', () => {
+    installFakeBrowser()
+    record(createWebSpeechEngine())
+    expect(FakeRecognition.latest?.maxAlternatives).toBeGreaterThan(1)
   })
 })
 

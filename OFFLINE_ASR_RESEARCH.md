@@ -29,7 +29,7 @@ from a downloadable model?
 
 | Piece | What it is |
 |---|---|
-| `tools/bench/asr-bench.html` | A page that runs `@huggingface/transformers` **with the production call options** from [`src/asr-offline.ts`](src/asr-offline.ts) (`task: 'transcribe'`, `chunk_length_s: 30`, `stride_length_s: 5`, the same fixed `language`), and imports the app's **own** `speechDurationMs` / `normalisePeak` from [`src/audio.ts`](src/audio.ts) rather than re-implementing them. |
+| `tools/bench/asr-bench.html` | A page that runs `@huggingface/transformers` **with the production call options** from [`src/asr-offline.ts`](src/asr-offline.ts) (`task: 'transcribe'`, the same fixed `language`; chunked with `chunk_length_s: 30`, `stride_length_s: 5` only for takes over 15s, single-pass below that — mirroring `transcribeOffline`), and imports the app's **own** `speechDurationMs` / `normalisePeak` from [`src/audio.ts`](src/audio.ts) rather than re-implementing them. |
 | `tools/bench-asr.mjs` | Drives that page in headless Edge over CDP, scores word error rate, writes JSON. |
 | `tools/bench-score.mjs` | Word-level Levenshtein WER; normalizes punctuation and case only. |
 | `tools/bench-report.mjs` | Per-clip tables from a result JSON (`--text` prints hypotheses). |
@@ -336,10 +336,12 @@ Ranked by how likely each is to bite next:
      or `whisper-small-tl-1` (20.7%). Same download, better Tagalog. Requires an `optimum`/
      `onnxruntime` conversion pass on a machine with Python, and a re-run of this benchmark to
      confirm the claimed numbers on the actual packaging.
-   - **(b) Offer `whisper-small` as a measured, opt-in upgrade** — "better Tagalog, 3× the
-     data" — since it is +14 points on the benchmark and 3.5× slower: a trade an owner can
-     only make for themselves, and the catalogue in `asr-offline.ts` is already structured for
-     more than one entry.
+   - **(b) ✅ Shipped: `whisper-small` as a measured, opt-in upgrade** — "better Tagalog, 3×
+     the data" — since it is +14 points on the benchmark and 3.5× slower: a trade an owner can
+     only make for themselves. `asr-offline.ts` now installs/transcribes per-model
+     (`WHISPER_SMALL_MODEL`, record keyed by model, per-model pipeline cache) and the
+     Offline screen offers each installable model with its own download/switch button.
+     Base stays the default.
    - **(c) Do not ship** large-v3-turbo, MMS (licence), Qwen3-ASR or Canary (no Filipino) for
      this audience. Large-v3-turbo is now *measured* rather than assumed: 12.9% against 38.7%
      for the shipped model on the same clips, at ~20× the time and ~14× the bytes (§2.5).

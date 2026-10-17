@@ -96,9 +96,6 @@ function useStorageEstimate(refreshKey: string): string | null {
   return bytes < 1024 * 1024 ? tNow('offline.storageAlmostNothing') : megabytes(bytes)
 }
 
-const WHISPER_TOTAL_MB =
-  (OFFLINE_MODELS.find((m) => m.installable)?.approxMB ?? 75) + RUNTIME_APPROX_MB
-
 function megabytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
@@ -120,6 +117,9 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
   const [phase, setPhase] = useState<InstallPhase | 'idle' | 'error'>('idle')
   const [progress, setProgress] = useState<InstallProgress | null>(null)
   const [error, setError] = useState('')
+  // Which catalogue entry the progress bar belongs to. Two models can be
+  // offered and only one downloads at a time, so the busy UI must know whose.
+  const [activeKey, setActiveKey] = useState<string | null>(null)
 
   // Only live features are listed: planned items are a roadmap, not a promise.
   const worksOffline = liveFeatures().filter((f) => f.onDevice)
@@ -161,13 +161,19 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
   }
   const canRecord = isCaptureSupported()
 
-  async function download() {
+  async function download(key: string) {
+    setActiveKey(key)
     setPhase('downloading')
     setError('')
     setProgress(null)
     try {
-      await installVoiceModel(setProgress, (next) => setPhase(next))
+      // A switch means replacing, not stacking: weights are hundreds of
+      // megabytes on prepaid data, so the old model is freed first. Removing
+      // only clears the browser cache and the badge; the ledger is untouched.
+      if (installed && model?.key !== key) await removeVoiceModel()
+      await installVoiceModel(key, setProgress, (next) => setPhase(next))
       setPhase('idle')
+      setActiveKey(null)
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -181,6 +187,7 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
   async function remove() {
     setPhase('idle')
     setProgress(null)
+    setActiveKey(null)
     await removeVoiceModel()
   }
 
@@ -356,6 +363,10 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
 
         {OFFLINE_MODELS.map((info) => {
           const isWhisper = info.installable
+          // This row's model is the one on the phone; a row for the other
+          // installable model offers a switch instead of a second download.
+          const isThis = installed && model?.key === info.key
+          const rowBusy = busy && activeKey === info.key
 
           return (
             <div
@@ -399,7 +410,7 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
 
               {isWhisper ? (
                 <div className="mt-3">
-                  {busy ? (
+                  {rowBusy ? (
                     <>
                       <div className="h-1.5 overflow-hidden rounded-full bg-line">
                         <div
@@ -423,7 +434,7 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
                         {t('offline.keepOpen')}
                       </p>
                     </>
-                  ) : installed ? (
+                  ) : isThis ? (
                     <div className="flex flex-wrap gap-2">
                       <div className="min-w-0 flex-1 rounded-2xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-[0.8125rem] leading-snug text-emerald-700">
                         {t('offline.worksNow')}
@@ -441,10 +452,10 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
                       <Button
                         variant="brand"
                         className="w-full rounded-full"
-                        onClick={download}
-                        disabled={!canRecord || !online}
+                        onClick={() => download(info.key)}
+                        disabled={!canRecord || !online || busy}
                       >
-                        {t('offline.download', { mb: WHISPER_TOTAL_MB })}
+                        {t('offline.download', { mb: info.approxMB + RUNTIME_APPROX_MB })}
                       </Button>
                     </>
                   )}

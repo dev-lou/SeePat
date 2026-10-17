@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { VoiceError, speechDurationMs, startCapture } from './audio.ts'
+import { TARGET_SAMPLE_RATE, VoiceError, speechDurationMs, startCapture } from './audio.ts'
 import type { Recorder } from './audio.ts'
 import type { AsrEngine } from './asr.ts'
 import { readPersisted, removePersisted, writePersisted } from './storage.ts'
@@ -79,8 +79,18 @@ const MODEL_STORAGE = {
   legacyKey: 'timbangai.voice.model.v1',
 }
 
-/** Whisper's language token for Tagalog. Forcing it stops the model from
- *  guessing English on short Taglish utterances and translating them. */
+/**
+ * Whisper's language token for Tagalog. Forcing it stops the model from
+ * guessing English on Tagalog utterances and translating them into fluent
+ * English that was never said.
+ *
+ * This is measured, not assumed: on `whisper-base` with transformers 3.7.6,
+ * Tagalog clips score ~50% word error with `tl` against ~128% with `en`, and
+ * `auto` produces byte-identical output to `en` — i.e. passing no language
+ * means English, not detection. Forcing `tl` costs nothing on the English
+ * control (0.0%). See OFFLINE_ASR_RESEARCH.md §2.1. Do not "fix" short
+ * English utterances by switching to auto; fix the chunking below instead.
+ */
 const SPOKEN_LANGUAGE = 'tl'
 
 /**
@@ -139,6 +149,41 @@ export const WHISPER_MODEL: OfflineModelInfo = {
   why: {
     en: 'It stays on your phone, and you may use it in your business. It hears short Taglish better than the smallest option, but the voice that uses the internet is still more accurate — so this is the one to use when there is no signal.',
     fil: 'Nananatili ito sa phone mo, at puwede mong gamitin sa negosyo. Mas nakakarinig ito ng maikling Taglish kaysa sa pinakamaliit na bersyon, pero mas tumpak pa rin ang boses na gumagamit ng internet — kaya ito ang gamitin kapag walang signal.',
+  },
+}
+
+/**
+ * The opt-in upgrade: the same Whisper family one size up.
+ *
+ * Measured through this app's own bench (OFFLINE_ASR_RESEARCH.md §2): small
+ * scores ~35% word error on clean Tagalog against ~50% for base — a real but
+ * modest gain — while costing ~248MB of download (over 3× the data) and
+ * 15–18s per 5-second clip on desktop x86, which is the floor for a phone.
+ * It is offered, not defaulted to, because only the owner can trade her data
+ * and waiting time for accuracy. Same MIT licence, same languages, same
+ * offline cache mechanism as base.
+ */
+export const WHISPER_SMALL_MODEL: OfflineModelInfo = {
+  key: 'whisper-small',
+  label: {
+    en: 'Offline voice — clearer Tagalog (large download)',
+    fil: 'Boses na offline — mas malinaw na Tagalog (malaking download)',
+  },
+  repo: 'onnx-community/whisper-small',
+  // Encoder plus merged decoder in int8, per the Hub file listing.
+  approxMB: 248,
+  languages: {
+    en: 'Tagalog, Taglish and English, plus more than 90 other languages',
+    fil: 'Tagalog, Taglish at English, at mahigit 90 pang wika',
+  },
+  license: {
+    en: 'Built on Whisper. Open source, and free to use in a business.',
+    fil: 'Gawa mula sa Whisper. Open source, at libreng gamitin sa negosyo.',
+  },
+  installable: true,
+  why: {
+    en: 'Hears Tagalog clearly better than the smaller download, but it costs about three times the data and answers more slowly — a five-second sentence can take half a minute on a phone. Pick this only if the small one keeps mishearing you and you have data and patience to spare.',
+    fil: 'Mas malinaw na nakakarinig ng Tagalog kaysa sa mas maliit na download, pero mga tatlong beses ang gastos sa data at mas mabagal sumagot — ang limang segundong pangungusap ay puwedeng umabot ng kalahating minuto sa phone. Piliin ito kung palaging nagkakamali ang maliit at may data at pasensya ka.',
   },
 }
 
@@ -210,7 +255,14 @@ export const VOSK_MODEL: OfflineModelInfo = {
   },
 }
 
-export const OFFLINE_MODELS: OfflineModelInfo[] = [WHISPER_MODEL, VOSK_MODEL]
+export const OFFLINE_MODELS: OfflineModelInfo[] = [WHISPER_MODEL, WHISPER_SMALL_MODEL, VOSK_MODEL]
+
+/** Catalogue entries the app can actually download. Base stays the default. */
+export const INSTALLABLE_MODELS: OfflineModelInfo[] = OFFLINE_MODELS.filter((m) => m.installable)
+
+export function modelInfoForKey(key: string): OfflineModelInfo | null {
+  return INSTALLABLE_MODELS.find((m) => m.key === key) ?? null
+}
 
 // ---------------------------------------------------------------------------
 // Installed-model state
@@ -229,6 +281,7 @@ function isInstalled(value: unknown): value is InstalledVoiceModel {
   const c = value as Partial<InstalledVoiceModel>
   return (
     typeof c.key === 'string' &&
+    typeof c.repo === 'string' &&
     typeof c.installedAt === 'string' &&
     typeof c.bytes === 'number' &&
     /*
@@ -242,7 +295,7 @@ function isInstalled(value: unknown): value is InstalledVoiceModel {
      * with. A stale record is therefore treated as no record, so the app asks for
      * the download up front instead of failing in the field.
      */
-    c.key === WHISPER_MODEL.key
+    modelInfoForKey(c.key)?.repo === c.repo
   )
 }
 
@@ -326,7 +379,7 @@ export interface InstallProgress {
 
 export type InstallPhase = 'downloading' | 'warming' | 'ready'
 
-let transcriberPromise: Promise<Transcriber> | null = null
+let transcriberPromises = new Map<string, Promise<Transcriber>>()
 
 /**
  * Loads the pipeline once and reuses it. The dynamic import is what keeps
@@ -340,10 +393,12 @@ let transcriberPromise: Promise<Transcriber> | null = null
  */
 async function loadTranscriber(
   onProgress?: (progress: InstallProgress) => void,
+  repo: string = VOICE_MODEL_REPO,
 ): Promise<Transcriber> {
-  if (transcriberPromise) return transcriberPromise
+  const cached = transcriberPromises.get(repo)
+  if (cached) return cached
 
-  transcriberPromise = (async () => {
+  const loading = (async () => {
     const transformers = await import('@huggingface/transformers')
 
     // The browser cache IS the offline mechanism: once the weights are here,
@@ -415,9 +470,9 @@ async function loadTranscriber(
      * GPU. If it is revisited, it needs measurements from real target devices,
      * with an explicit `dtype` so it cannot quietly pull fp32 again.
      */
-    return createPipeline('automatic-speech-recognition', VOICE_MODEL_REPO, {
+    return createPipeline('automatic-speech-recognition', repo, {
       // Quantization is left to the library default, which is int8 (`q8`) on
-      // WASM — the whole reason this is a tens-of-megabytes download rather
+      // WASM — the whole reason base is a tens-of-megabytes download rather
       // than a hundreds-of-megabytes one.
       progress_callback,
     })
@@ -425,21 +480,51 @@ async function loadTranscriber(
 
   // A failed load must not be cached as a permanent failure — the owner should
   // be able to tap download again after reconnecting.
-  transcriberPromise.catch(() => {
-    transcriberPromise = null
+  loading.catch(() => {
+    if (transcriberPromises.get(repo) === loading) transcriberPromises.delete(repo)
   })
+  transcriberPromises.set(repo, loading)
 
-  return transcriberPromise
+  return loading
 }
 
 export async function transcribeOffline(samples: Float32Array): Promise<string> {
-  const transcriber = await loadTranscriber()
-  const output = await transcriber(samples, {
-    language: SPOKEN_LANGUAGE,
-    task: 'transcribe',
-    chunk_length_s: 30,
-    stride_length_s: 5,
-  })
+  // The installed record names the weights: base and small are different
+  // downloads, and transcribing with one while the other is cached would
+  // either re-download mid-take or fail offline. No record, no take — the
+  // engine above already refuses before this is reached.
+  const installed = getInstalledVoiceModel()
+  const repo = (installed && modelInfoForKey(installed.key)?.repo) || VOICE_MODEL_REPO
+  const transcriber = await loadTranscriber(undefined, repo)
+  /*
+   * Short takes are transcribed in one pass, without chunking.
+   *
+   * `chunk_length_s: 30` with a stride exists for long audio: the pipeline
+   * windows the input and stitches the pieces back together. On a 1–2 second
+   * shop utterance ("1 Coke") there is nothing to window — the windowing only
+   * pads the tiny clip out to a 30-second frame, and Whisper answers padding
+   * with invention, including fluent text in the wrong language. That is the
+   * "I said one word and got back a sentence I never said" failure, and the
+   * model is not at fault for it. Anything under 15 seconds goes through as a
+   * single chunk; the chunked path stays for takes that actually need it.
+   *
+   * The language stays forced (see SPOKEN_LANGUAGE): the bench shows `auto`
+   * is English-by-another-name in this library version, so un-forcing it
+   * would trade one hallucination for a worse one.
+   */
+  const durationS = samples.length / TARGET_SAMPLE_RATE
+  const output =
+    durationS > 15
+      ? await transcriber(samples, {
+          language: SPOKEN_LANGUAGE,
+          task: 'transcribe',
+          chunk_length_s: 30,
+          stride_length_s: 5,
+        })
+      : await transcriber(samples, {
+          language: SPOKEN_LANGUAGE,
+          task: 'transcribe',
+        })
   const text = Array.isArray(output) ? output.map((o) => o.text).join(' ') : output.text
   return text.trim()
 }
@@ -456,17 +541,28 @@ export async function transcribeOffline(samples: Float32Array): Promise<string> 
  * ledger from anything like it.)
  */
 export async function installVoiceModel(
+  key: string = WHISPER_MODEL.key,
   onProgress?: (progress: InstallProgress) => void,
   onPhase?: (phase: InstallPhase) => void,
 ): Promise<InstalledVoiceModel> {
   try {
-    return await downloadAndWarm(onProgress, onPhase)
+    const info = modelInfoForKey(key)
+    if (!info) {
+      throw new VoiceError(
+        say(
+          'That offline voice is no longer offered. Pick one from the list instead.',
+          'Hindi na inaalok ang boses na offline na iyan. Pumili na lang sa listahan.',
+        ),
+      )
+    }
+    return await downloadAndWarm(info, onProgress, onPhase)
   } catch (error) {
     throw new Error(explainOfflineFailure(error))
   }
 }
 
 async function downloadAndWarm(
+  info: OfflineModelInfo,
   onProgress?: (progress: InstallProgress) => void,
   onPhase?: (phase: InstallPhase) => void,
 ): Promise<InstalledVoiceModel> {
@@ -480,7 +576,7 @@ async function downloadAndWarm(
   }
 
   onPhase?.('downloading')
-  const transcriber = await loadTranscriber(onProgress)
+  const transcriber = await loadTranscriber(onProgress, info.repo)
 
   onPhase?.('warming')
   await transcriber(new Float32Array(8000), {
@@ -489,8 +585,8 @@ async function downloadAndWarm(
   })
 
   const record: InstalledVoiceModel = {
-    key: WHISPER_MODEL.key,
-    repo: VOICE_MODEL_REPO,
+    key: info.key,
+    repo: info.repo,
     installedAt: new Date().toISOString(),
     // Measured from this model's own cached files rather than from the shared
     // cache total — see `cachedModelBytes`.
@@ -564,7 +660,7 @@ export async function removeVoiceModel(): Promise<void> {
     // Nothing to free, or storage is not ours to clear.
   }
   removePersisted(MODEL_STORAGE)
-  transcriberPromise = null
+  transcriberPromises.clear()
   publish(null)
 }
 
@@ -582,15 +678,24 @@ export function createWhisperOfflineEngine(): AsrEngine {
 
   const model = getInstalledVoiceModel()
   const megabytes = model ? Math.round(model.bytes / (1024 * 1024)) : 0
+  // The installed entry names what is actually on the phone, so the note
+  // quotes it rather than the catalogue default — base and small differ by
+  // hundreds of megabytes, and the wrong name here is a wrong promise.
+  const installedInfo = model ? modelInfoForKey(model.key) : null
 
   return {
     id: OFFLINE_ENGINE_ID,
     label: { en: 'Offline voice (no internet)', fil: 'Boses offline (walang internet)' },
     note: model
-      ? {
-          en: `Ready, and it needs no signal${megabytes > 0 ? ` — about ${megabytes}MB on your phone` : ''}. It is less accurate than the internet voice, so check the numbers before you save.`,
-          fil: `Handa na, at hindi ito kailangan ng signal${megabytes > 0 ? ` — mga ${megabytes}MB sa phone mo` : ''}. Mas mahina ito kaysa sa boses na may internet, kaya suriin ang mga numero bago i-save.`,
-        }
+      ? installedInfo
+        ? {
+            en: `${installedInfo.label.en} is on your phone and needs no signal${megabytes > 0 ? ` — about ${megabytes}MB` : ''}. It is less accurate than the internet voice, so check the numbers before you save.`,
+            fil: `Ang ${installedInfo.label.fil} ay nasa phone mo at hindi kailangan ng signal${megabytes > 0 ? ` — mga ${megabytes}MB` : ''}. Mas mahina ito kaysa sa boses na may internet, kaya suriin ang mga numero bago i-save.`,
+          }
+        : {
+            en: `Ready, and it needs no signal${megabytes > 0 ? ` — about ${megabytes}MB on your phone` : ''}. It is less accurate than the internet voice, so check the numbers before you save.`,
+            fil: `Handa na, at hindi ito kailangan ng signal${megabytes > 0 ? ` — mga ${megabytes}MB sa phone mo` : ''}. Mas mahina ito kaysa sa boses na may internet, kaya suriin ang mga numero bago i-save.`,
+          }
       : {
           // Computed from the catalogue rather than written twice: this note used
           // to promise ~75MB while the catalogue said 42MB, and the number an
