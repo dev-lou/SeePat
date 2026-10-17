@@ -229,8 +229,47 @@ export function Dashboard({
     },
   ]
 
+  // The greeting follows the clock on the owner's own phone: morning, hapon,
+  // gabi. It is the first word on the screen, the way the tarsier greets first
+  // in the reference — the numbers come right after, inside the bubble and
+  // the hero below it.
+  const hour = negosyo.now.getHours()
+  const greeting =
+    hour < 12 ? t('dash.greetMorning') : hour < 18 ? t('dash.greetAfternoon') : t('dash.greetEvening')
+
   return (
     <div className="space-y-5">
+      {/* The greeting: date + Good morning. The shell header is hidden on this
+          tab, so this block IS the top of the screen. One owl only — it roosts
+          on the hero below, so none rides beside the words. */}
+      <div className="px-3.5">
+        <p className="eyebrow text-fg-faint">{todayLabel}</p>
+        <h2 className="headline mt-1 text-[1.5rem] leading-tight text-fg">{greeting}</h2>
+      </div>
+      {/* Mascot + line, side by side: the full owl on the left, the bubble on
+          the right with its tail pointing at him. Taps jump to the Score. */}
+      <div className="px-3.5">
+        <div className="mt-2.5 flex items-end gap-2.5">
+          <button
+            type="button"
+            onClick={onOpenScore}
+            className="owl-buddy shrink-0 transition-transform active:scale-95"
+            aria-label={`Sipat Score ${score.value}/100 — ${bandLabel(score.band, lang)}`}
+          >
+            <img src="/seepat-mark.png" alt="" width={88} height={88} />
+          </button>
+          <div className="greet-bubble min-w-0 flex-1">
+            <p className="text-[0.875rem] leading-relaxed text-fg-muted">
+              <span className="num font-black text-fg">{formatPHP(Math.round(heroValue))}</span>{' '}
+              {t('dash.heroExplain')}
+            </p>
+            <div className="mt-1.5">
+              <Delta label={deltaLabel} direction={deltaDirection} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* The one dark surface on the screen: the day's real take, lit from behind,
           with the week's shape drawn underneath it. Everything else stays quiet so
           this number owns the top of the fold.
@@ -240,34 +279,12 @@ export function Dashboard({
           card below overlaps that foot — one dark header, one white instrument
           panel, no margins interrupting either. */}
       <HeroShell className="p-5.5 shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)]">
-        {/*
-         * The label, not a badge.
-         *
-         * This row used to hold two rounded pills — "REAL PROFIT TODAY" and a
-         * score chip — and the pair read as generated dashboard furniture: two
-         * lozenges of chrome above a number that needs no frame. The score also
-         * lived twice on this screen (here and in the card below) and a third
-         * time as its own destination in the dock, so the pill was the least
-         * useful of the three. What is left is the one thing the figure needs:
-         * what it is and what day it covers.
-         */}
-        <div className="flex items-center gap-2">
-          <span className="text-[0.7rem] font-extrabold tracking-[0.18em] text-gold-300/90 uppercase">
-            {t('dash.heroLabel')}
-          </span>
+        <div className="text-[0.7rem] font-extrabold tracking-[0.18em] text-gold-300/90 uppercase">
+          {t('dash.heroLabel')}
         </div>
 
-        <div className="figure-xl mt-4 text-[clamp(2.1rem,11.5vw,3.5rem)] leading-none font-black text-white tabular-nums drop-shadow-sm">
+        <div className="figure-xl mt-3 text-[clamp(2.1rem,11.5vw,3.5rem)] leading-none font-black text-white tabular-nums drop-shadow-sm">
           {formatPHP(Math.round(heroValue))}
-        </div>
-
-        <p className="aside mt-2 text-[0.9375rem] leading-relaxed text-white/85">
-          {t('dash.heroExplain')}
-        </p>
-
-        <div className="mt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="text-[0.8125rem] font-medium text-white/90">{todayLabel}</span>
-          <Delta label={deltaLabel} direction={deltaDirection} surface="dark" />
         </div>
 
         <div className="mt-4">
@@ -405,7 +422,7 @@ export function Dashboard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-[0.6875rem] font-extrabold uppercase tracking-wider text-brand-700">{t('dash.scoreTitle')}</span>
-            <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.625rem] font-black uppercase tracking-wider text-emerald-800 border border-emerald-500/20">
+            <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.6875rem] font-black uppercase tracking-wider text-emerald-800 border border-emerald-500/20">
               {bandLabel(score.band, lang)}
             </span>
           </div>

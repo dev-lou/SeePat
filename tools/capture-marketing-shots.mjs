@@ -50,14 +50,16 @@ if (LANG !== 'en' && LANG !== 'fil') throw new Error(`unknown language: ${LANG}`
  * come from so a copy change is a one-line fix in one place:
  * tab.twin, tab.ledger, tab.voice, tab.ask, tab.score, dash.cash, ask.ask,
  * the capital answer in engine/narrator.ts, voice.typeTitle,
- * voice.draftSheetTitle, score.dimensions, record.quickTitle.
+ * voice.draftSheetTitle, score.dimensions, and the Sale hint on the ledger
+ * write side (Cash / GCash).
  */
 const MARKERS = {
   en: {
     tabMoney: 'Money',
-    tabLedger: 'Ledger',
+    tabLedger: 'Tala',
     tabVoice: 'Voice',
     tabAsk: 'Ask',
+    more: 'Quick actions',
     tabScore: 'Score',
     money: 'Cash in the box',
     askButton: 'Ask',
@@ -65,13 +67,14 @@ const MARKERS = {
     voice: 'Type What You Said',
     draft: 'Confirm the record',
     score: 'What makes up the Score',
-    ledger: 'Quick record',
+    ledger: 'Cash / GCash',
   },
   fil: {
     tabMoney: 'Pera',
     tabLedger: 'Tala',
     tabVoice: 'Boses',
     tabAsk: 'Tanong',
+    more: 'Mabilisang kilos',
     tabScore: 'Score',
     money: 'Cash sa kahon',
     askButton: 'Tanong',
@@ -79,7 +82,7 @@ const MARKERS = {
     voice: 'I-type ang Sinabi Mo',
     draft: 'Kumpirmahin ang tala',
     score: 'Ano ang Bumubuo sa Score',
-    ledger: 'Mabilisang tala',
+    ledger: 'Cash / GCash',
   },
 }[LANG]
 
@@ -263,9 +266,14 @@ async function main() {
   await waitFor(hasText(MARKERS.money), 'the money screen')
   await shot('money')
 
-  // 2 — Ask: the owner's own question, answered from her own records.
+  // 2 — Ask: the owner's own question, answered from her own records. Ask
+  // lives in the floating speed-dial now: open it, then take its row.
   console.log('Ask…')
-  await clickTab(MARKERS.tabAsk)
+  await clickTab(MARKERS.more)
+  await evaluate(
+    `(() => { const b = [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(MARKERS.tabAsk)})); if (!b) return false; b.click(); return true })()`,
+  )
+  await sleep(650)
   await waitFor("!!document.querySelector('main input')", 'the ask input')
   await evaluate(`(() => {
     const input = document.querySelector('main input');

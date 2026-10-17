@@ -1448,6 +1448,20 @@ body {
   outline-offset: 3px;
 }
 
+/* No double-tap zoom delay on any control: every tap is a single tap, so the
+   browser never waits 300ms to see whether a second one is coming. */
+button,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/* No grey flash on tap (Android Chrome): the press state is the button's own
+   scale + fill, not the browser's overlay. */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /*
  * If the device is set to raise contrast, take the hint: the faint ink step
  * moves up the ramp, hairlines get real, and the surfaces stay where they are.
@@ -1765,6 +1779,39 @@ body {
   transform: translateY(-2px);
 }
 
+/* The mic rides separate, with a gap, to the right of the pill — same face
+   as the old centre key, but floating a little above the bar so it reads
+   as its own action. */
+.mic-side {
+  margin-top: 0;
+  margin-bottom: 14px;
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  box-shadow:
+    0 0 0 5px rgb(255 255 255 / 0.95),
+    0 18px 34px -6px rgb(42 58 214 / 0.7);
+}
+
+/* --- Speed-dial ------------------------------------------------------------- */
+
+/*
+ * The More key is a plain fourth dock-tab (icon + label like its peers);
+ * only the panel below needs its own styles. Open, the key wears the
+ * selected pill via `.dock-tab.is-on` — no second accent in the bar.
+ */
+.speed-row {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: speed-rise 220ms var(--ease-spring) forwards;
+}
+@keyframes speed-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Below 380px the bar padding and the circles step down one notch — the same
  * design, with 4×42 + 54 + gaps + padding ≈ 256px so all five destinations
  * stay on a 280px phone. */
@@ -1834,6 +1881,9 @@ body {
     height: 52px;
     margin-top: -24px;
   }
+  .mic-side {
+    margin-top: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1844,6 +1894,176 @@ body {
   .dock-tab:active {
     transform: none;
   }
+  .speed-row {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .plan-pro-sheen {
+    animation: none;
+    display: none;
+  }
+  .profit-meter-fill {
+    transition: none;
+  }
+  .owl-buddy {
+    animation: none;
+  }
+}
+
+/* --- Plan story cards ----------------------------------------------------- */
+
+/* PRO sheen: one diagonal sweep on mount, ink-safe (white at 8% over navy),
+   never looping, never on FREE. */
+.plan-pro-sheen {
+  position: absolute;
+  inset: -20% -60% auto -60%;
+  height: 140%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgb(255 255 255 / 0.09) 50%, transparent 58%);
+  transform: translateX(-55%);
+  animation: plan-sheen 1.6s ease-out 0.25s 1 both;
+}
+@keyframes plan-sheen {
+  to {
+    transform: translateX(55%);
+  }
+}
+
+/* Gold inner top highlight on the PRO card: the physical edge that says
+   "this one is the offer" without a ribbon or badge. */
+.plan-pro::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 213 74 / 0.65), transparent);
+  pointer-events: none;
+}
+
+/* --- Native settings sheet -------------------------------------------------- */
+
+/* Full-bleed native sheet: edge to edge, no side/bottom gaps, its own scroll
+   container so the sticky header can collapse against it. */
+.sheet-native {
+  scrollbar-width: thin;
+}
+.sheet-native-header {
+  transition:
+    padding 180ms var(--ease-spring),
+    background-color 180ms linear;
+}
+.sheet-native-header[data-collapsed='true'] {
+  box-shadow: 0 1px 0 var(--color-line);
+}
+.sheet-native-header[data-collapsed='true'] .sheet-title-large {
+  display: none;
+}
+.sheet-native-header:not([data-collapsed='true']) .sheet-title-small {
+  display: none;
+}
+
+/* --- Mascot greeting ---------------------------------------------------------- */
+
+/*
+ * The buddy: the full owl standing left of the greeting bubble (never buried
+ * behind a card — the roost hid all but a sliver of him, and the blink
+ * overlay is gone with it). Gentle bob loop; a press squashes him slightly,
+ * like a squeeze toy.
+ */
+.owl-buddy {
+  line-height: 0;
+  border-radius: 1.4rem;
+  animation: owl-bob 4.5s ease-in-out infinite;
+}
+.owl-buddy img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgb(8 16 50 / 0.25));
+}
+.owl-buddy:active {
+  animation: none;
+  transform: scale(0.92);
+}
+@keyframes owl-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* The speech bubble beside the owl: a white card with a tail pointing left at
+   the speaker. The tail is a rotated square sharing the card's fill and edge. */
+.greet-bubble {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+  border-radius: 1.1rem;
+  border-bottom-left-radius: 0.35rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-e1);
+  padding: 0.8rem 0.9rem;
+}
+.greet-bubble::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  bottom: 14px;
+  width: 10px;
+  height: 10px;
+  background-color: inherit;
+  border-left: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  transform: rotate(45deg);
+  border-bottom-left-radius: 2px;
+}
+
+/* --- Profit meter ----------------------------------------------------------- */
+
+.profit-meter {
+  position: relative;
+}
+.profit-meter-bar {
+  height: 8px;
+  border-radius: 9999px;
+  background-color: rgb(255 255 255 / 0.15);
+  overflow: hidden;
+}
+.profit-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-gold-400), var(--color-gold-300));
+  transition: width 900ms var(--ease-spring);
+}
+
+/* Header PRO chip: the same gold inner top highlight as the PRO story card,
+   so the medallion reads as metal, not a flat fill. */
+.plan-chip-pro {
+  position: relative;
+  overflow: hidden;
+}
+.plan-chip-pro::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 213 74 / 0.7), transparent);
+  pointer-events: none;
+}
+
+/* --- Dock FAB gold ring ------------------------------------------------------- */
+
+.dock-fab {
+  outline: 2px solid rgb(255 213 74 / 0.55);
+  outline-offset: 2px;
+}
+.dock-fab.is-active {
+  outline-color: rgb(255 213 74 / 0.9);
 }
 
 /*

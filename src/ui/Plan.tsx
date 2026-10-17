@@ -46,10 +46,15 @@ export function PlanScreen({ billing }: { billing: Billing }) {
   const current = tierById(billing.tier)
   const expiredButPaid = billing.entitlement.tier !== 'free' && billing.tier === 'free'
 
-  function startCheckout(tier: Exclude<TierId, 'free'>) {
+  // Browse-level billing period: re-prices the PRO story card live so an
+  // owner sees monthly vs annual without opening checkout.
+  const [browsePeriod, setBrowsePeriod] = useState<BillingPeriod>('monthly')
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+
+  function startCheckout(tier: Exclude<TierId, 'free'>, initialPeriod?: BillingPeriod) {
     setPendingTier(tier)
     setMethod('gcash')
-    setPeriod('monthly')
+    setPeriod(initialPeriod ?? browsePeriod)
     setStep('method')
   }
 
@@ -131,6 +136,44 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         <SimulatedNote>{t('plan.simulatedBody')}</SimulatedNote>
       </div>
 
+      {/* Billing toggle: re-prices PRO live. Annual = ₱999 vs 12×₱99, so the
+          badge names the real saving instead of a percentage. */}
+      <div className="px-3.5">
+        <div
+          role="group"
+          aria-label={t('plan.periodToggle')}
+          className="flex items-center gap-1 rounded-full border border-line bg-card p-1 shadow-e1"
+        >
+          {(['monthly', 'annual'] as BillingPeriod[]).map((p) => {
+            const selected = browsePeriod === p
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setBrowsePeriod(p)}
+                className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[0.8125rem] font-bold transition-all duration-200 ${
+                  selected ? 'bg-ink-900 text-white shadow-pop' : 'text-fg-muted hover:text-fg'
+                }`}
+              >
+                {p === 'monthly' ? t('plan.monthly') : t('plan.annual')}
+                {p === 'annual' ? (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[0.6875rem] font-black ${
+                      selected ? 'bg-gold-300 text-ink-900' : 'bg-gold-300/30 text-amber-800'
+                    }`}
+                  >
+                    {t('plan.saveAnnual', {
+                      amount: formatPlanPrice(priceFor('pro', 'monthly') * 12 - priceFor('pro', 'annual')),
+                    })}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {visibleTiers().map((tier) => {
         const isCurrent = billing.tier === tier.id
         // Only features with working code are ever listed — planned items are
@@ -139,6 +182,17 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         const live = liveFeatures()
         const included = live.filter((f) => tierRank(f.tier) <= tierRank(tier.id))
         const locked = live.filter((f) => tierRank(f.tier) > tierRank(tier.id))
+        // Story-card split: 3 glanceable rows up front, everything else behind
+        // the expander. PRO leads with its paid differentiators so the upgrade
+        // reason is visible without scrolling; FREE leads with daily tools.
+        const proOnly = included.filter((f) => f.tier === 'pro')
+        const freeAnchors = included.filter((f) => f.tier === 'free')
+        const top =
+          tier.id === 'pro'
+            ? [...proOnly, ...freeAnchors.slice(0, 1)].slice(0, 3)
+            : included.slice(0, 3)
+        const rest = included.slice(top.length)
+        const open = expanded[tier.id] === true
 
         /*
          * The recommended column is the one dark card on the page — the same
@@ -155,125 +209,180 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         return (
           <div
             key={tier.id}
-            className={`relative w-full overflow-hidden border-y !border-x-0 p-5.5 shadow-e2 backdrop-blur-md ${
+            className={`plan-card relative w-full overflow-hidden border-y !border-x-0 p-5.5 shadow-e2 backdrop-blur-md ${
               ink
-                ? 'border-white/20 bg-gradient-to-br from-[#0c1445] via-[#091030] to-[#040714] text-white shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)]'
+                ? 'plan-pro border-white/20 bg-gradient-to-br from-[#0c1445] via-[#091030] to-[#040714] text-white shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)]'
                 : 'border-white/80 bg-white/70 shadow-xs'
             }`}
           >
+            {/* One-time sheen sweep on the PRO card: ink-safe, motion-safe. */}
+            {ink ? <span className="plan-pro-sheen" aria-hidden /> : null}
+            {/* Story header: icon medallion + name + stamp on the left, price
+                on the right. Glanceable in 3 seconds: what, how much, for whom. */}
             <div className="relative flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className={`headline text-[1.05rem] ${ink ? 'text-white' : 'text-fg'}`}>
-                    {tier.name}
-                  </h2>
-                  {/*
-                   * Every state carries its meaning in words, so the tone is never
-                   * the only signal. On the dark column the pill is outlined in
-                   * white rather than tinted: `.stamp` mixes its fill out of
-                   * `currentColor`, which on a near-black card would produce a
-                   * white pill behind white text.
-                   */}
-                  {ink ? (
-                    <>
-                      {tier.highlight ? (
-                        <span className="rounded-full border border-white/25 px-2.5 py-1 text-[0.75rem] font-extrabold tracking-[0.06em] text-white uppercase">
-                          {t('plan.badgeBest')}
-                        </span>
-                      ) : null}
-                      {isCurrent ? (
-                        <span className="rounded-full border border-white/25 px-2.5 py-1 text-[0.75rem] font-extrabold tracking-[0.06em] text-white uppercase">
+              <div className="flex min-w-0 items-start gap-3">
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                    ink
+                      ? 'border border-gold-300/50 bg-gold-300/15 text-gold-300'
+                      : 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-700'
+                  }`}
+                  aria-hidden
+                >
+                  {tier.id === 'pro' ? (
+                    <svg viewBox="0 0 24 24" className="h-5.5 w-5.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-5.5 w-5.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 9l8-5 8 5v9l-8 5-8-5zM4 9l8 5 8-5M12 14v7" />
+                    </svg>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className={`headline text-[1.05rem] ${ink ? 'text-white' : 'text-fg'}`}>
+                      {tier.name}
+                    </h2>
+                    {ink ? (
+                      <span className="rounded-full border border-gold-300/50 bg-gold-300/15 px-2.5 py-1 text-[0.6875rem] font-black tracking-[0.08em] text-gold-300 uppercase">
+                        {t('plan.proStamp')}
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[0.6875rem] font-black tracking-[0.08em] text-emerald-800 uppercase">
+                        {t('plan.freeStamp')}
+                      </span>
+                    )}
+                    {isCurrent ? (
+                      ink ? (
+                        <span className="rounded-full border border-white/25 px-2.5 py-1 text-[0.6875rem] font-extrabold tracking-[0.06em] text-white uppercase">
                           {t('plan.badgeCurrent')}
                         </span>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      {isCurrent ? (
+                      ) : (
                         <span className="stamp text-brand-700">{t('plan.badgeCurrent')}</span>
-                      ) : null}
-                    </>
-                  )}
+                      )
+                    ) : null}
+                  </div>
+                  <p className={`mt-1 text-[0.8125rem] font-bold ${ink ? 'text-gold-300/90' : 'text-emerald-800'}`}>
+                    {tier.id === 'pro' ? t('plan.proFor') : t('plan.freeFor')}
+                  </p>
                 </div>
-                <p className={`mt-1.5 text-[0.875rem] ${ink ? 'text-white/70' : 'text-fg-subtle'}`}>
-                  {pick(lang, tier.tagline)}
-                </p>
-                <p className={`mt-0.5 text-[0.8125rem] ${soft}`}>{pick(lang, tier.audience)}</p>
               </div>
               <div className="shrink-0 text-right">
-                {/* The price is the one figure in a fixed column here, so it is
-                    sized against an amount no tier exceeds rather than by viewport. */}
                 <div className="money-cell">
                   <div className={`figure-xl leading-none ${ink ? 'text-white' : 'text-fg'}`}>
-                    {formatPlanPrice(priceFor(tier.id, 'monthly'))}
+                    {tier.id === 'free'
+                      ? formatPlanPrice(tier.priceCentavos)
+                      : formatPlanPrice(priceFor(tier.id, browsePeriod))}
                   </div>
                 </div>
-                <div className={`eyebrow mt-1.5 ${soft}`}>{pick(lang, tier.period)}</div>
-                {tier.id === 'pro' ? (
-                  <div className={`num mt-1 text-[0.8125rem] font-semibold ${ink ? 'text-white/70' : 'text-fg-subtle'}`}>
-                    {t('plan.annualNote', { amount: formatPlanPrice(priceFor('pro', 'annual')) })}
-                  </div>
-                ) : null}
+                <div className={`eyebrow mt-1.5 ${soft}`}>
+                  {tier.id === 'free'
+                    ? pick(lang, tier.period)
+                    : browsePeriod === 'annual'
+                      ? t('plan.perYear')
+                      : pick(lang, tier.period)}
+                </div>
               </div>
             </div>
 
-            {/* A checklist, hairlined rather than boxed: what the plan includes,
-                one line per item, with a round tick that carries the state as
-                much as the colour does. */}
-            <ul
-              className={`relative mt-3.5 divide-y border-t ${
-                ink ? 'divide-white/10 border-white/15' : 'divide-line border-line/80'
-              }`}
-            >
-              {included.map((f) => (
-                <li key={f.key} className={`flex gap-2.5 py-2.5 text-[0.875rem] leading-relaxed ${body}`}>
-                  <span
-                    className={`mt-px flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full ${
-                      ink ? 'bg-white/15' : 'bg-emerald-100'
-                    }`}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className={`h-2.5 w-2.5 ${ink ? 'text-white' : 'text-emerald-700'}`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </span>
-                  <span>{pick(lang, f.label)}</span>
-                </li>
-              ))}
-              {locked.map((f) => (
-                <li key={f.key} className={`flex gap-2.5 py-2.5 text-[0.875rem] leading-relaxed ${soft}`}>
-                  <span
-                    className={`mt-px flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border ${
-                      ink ? 'border-white/25' : 'border-line-strong'
-                    }`}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-2 w-2"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    >
-                      <path d="M6 6l12 12M18 6L6 18" />
-                    </svg>
-                  </span>
+            {/* Daily-use trio: the 3 rows an owner actually reads. Icons carry
+                meaning (basket = tala, mic = boses, spark = AI, cloud = backup)
+                so a non-reader gets it from shape + 5 words. */}
+            <p className={`relative mt-4 text-[0.6875rem] font-black tracking-[0.1em] uppercase ${soft}`}>
+              {t('plan.topFeatures')}
+            </p>
+            <ul className="relative mt-1.5 space-y-1.5">
+              {top.map((f) => (
+                <li
+                  key={f.key}
+                  className={`flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-[0.875rem] font-semibold leading-snug ${
+                    ink ? 'border-white/12 bg-white/[0.07] text-white/90' : 'border-line bg-card text-fg-muted'
+                  }`}
+                >
+                  <FeatureGlyph featureKey={f.key} ink={ink} />
                   <span>{pick(lang, f.label)}</span>
                 </li>
               ))}
             </ul>
 
+            {/* Everything else behind one expander: less text on load, full
+                honesty one tap away. FREE also previews what stays locked so
+                the upgrade reason is visible without leaving the card. */}
+            {rest.length + locked.length > 0 ? (
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => setExpanded((prev) => ({ ...prev, [tier.id]: !prev[tier.id] }))}
+                className={`mt-2.5 flex w-full items-center justify-between gap-2 rounded-full border px-3.5 py-2.5 text-[0.8125rem] font-bold transition active:scale-[0.99] ${
+                  ink
+                    ? 'border-white/15 text-white/80 hover:bg-white/5'
+                    : 'border-line-strong text-fg-subtle hover:text-fg'
+                }`}
+              >
+                <span>{open ? t('plan.showLess') : t('plan.showMore', { n: rest.length + locked.length })}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+            ) : null}
+            {open ? (
+              <ul
+                className={`relative mt-2.5 divide-y border-t ${
+                  ink ? 'divide-white/10 border-white/15' : 'divide-line border-line/80'
+                }`}
+              >
+                {rest.map((f) => (
+                  <li key={f.key} className={`flex gap-2.5 py-2.5 text-[0.875rem] leading-relaxed ${body}`}>
+                    <span
+                      className={`mt-px flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full ${
+                        ink ? 'bg-white/15' : 'bg-emerald-100'
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`h-2.5 w-2.5 ${ink ? 'text-white' : 'text-emerald-700'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </span>
+                    <span>{pick(lang, f.label)}</span>
+                  </li>
+                ))}
+                {locked.map((f) => (
+                  <li key={f.key} className={`flex gap-2.5 py-2.5 text-[0.875rem] leading-relaxed ${soft}`}>
+                    <span
+                      className={`mt-px flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border ${
+                        ink ? 'border-white/25' : 'border-line-strong'
+                      }`}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="5" y="10" width="14" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span>{pick(lang, f.label)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             {tier.id === 'pro' ? (
-              /* A note in the margin rather than another boxed panel: one more
-                 bordered card would have flattened the whole column. */
-              <p className={`relative mt-3.5 border-l-2 pl-3 text-[0.8125rem] leading-relaxed ${ink ? 'border-white/25 text-white/65' : 'border-line-strong text-fg-subtle'}`}>
+              <p className={`relative mt-3 border-l-2 pl-3 text-[0.8125rem] leading-relaxed ${ink ? 'border-gold-300/50 text-white/65' : 'border-line-strong text-fg-subtle'}`}>
+                {t('plan.proPays')}{' '}
                 {t('plan.aiMeterNote', { n: AI_QUESTION_LIMIT })}
               </p>
             ) : null}
@@ -281,13 +390,13 @@ export function PlanScreen({ billing }: { billing: Billing }) {
             {isCurrent ? null : tierRank(tier.id) > tierRank(billing.tier) ? (
               <Button
                 className="relative mt-3.5 w-full rounded-full"
-                /* The recommended column's action is the soft yellow on near-black:
-                   the one warm shape on a cool screen, which is what makes it read
-                   as the offer rather than as another button. */
                 variant={ink ? 'gold' : 'ghost'}
-                onClick={() => startCheckout(tier.id as Exclude<TierId, 'free'>)}
+                onClick={() => startCheckout(tier.id as Exclude<TierId, 'free'>, browsePeriod)}
               >
                 {t('plan.upgradeTo', { tier: tier.short })}
+                {tier.id === 'pro' && browsePeriod === 'annual'
+                  ? ` · ${formatPlanPrice(priceFor('pro', 'annual'))}${t('plan.perYear')}`
+                  : ''}
               </Button>
             ) : (
               <Button
@@ -351,9 +460,6 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         <SectionTitle>{t('plan.whyPriceTitle')}</SectionTitle>
         <p className="text-[0.875rem] leading-relaxed text-fg-subtle">
           {t('plan.whyPriceBody')}
-        </p>
-        <p className="mt-2 text-[0.8125rem] text-fg-faint">
-          {t('plan.whyPriceFoot')}
         </p>
       </Card>
 
@@ -577,6 +683,51 @@ function CohortPreview() {
         <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">median score</div>
       </div>
     </div>
+  )
+}
+
+/**
+ * One glyph per feature family so the top-3 rows read by shape, not by
+ * sentence. Basket = records/stock, mic = voice, spark = AI, cloud = backup,
+ * star = score, truck = restock, coin = capital/utang. Unknown keys fall back
+ * to a tick — never a broken icon.
+ */
+function FeatureGlyph({ featureKey, ink }: { featureKey: string; ink: boolean }) {
+  const path =
+    featureKey === 'ledger' || featureKey === 'inventory'
+      ? 'M4 9l8-5 8 5v9l-8 5-8-5zM4 9l8 5 8-5M12 14v7'
+      : featureKey === 'utang' || featureKey === 'capital_views'
+        ? 'M12 3v18M7 6h10M7 12h10M7 18h10M5 3h14v18H5z'
+        : featureKey === 'voice_capture' || featureKey === 'speak_answers' || featureKey === 'offline_voice_model'
+          ? 'M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z'
+          : featureKey === 'ai_narration' || featureKey === 'ask_deterministic'
+            ? 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18'
+            : featureKey === 'cloud_backup'
+              ? 'M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.5 1.5A3.5 3.5 0 0 1 17.5 18z'
+              : featureKey === 'score_current' || featureKey === 'score_history'
+                ? 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z'
+                : featureKey === 'restocking'
+                  ? 'M3 7h13v8H3zM16 10h3l2 3v2h-5zM7 18a1.5 1.5 0 1 0 0-.01M18 18a1.5 1.5 0 1 0 0-.01'
+                  : 'M20 6L9 17l-5-5'
+  return (
+    <span
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+        ink ? 'bg-white/12 text-gold-300' : 'bg-sunken text-fg-muted'
+      }`}
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d={path} />
+      </svg>
+    </span>
   )
 }
 

@@ -204,6 +204,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div className="fixed top-3.5 inset-x-0 z-[99999] mx-auto max-w-sm px-3.5 pointer-events-none flex justify-center">
           <div
             key={current.id}
+            role="status"
+            aria-live="polite"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onTouchStart={handlePause}
@@ -260,10 +262,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   current.onUndo?.()
                   dismiss()
                 }}
-                className="shrink-0 flex items-center gap-1.5 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 px-3 py-1 text-[0.75rem] font-black uppercase tracking-wider text-gold-300 backdrop-blur-md border border-white/25 shadow-xs transition-all"
+                className="shrink-0 flex min-h-11 items-center gap-1.5 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 px-3.5 py-2 text-[0.75rem] font-black uppercase tracking-wider text-gold-300 backdrop-blur-md border border-white/25 shadow-xs transition-all"
               >
                 <span>{current.undoLabel ?? 'Undo'}</span>
-                <span className="inline-flex items-center justify-center rounded-full bg-black/45 px-1.5 py-0.5 text-[0.6875rem] font-mono font-black text-gold-200 tabular-nums shadow-inner">
+                <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-black/45 px-1.5 py-0.5 text-[0.6875rem] font-mono font-black text-gold-200 tabular-nums shadow-inner">
                   {timeLeft}s
                 </span>
               </button>
@@ -274,7 +276,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={dismiss}
               aria-label="Dismiss"
-              className="shrink-0 text-white/50 hover:text-white active:scale-90 transition-all p-0.5"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/50 hover:text-white active:scale-90 transition-all"
             >
               <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
                 <path

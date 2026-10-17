@@ -1,8 +1,15 @@
 # SeePat marketing site.
 #
-# Nothing here is disallowed, and the file exists for one reason: the Sitemap
-# line. A crawler that finds the sitemap early wastes fewer requests discovering
-# two pages, and this site has exactly two.
+# The file exists for two reasons: the Sitemap line (a crawler that finds it
+# early wastes fewer requests discovering two pages), and the AI-crawler
+# policy below it.
+#
+# AI POLICY. Search crawlers that power AI answers (ChatGPT Search, Claude
+# search, Perplexity, Google) are welcome: being answerable from the source
+# is the point of these pages. Training crawlers are not: GPTBot, ClaudeBot
+# and Google-Extended may not use this content to train models. These are
+# separate controls for OpenAI and Anthropic — allowing search does not allow
+# training, and blocking training does not block search.
 #
 # Note that robots.txt is not a way to keep a page out of results — a blocked URL
 # can still be indexed, just without its content. Anything that genuinely must
@@ -10,5 +17,25 @@
 
 User-agent: *
 Allow: /
+
+# AI search: allowed (powers cited answers).
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# AI training: not allowed.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
 
 Sitemap: %SITE_URL%/sitemap.xml

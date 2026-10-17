@@ -1,0 +1,77 @@
+# SeePat CI — the checks that must pass before main moves.
+#
+# Two jobs because there are two products: the Vite+React app at the root and
+# the zero-dependency static marketing site in marketing/. Vercel deploys the
+# marketing site on every push; this workflow is what stops a broken app or a
+# broken page from getting there. Keep it fast and hermetic: no network beyond
+# the npm registry, no browsers, no secrets.
+#
+# To make it load-bearing, turn on branch protection for `main` (Settings →
+# Branches → Add rule): require status checks "app" and "marketing", require
+# branches to be up to date, and block force pushes. Without that, this file
+# is a suggestion, not a gate.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Contrast audit
+        run: node tools/contrast-check.mjs
+
+  marketing:
+    name: marketing
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No install step: the marketing site has no dependencies by design
+      # (see marketing/README.md). Build stamps the origin, smoke checks the
+      # output — links, JSON-LD/FAQ parity, hreflang, sitemap, robots, llms.txt
+      # and the byte budgets.
+      - name: Build
+        run: npm run build
+        working-directory: marketing
+        env:
+          SITE_URL: https://example.com
+
+      - name: Smoke test
+        run: npm run smoke
+        working-directory: marketing

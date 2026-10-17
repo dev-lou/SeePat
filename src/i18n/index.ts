@@ -321,13 +321,17 @@ export const UI = {
   // concept behind it: "Twin" is the product's own word for the money overview,
   // and nobody looking for their kita taps a word they have never used.
   'tab.twin': { en: 'Money', fil: 'Pera' },
-  'tab.ledger': { en: 'Ledger', fil: 'Tala' },
+  // Tala in both languages: "Ledger" is bookkeeping English, and nobody
+  // looking for today's benta taps a word they have never used.
+  'tab.ledger': { en: 'Tala', fil: 'Tala' },
   'tab.voice': { en: 'Voice', fil: 'Boses' },
   'tab.ask': { en: 'Ask', fil: 'Tanong' },
   'tab.score': { en: 'Score', fil: 'Score' },
   // The centre key of the dock: a plus that blooms into the three fastest
   // actions rather than a fifth destination.
   'dock.quick': { en: 'Quick actions', fil: 'Mabilisang kilos' },
+  'dock.more': { en: 'More', fil: 'Iba pa' },
+  'dock.askHint': { en: 'Ask about your numbers', fil: 'Magtanong tungkol sa numero mo' },
 
   // --- Dashboard ----------------------------------------------------------
   'dash.heroLabel': { en: 'Real profit today', fil: 'Tunay na Kita Ngayon' },
@@ -1102,6 +1106,29 @@ export const UI = {
   'plan.billingPeriod': { en: 'Billing period', fil: 'Panahon ng bayad' },
   'plan.monthly': { en: 'Monthly', fil: 'Buwanan' },
   'plan.annual': { en: 'Yearly', fil: 'Taunan' },
+  'plan.periodToggle': { en: 'Billing', fil: 'Bayad' },
+  'plan.saveAnnual': { en: 'Save {amount}', fil: 'Tipid {amount}' },
+  'plan.freeStamp': { en: 'Libre · habang-buhay', fil: 'Libre · habang-buhay' },
+  'plan.proStamp': { en: 'Pinakasulit', fil: 'Pinakasulit' },
+  'plan.topFeatures': { en: "What you'll use daily", fil: 'Gagamitin mo araw-araw' },
+  'plan.allFeatures': { en: "What's included", fil: 'Kasama dito' },
+  'plan.showMore': { en: 'Show all ({n})', fil: 'Ipakita lahat ({n})' },
+  'plan.showLess': { en: 'Show less', fil: 'Itago' },
+  'plan.freeFor': { en: 'For starting out', fil: 'Para sa nagsisimula' },
+  'plan.proFor': { en: 'For steady stores', fil: 'Para sa tuloy-tuloy na tindahan' },
+  'plan.proPays': {
+    en: 'PRO pays for itself if one tip saves you ₱4 a day.',
+    fil: 'Sulit ang PRO kung isang tip ay nakakatipid ng ₱4 kada araw.',
+  },
+  'dash.profitToday': { en: 'Real profit today', fil: 'Tunay na kita ngayon' },
+  'dash.greetMorning': { en: 'Good morning!', fil: 'Magandang umaga!' },
+  'dash.greetAfternoon': { en: 'Good afternoon!', fil: 'Magandang hapon!' },
+  'dash.greetEvening': { en: 'Good evening!', fil: 'Magandang gabi!' },
+  'app.settingsAccount': { en: 'Account', fil: 'Account' },
+  'app.settingsShop': { en: 'Tindahan', fil: 'Tindahan' },
+  'app.settingsVoice': { en: 'Boses', fil: 'Boses' },
+  'app.settingsApp': { en: 'App', fil: 'App' },
+  'app.settingsData': { en: 'Data on this phone', fil: 'Data sa phone na ito' },
   'plan.cohortTitle': { en: 'For cooperatives and LGUs', fil: 'Para sa kooperatiba at LGU' },
   'plan.cohortBody': {
     en: 'One licence for many stores: an opt-in, aggregate view of how a cohort records, earns and completes — never any store\u2019s raw ledger.',

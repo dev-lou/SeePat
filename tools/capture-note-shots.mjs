@@ -193,8 +193,13 @@ async function main() {
   await waitFor("document.body.textContent.includes('Draft — confirm it')", 'the confirmation draft')
   await shoot('voice', 'Draft — confirm it')
 
-  // 2 — Ask: the owner's own words, answered from the ledger.
-  await clickTab('Ask')
+  // 2 — Ask: the owner's own words, answered from the ledger. Ask lives in
+  // the floating speed-dial now, not the dock: open it, then take its row.
+  await clickTab('Quick actions')
+  await evaluate(
+    `(() => { const b = [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent.trim().startsWith('Ask')); if (!b) return false; b.click(); return true })()`,
+  )
+  await sleep(500)
   await waitFor("!!document.querySelector('main input')", 'the ask input')
   await evaluate(`(() => {
     const input = document.querySelector('main input');

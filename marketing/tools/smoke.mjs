@@ -167,7 +167,14 @@ const robots = readFileSync(join(DIR, 'robots.txt'), 'utf8')
 const sitemapUrl = robots.match(/^Sitemap:\s*(\S+)$/m)?.[1]
 if (!sitemapUrl) fail('robots.txt has no Sitemap line')
 else if (!absolute(sitemapUrl)) fail(`robots.txt sitemap is not absolute: ${sitemapUrl}`)
-if (/^Disallow: \/\s*$/m.test(robots)) fail('robots.txt blocks the whole site')
+const globalBlock = robots.split(/(?=^User-agent:)/m).find((block) => /^User-agent: \*\s*$/m.test(block))
+if (globalBlock && /^Disallow: \//m.test(globalBlock)) fail('robots.txt blocks the whole site')
+for (const bot of ['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot']) {
+  const block = robots
+    .split(/(?=^User-agent:)/m)
+    .find((entry) => entry.includes(`User-agent: ${bot}`))
+  if (!block || !/^Allow: \//m.test(block)) fail(`robots.txt does not allow AI search crawler ${bot}`)
+}
 
 const sitemap = readFileSync(join(DIR, 'sitemap.xml'), 'utf8')
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
@@ -179,6 +186,24 @@ if (sitemapUrl && absolute(sitemapUrl)) {
   if (en.canonical && !en.canonical.startsWith(declared)) {
     fail(`robots.txt points at ${sitemapUrl}, which is not under ${en.canonical}`)
   }
+}
+
+/* ── 5b. the AI index ──────────────────────────────────────────────────────── */
+if (!existsSync(join(DIR, 'llms.txt'))) fail('llms.txt is missing')
+else {
+  const llms = readFileSync(join(DIR, 'llms.txt'), 'utf8')
+  if (!llms.startsWith('# ')) fail('llms.txt does not start with an H1')
+  if (/%[A-Z_]+%/.test(llms)) fail('llms.txt has an unstamped token')
+  const httpLinks = [...llms.matchAll(/\((https?:[^)\s]+)\)/g)].map((match) => match[1])
+  if (!httpLinks.length) fail('llms.txt has no absolute links')
+  // Every link stays on-site except the last one: the app link, which may
+  // live on APP_URL (a different origin) when the app is deployed apart.
+  httpLinks.forEach((link, index) => {
+    const isAppLink = index === httpLinks.length - 1
+    if (!isAppLink && en.canonical && !link.startsWith(en.canonical)) {
+      fail(`llms.txt links off-site: ${link}`)
+    }
+  })
 }
 
 /* ── 6. What it costs to open ──────────────────────────────────────────────── */

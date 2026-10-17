@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, Card, Chip, CustomSelect, EmptyState, Field, SectionTitle, inputClass } from './components.tsx'
 import { useToast } from './Toast.tsx'
@@ -171,6 +171,10 @@ export function RecordScreen({
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showMoreModes, setShowMoreModes] = useState(false)
+  // One job per screen: writing a record OR reading history, never both at
+  // once. Stacking the form and the feed is what made Tala feel like too
+  // much to process — the feed is one tap away, with its count on the tab.
+  const [section, setSection] = useState<'write' | 'history'>('write')
   // Deleting is always gated: the row key arms this, the dialog confirms it,
   // and the toast afterwards still offers undo. No silent deletes.
   const [pendingDelete, setPendingDelete] = useState<{ txn: Transaction; index: number } | null>(null)
@@ -203,6 +207,7 @@ export function RecordScreen({
   function changeMode(next: Mode) {
     setMode(next)
     setFlash('')
+    setSection('write')
   }
 
   function changeRange(next: HistoryRange) {
@@ -232,42 +237,6 @@ export function RecordScreen({
     setCustomerId('')
     setOnCredit(false)
     setChannel('cash')
-  }
-
-  /**
-   * The items this shop sells most, as one-tap tiles.
-   *
-   * A sari-sari's day is the same eight products over and over, and the form's
-   * path to them is item → quantity → price → record, read out while a customer
-   * waits. Counting what has actually been sold turns that into one tap for the
-   * common case, and it needs no setup: the tiles appear once there is history.
-   *
-   * Tapping a tile fills the empty line if there is one, and otherwise adds a
-   * line — so two taps record a two-item sale rather than overwriting the first.
-   */
-  const quickSkus = useMemo(() => {
-    const counted = new Map<string, number>()
-    for (const txn of ledger.transactions) {
-      if (txn.kind !== 'cash_sale' && txn.kind !== 'credit_sale') continue
-      if (ledger.voids.some((v) => v.txnId === txn.id)) continue
-      for (const line of txn.lines) counted.set(line.skuId, (counted.get(line.skuId) ?? 0) + 1)
-    }
-    return [...counted.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([skuId]) => ledger.skus.find((s) => s.id === skuId))
-      .filter((sku): sku is Sku => Boolean(sku))
-      .slice(0, 8)
-  }, [ledger])
-
-  function quickAdd(skuId: string) {
-    const empty = lines.length === 1 && !lines[0].skuId
-    if (empty) {
-      pickSku(lines[0].key, skuId)
-      return
-    }
-    const key = String(Date.now() + lines.length)
-    setLines((current) => [...current, { key, skuId: '', qty: '1', price: '' }])
-    pickSku(key, skuId)
   }
 
   function pickSku(key: string, skuId: string) {
@@ -558,30 +527,76 @@ export function RecordScreen({
 
   return (
     <div className="space-y-5">
-      {/* The daily three up front, the rest under More: seven chips at once is
-          what made this feel like a form to study rather than a till to use. */}
+      {/* Write vs history: one segmented switch, so the screen asks a single
+          question — "what are you doing?" — before showing anything else. */}
       <div className="px-3.5 pt-2">
-        <div className="rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 shadow-xs p-1.5 space-y-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            {PRIMARY_MODES.map((m) => (
-              <Chip key={m.id} active={mode === m.id} onClick={() => changeMode(m.id)}>
-                {t(m.labelKey)}
-              </Chip>
-            ))}
-            <button
-              type="button"
-              aria-expanded={showMoreModes || MORE_IDS.includes(mode)}
-              onClick={() => setShowMoreModes((v) => !v)}
-              className="tag"
-            >
-              {showMoreModes || MORE_IDS.includes(mode)
-                ? t('record.hideModes')
-                : t('record.moreModes')}{' '}
-              <span aria-hidden>{showMoreModes || MORE_IDS.includes(mode) ? '▴' : '▾'}</span>
-            </button>
+        <div
+          role="tablist"
+          aria-label={t('tab.ledger')}
+          className="grid grid-cols-2 gap-1 rounded-2xl border border-white/80 bg-white/60 p-1 shadow-xs backdrop-blur-md"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={section === 'write'}
+            onClick={() => setSection('write')}
+            className={`min-h-11 rounded-xl text-[0.9375rem] font-bold transition active:scale-[0.99] ${section === 'write' ? 'bg-brand-600 text-white shadow-xs' : 'text-fg-muted'}`}
+          >
+            {t('tab.ledger')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={section === 'history'}
+            onClick={() => setSection('history')}
+            className={`min-h-11 rounded-xl text-[0.9375rem] font-bold transition active:scale-[0.99] ${section === 'history' ? 'bg-brand-600 text-white shadow-xs' : 'text-fg-muted'}`}
+          >
+            {t('record.filter.label')}
+            <span className="num ml-1.5 text-[0.8125rem] font-semibold opacity-80">
+              {ledger.transactions.length}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {section === 'write' ? (
+      <div className="space-y-5">
+      {/* The daily three as big thumb-sized targets — one tap, no reading.
+          Everything else lives under one quiet More row. */}
+      <div className="px-3.5">
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('tab.ledger')}>
+            {PRIMARY_MODES.map((m) => {
+              const active = mode === m.id
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => changeMode(m.id)}
+                  className={`min-h-16 rounded-2xl border px-2 py-2.5 text-center transition active:scale-[0.97] ${active ? 'border-brand-600 bg-brand-600 text-white shadow-md' : 'border-white/80 bg-white/60 text-fg backdrop-blur-md shadow-xs'}`}
+                >
+                  <span className="block text-[0.9375rem] leading-tight font-bold">{t(m.labelKey)}</span>
+                  <span className={`mt-0.5 block text-[0.6875rem] leading-tight font-semibold ${active ? 'text-white/80' : 'text-fg-faint'}`}>
+                    {m.id === 'cash_sale' ? (lang === 'fil' ? 'Cash / GCash' : 'Cash / GCash') : m.id === 'expense' ? (lang === 'fil' ? 'Lumalabas' : 'Money out') : (lang === 'fil' ? 'Sisingilin' : 'Collect later')}
+                  </span>
+                </button>
+              )
+            })}
           </div>
+          <button
+            type="button"
+            aria-expanded={showMoreModes || MORE_IDS.includes(mode)}
+            onClick={() => setShowMoreModes((v) => !v)}
+            className="flex min-h-11 w-full items-center justify-center gap-1 rounded-xl border border-line/60 bg-white/40 text-[0.875rem] font-bold text-fg-muted transition active:scale-[0.99]"
+          >
+            {showMoreModes || MORE_IDS.includes(mode)
+              ? t('record.hideModes')
+              : t('record.moreModes')}{' '}
+            <span aria-hidden>{showMoreModes || MORE_IDS.includes(mode) ? '▴' : '▾'}</span>
+          </button>
           {showMoreModes || MORE_IDS.includes(mode) ? (
-            <div className="flex flex-wrap gap-1.5 border-t border-line/60 pt-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {MORE_MODES.map((m) => (
                 <Chip key={m.id} active={mode === m.id} onClick={() => changeMode(m.id)}>
                   {t(m.labelKey)}
@@ -647,27 +662,6 @@ export function RecordScreen({
 
         {isLineMode ? (
           <div className="space-y-3.5">
-            {quickSkus.length > 0 ? (
-              <div>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="eyebrow text-fg-subtle">{t('record.quickTitle')}</span>
-                  <span className="text-[0.75rem] text-fg-faint">{t('record.quickHint')}</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {quickSkus.map((sku) => (
-                    <button
-                      key={sku.id}
-                      type="button"
-                      onClick={() => quickAdd(sku.id)}
-                      className="min-h-11 rounded-full border border-brand-500/30 bg-brand-50/70 px-3.5 text-[0.875rem] font-semibold text-brand-800 shadow-xs backdrop-blur-md transition active:scale-[0.97] hover:border-brand-600/50"
-                    >
-                      {sku.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {lines.map((line) => {
               const sku = ledger.skus.find((s) => s.id === line.skuId)
               const perKilo = sku?.baseUnit === 'g'
@@ -890,7 +884,10 @@ export function RecordScreen({
           </div>
         ) : null}
       </Card>
+      </div>
+      ) : null}
 
+      {section === 'history' ? (
       <Card>
         <SectionTitle hint={`${ledger.transactions.length}`}>{t('record.recentTitle')}</SectionTitle>
         {/* History controls: search does the finding, the chips do the narrowing.
@@ -904,7 +901,7 @@ export function RecordScreen({
             aria-label={t('record.filter.search')}
             onChange={(e) => changeQuery(e.target.value)}
           />
-          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t('record.filter.label')}>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1" role="group" aria-label={t('record.filter.label')}>
             <Chip active={range === 'today'} onClick={() => changeRange('today')}>
               {t('record.filter.today')}
             </Chip>
@@ -1132,6 +1129,7 @@ export function RecordScreen({
           </div>
         )}
       </Card>
+      ) : null}
 
       {pendingDelete ? (
         <DeleteConfirmDialog
@@ -1159,6 +1157,15 @@ function DeleteConfirmDialog({
   onConfirm: () => void
 }) {
   const t = useT()
+  // Esc backs out of the delete gate the same as tapping outside it: the
+  // record stays, and focus stays where the owner left it.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel])
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-5 backdrop-blur-sm"

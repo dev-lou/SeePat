@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { TouchEvent as ReactTouchEvent } from 'react'
 import { Dashboard } from './Dashboard.tsx'
 import { RecordScreen } from './Record.tsx'
 import { VoiceScreen } from './Voice.tsx'
@@ -40,12 +41,13 @@ const READING_OPTIONS: { id: ReadingSize; labelKey: UIStr }[] = [
 ]
 
 // Tab ids stay as they are (they are keys, not copy); only the label is looked up.
-// Voice is not a dock destination: it leads the centre speed-dial instead, so
-// the bar holds four peers plus the plus key — the reference layout.
+// The dock holds three peers plus the mic: Money, Tala, mic, Score. Ask lives
+// in the floating speed-dial instead — it is powerful but not daily, and four
+// destinations plus the mic is already all a small phone can hold. `tanong`
+// stays a full Tab (the screen still exists); it is just not a dock item.
 const TABS: { id: Tab; labelKey: UIStr; icon: string }[] = [
   { id: 'twin', labelKey: 'tab.twin', icon: 'M3 13h4v8H3zM10 3h4v18h-4zM17 9h4v12h-4z' },
   { id: 'tala', labelKey: 'tab.ledger', icon: 'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5' },
-  { id: 'tanong', labelKey: 'tab.ask', icon: 'M4 4h16v12H8l-4 4z' },
   { id: 'score', labelKey: 'tab.score', icon: 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z' },
 ]
 
@@ -94,6 +96,9 @@ function AppShell() {
   const speakOn = useSpeakEnabled()
   const [tab, setTab] = useState<Tab>('twin')
   const [menuOpen, setMenuOpen] = useState(false)
+  // The floating speed-dial above the dock: Utang, Items, Ask. Closed whenever
+  // a destination is chosen, so it can never cover the screen it just opened.
+  const [moreOpen, setMoreOpen] = useState(false)
   // Holding the pending erase as the ledger we would restore, not a boolean:
   // the confirm and the undo are the same value, so there is no window where the
   // dialog is up and the thing it protects has already changed.
@@ -125,14 +130,19 @@ function AppShell() {
 
 
 
+  // Header plan chip: two solid medallions, not two tints. FREE is a paper
+  // pill with a live emerald dot; PRO is the same near-black + gold as the
+  // PRO story card, so the header and the offer read as one product. The old
+  // amber wash read as a warning state, not a plan worth paying for.
   const tierConfig = {
     free: {
-      badge: 'bg-emerald-500/10 text-emerald-800 border-emerald-500/25',
-      dot: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]',
+      badge: 'border-emerald-600/30 bg-emerald-50 text-emerald-900 shadow-xs',
+      dot: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]',
     },
     pro: {
-      badge: 'bg-amber-500/15 text-amber-800 border-amber-500/35',
-      dot: 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]',
+      badge:
+        'plan-chip-pro border-gold-300/50 bg-[#0c1445] text-gold-300 shadow-[0_6px_16px_-6px_rgba(8,16,50,0.6)]',
+      dot: 'bg-gold-300 shadow-[0_0_6px_rgba(255,213,74,0.9)]',
     },
     negosyo: {
       badge: 'bg-brand-500/15 text-brand-700 border-brand-500/35',
@@ -150,9 +160,84 @@ function AppShell() {
     setMenuOpen(false)
   }
 
+  // Swipe between the dock's screens like a native tab bar: Money ↔ Tala ↔
+  // Voice ↔ Score, the same left-to-right order the dock shows. Secondary
+  // screens (Ask, Items, Utang, Plan…) never swipe — a sideways move there
+  // would lose a form or a list the owner opened on purpose.
+  const SWIPE_TABS: Tab[] = ['twin', 'tala', 'boses', 'score']
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  function onSwipeStart(event: ReactTouchEvent<HTMLElement>) {
+    const touch = event.touches[0]
+    if (!touch) return
+    // The screen edges belong to the OS back gesture; never steal them.
+    if (touch.clientX < 16 || touch.clientX > window.innerWidth - 16) {
+      swipeStart.current = null
+      return
+    }
+    swipeStart.current = { x: touch.clientX, y: touch.clientY }
+  }
+  function onSwipeEnd(event: ReactTouchEvent<HTMLElement>) {
+    const start = swipeStart.current
+    swipeStart.current = null
+    if (!start) return
+    // Overlays eat the gesture: a swipe with the sheet or speed-dial open
+    // dismisses nothing and navigates nowhere.
+    if (menuOpen || moreOpen) return
+    const order = SWIPE_TABS.indexOf(tab)
+    if (order < 0) return
+    const touch = event.changedTouches[0]
+    if (!touch) return
+    const dx = touch.clientX - start.x
+    const dy = touch.clientY - start.y
+    // A deliberate horizontal flick: 70px, and twice as wide as it is tall,
+    // so a scrolling thumb never changes the screen by accident.
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return
+    const target = event.target as HTMLElement | null
+    // Text fields keep their own gestures, and a swipe that starts inside a
+    // horizontal scroller (filter chips) belongs to that scroller.
+    if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
+    let node: HTMLElement | null = target
+    while (node && node !== mainRef.current) {
+      if (node.scrollWidth > node.clientWidth + 4) return
+      node = node.parentElement
+    }
+    const next = dx < 0 ? SWIPE_TABS[order + 1] : SWIPE_TABS[order - 1]
+    if (next) goToTab(next)
+  }
+
   const goToTab = (next: Tab) => {
+    // Light haptic on tab change where the device allows it: the dock is the
+    // most-tapped surface in the app, and 10ms is felt, not heard.
+    try {
+      navigator.vibrate?.(10)
+    } catch {
+      /* vibrate is best-effort */
+    }
+    setMoreOpen(false)
     setTab(next)
   }
+
+  // Esc closes the speed-dial like a native popover. Registered only while it
+  // is open, so the rest of the app never pays for the listener.
+  useEffect(() => {
+    if (!moreOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [moreOpen])
+
+  // Esc closes the settings sheet, same as the speed-dial above: a keyboard
+  // or switch user gets the same way out of every overlay.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
 
   /*
    * The owner's own book, reached from where it is needed rather than from the
@@ -167,17 +252,73 @@ function AppShell() {
   const goToItems = () => {
     setTab('items')
     setMenuOpen(false)
+    setMoreOpen(false)
   }
 
   const goToUtang = () => {
     setTab('utang')
     setMenuOpen(false)
+    setMoreOpen(false)
   }
 
   function setDemoTier(tier: TierId) {
     if (tier === 'free') billing.downgrade()
     else billing.purchase(tier, 'gcash')
   }
+
+  // The plan chip + Settings key, shared by the full header and the Money
+  // tab's slim row: one element, rendered in exactly one place at a time.
+  const headerActions = (
+    <div className="flex items-center justify-end gap-2">
+      <button
+        type="button"
+        onClick={goToPlan}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.6875rem] font-black uppercase tracking-[0.08em] transition-all active:scale-95 hover:opacity-90 ${tierConfig.badge}`}
+        aria-label={t('app.managePlan')}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${tierConfig.dot}`} />
+        <span>{tierById(billing.tier).short}</span>
+      </button>
+      {/*
+       * Labelled, not icon-only.
+       *
+       * Two of the three things behind this button are the ones this
+       * audience actually needs — the language and the text size — and a
+       * gear or a slider glyph is not a word a 55-year-old reads as "my
+       * settings". The word rides beside the glyph from 380px up and the
+       * key collapses back to the icon below that, so nothing is lost on a
+       * very narrow phone.
+       */}
+      <button
+        type="button"
+        aria-label={t('app.settings')}
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((open) => !open)}
+        className={`flex h-10 items-center justify-center gap-1.5 rounded-full border px-3 transition-all duration-200 active:translate-y-px ${
+          menuOpen
+            ? 'border-brand-800 bg-brand-800 text-white shadow-pop'
+            : 'border-line-strong bg-card text-fg-muted shadow-e1 hover:text-fg'
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+          <circle cx="16" cy="7" r="2.4" />
+          <circle cx="8" cy="17" r="2.4" />
+        </svg>
+        <span className="hidden text-[0.75rem] font-bold min-[380px]:inline">
+          {t('app.settings')}
+        </span>
+      </button>
+    </div>
+  )
 
   return (
     <>
@@ -189,7 +330,17 @@ function AppShell() {
        * The header: the owl and the plan, then the page's name, then a hairline.
        * It is translucent and blurred rather than solid, so content sliding
        * under it stays visible and the app reads as one moving surface.
+       *
+       * On the Money tab only the right cluster (plan chip + Settings) shows,
+       * right-aligned with no title: the greeting block (date + Good morning +
+       * owl bubble) already opens the screen, so a second title would say the
+       * same thing twice — but the plan and settings must stay one tap away.
        */}
+      {tab === 'twin' ? (
+        <div className="safe-top z-20 flex justify-end px-4 pt-2">
+          {headerActions}
+        </div>
+      ) : (
       <header className="safe-top z-20 bg-page/65 px-4 pt-1 pb-2.5 backdrop-blur-xl">
         {/* Brand row: the owl left, the plan chip and settings right. The mark
             is the generated owl-only crop, so no wordmark is squeezed into the
@@ -214,56 +365,7 @@ function AppShell() {
             </button>
           </div>
 
-          {/* Right: Plan indicator chip + Settings button */}
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={goToPlan}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.625rem] font-black uppercase tracking-wider border shadow-xs transition-all active:scale-95 hover:opacity-90 ${tierConfig.badge}`}
-              aria-label={t('app.managePlan')}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${tierConfig.dot}`} />
-              <span>{tierById(billing.tier).short}</span>
-            </button>
-            {/*
-             * Labelled, not icon-only.
-             *
-             * Two of the three things behind this button are the ones this
-             * audience actually needs — the language and the text size — and a
-             * gear or a slider glyph is not a word a 55-year-old reads as "my
-             * settings". The word rides beside the glyph from 380px up and the
-             * key collapses back to the icon below that, so nothing is lost on a
-             * very narrow phone.
-             */}
-            <button
-              type="button"
-              aria-label={t('app.settings')}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-              className={`flex h-10 items-center justify-center gap-1.5 rounded-full border px-3 transition-all duration-200 active:translate-y-px ${
-                menuOpen
-                  ? 'border-brand-800 bg-brand-800 text-white shadow-pop'
-                  : 'border-line-strong bg-card text-fg-muted shadow-e1 hover:text-fg'
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
-                <circle cx="16" cy="7" r="2.4" />
-                <circle cx="8" cy="17" r="2.4" />
-              </svg>
-              <span className="hidden text-[0.75rem] font-bold min-[380px]:inline">
-                {t('app.settings')}
-              </span>
-            </button>
-          </div>
+          {headerActions}
         </div>
 
         {/*
@@ -279,8 +381,14 @@ function AppShell() {
         </h1>
         <div className="rule-set mt-2" aria-hidden />
       </header>
+      )}
 
-      <main ref={mainRef} className="no-scrollbar flex-1 overflow-y-auto px-0 pt-0 pb-32">
+      <main
+        ref={mainRef}
+        className="no-scrollbar flex-1 touch-pan-y overflow-y-auto px-0 pt-0 pb-32"
+        onTouchStart={onSwipeStart}
+        onTouchEnd={onSwipeEnd}
+      >
         {/* Keyed by tab so the staggered entrance replays on every screen change. */}
         <div key={tab} className="enter">
           {tab === 'twin' ? (
@@ -321,19 +429,64 @@ function AppShell() {
       </main>
 
       {/*
-       * The dock — a floating white pill with four peer destinations and a
-       * raised plus key in the middle.
+       * The dock — one floating white pill with four keys in a row: Money,
+       * Tala, Score, More. The mic rides separate, with a gap, to the
+       * right of the pill. More is not a destination — it blooms Ask, My
+       * items and the Utang list upward above the dock's right end.
        *
        * The selected destination stretches into a labelled pill (index.css,
        * `.dock-tab.is-on`) so the bar itself says where you are; on a 280px
        * phone the label is shed and the page eyebrow above the content keeps
-       * naming the screen. The plus blooms the speed-dial upward — voice first,
-       * because speaking a sale is how this app is meant to be used.
+       * naming the screen.
        */}
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 px-3 pb-3">
-        <ul className="dock mx-auto max-w-md">
-          {TABS.slice(0, 2).map((item) => {
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {/* Transparent scrim while the speed-dial is open: a tap anywhere
+            outside it dismisses, with no dimming so the owner keeps context. */}
+        {moreOpen ? (
+          <button
+            type="button"
+            aria-label={t('app.close')}
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 -z-10 cursor-default bg-transparent"
+          />
+        ) : null}
+        <div className="relative mx-auto flex max-w-md items-end gap-2.5">
+          <div className="relative min-w-0 flex-1">
+          {/* The speed-dial panel: More blooms Ask, My items and the Utang
+              list upward above the dock's right end. */}
+          {moreOpen ? (
+            <div
+              role="menu"
+              aria-label={t('dock.quick')}
+              className="absolute right-0 bottom-[calc(100%+10px)] z-10 flex w-64 flex-col gap-1.5 rounded-3xl border border-white/80 bg-white/95 p-2 shadow-2xl backdrop-blur-2xl"
+            >
+              <SpeedRow
+                index={0}
+                icon="M4 4h16v12H8l-4 4z"
+                title={t('tab.ask')}
+                sub={t('dock.askHint')}
+                onOpen={() => goToTab('tanong')}
+                active={tab === 'tanong'}
+              />
+              <SpeedRow
+                index={1}
+                icon="M4 9l8-5 8 5v9l-8 5-8-5zM4 9l8 5 8-5M12 14v7"
+                title={t('app.myItems')}
+                sub={t('items.count', { n: negosyo.ledger.skus.length })}
+                onOpen={goToItems}
+              />
+              <SpeedRow
+                index={2}
+                icon="M7 10h10M7 14h7M5 3h14v18H5z"
+                title={t('app.utangList')}
+                sub={`${t('utang.total')} · ${formatPHP(negosyo.derived.receivablesCentavos)}`}
+                onOpen={goToUtang}
+              />
+            </div>
+          ) : null}
+          <ul className="dock min-w-0 flex-1">
+          {TABS.map((item) => {
             const active = tab === item.id
             return (
               <li key={item.id} className="flex flex-1 justify-center">
@@ -362,76 +515,90 @@ function AppShell() {
               </li>
             )
           })}
-          <li className="flex shrink-0 justify-center">
+          {/* More: the fourth dock key, not a destination — it blooms the
+              speed-dial panel above. Reads selected while open, like a tab. */}
+          <li className="flex flex-1 justify-center">
             <button
               type="button"
-              onClick={() => goToTab('boses')}
-              aria-current={tab === 'boses' ? 'page' : undefined}
-              aria-label={t('tab.voice')}
-              title={t('tab.voice')}
-              className={`dock-fab ${tab === 'boses' ? 'is-active' : ''}`}
+              onClick={() => {
+                try {
+                  navigator.vibrate?.(10)
+                } catch {
+                  /* vibrate is best-effort */
+                }
+                setMoreOpen((open) => !open)
+              }}
+              aria-expanded={moreOpen}
+              aria-label={moreOpen ? t('app.close') : t('dock.quick')}
+              title={t('dock.quick')}
+              className={`dock-tab ${moreOpen ? 'is-on' : ''}`}
             >
               <svg
                 viewBox="0 0 24 24"
-                className="h-6 w-6"
-                fill="currentColor"
+                className="h-5 w-5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
                 aria-hidden="true"
               >
-                <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+                <path d="M12 5v14M5 12h14" />
               </svg>
+              <span className="dock-label">{t('dock.more')}</span>
             </button>
           </li>
-          {TABS.slice(2).map((item) => {
-            const active = tab === item.id
-            return (
-              <li key={item.id} className="flex flex-1 justify-center">
-                <button
-                  type="button"
-                  onClick={() => goToTab(item.id)}
-                  aria-current={active ? 'page' : undefined}
-                  aria-label={t(item.labelKey)}
-                  title={t(item.labelKey)}
-                  className={`dock-tab ${active ? 'is-on' : ''}`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d={item.icon} />
-                  </svg>
-                  <span className="dock-label">{t(item.labelKey)}</span>
-                </button>
-              </li>
-            )
-          })}
         </ul>
+          </div>
+          {/* The mic rides separate, with a gap, to the right of the pill. */}
+          <button
+            type="button"
+            onClick={() => goToTab('boses')}
+            aria-current={tab === 'boses' ? 'page' : undefined}
+            aria-label={t('tab.voice')}
+            title={t('tab.voice')}
+            className={`dock-fab mic-side ${tab === 'boses' ? 'is-active' : ''}`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+            </svg>
+          </button>
+        </div>
       </nav>
 
       {/* Settings as an overlay sheet, not an inline expander: it stops the app
           from reflowing under the owner's thumb and gives destructive actions
           (Burahin lahat) the separation they deserve. */}
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 flex flex-col justify-end">
+        <div
+          className="fixed inset-0 z-40 flex flex-col justify-end"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('app.settings')}
+        >
           <button
             type="button"
             aria-label={t('app.close')}
             onClick={() => setMenuOpen(false)}
             className="absolute inset-0 bg-scrim backdrop-blur-[2px]"
           />
-          <div className="mx-auto w-full max-w-md px-3 pb-3">
-            <div className="safe-bottom relative max-h-[82vh] overflow-y-auto rounded-3xl border border-white/80 bg-white/95 backdrop-blur-2xl p-5 shadow-2xl">
-              <div className="mb-4 flex items-center justify-between gap-3 border-b border-line/60 pb-3">
-                <h2 className="headline text-[1.125rem] font-bold text-fg">{t('app.settings')}</h2>
+          {/* Native sheet: full-bleed to all four phone edges — no side or
+              bottom gaps. The header never scrolls; the big title lives inside
+              the scroll area so it slides away and the small title up top is
+              what stays. */}
+          <div className="relative mx-auto flex h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] border-x border-t border-white/80 bg-white/95 shadow-2xl backdrop-blur-2xl">
+            <div className="sheet-native-header shrink-0 border-b border-line/60 bg-white/80 px-4 pt-2 pb-2.5 backdrop-blur-xl">
+              <div className="mx-auto mb-1.5 h-1 w-10 rounded-full bg-line-strong" aria-hidden />
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[0.9375rem] font-extrabold text-fg">{t('app.settings')}</span>
                 <button
                   type="button"
                   onClick={() => setMenuOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-sunken text-fg-muted hover:text-fg active:scale-95 transition-transform"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-sunken text-fg-muted transition-transform hover:text-fg active:scale-95"
                   aria-label={t('app.close')}
                 >
                   <svg
@@ -446,8 +613,17 @@ function AppShell() {
                   </svg>
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-3">
+            <div className="sheet-native flex-1 overflow-y-auto px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <h2 className="headline text-[1.75rem] leading-tight font-black text-fg">
+                {t('app.settings')}
+              </h2>
+
+              <div className="mt-3 space-y-5">
+              <section aria-label={t('app.settingsAccount')}>
+                <h3 className="eyebrow mb-1.5 text-fg-faint">{t('app.settingsAccount')}</h3>
+                <div className="space-y-2.5">
                 <button
                   type="button"
                   onClick={goToPlan}
@@ -466,7 +642,11 @@ function AppShell() {
                     {billing.tier === 'free' ? t('app.upgrade') : t('app.managePlan')}
                   </span>
                 </button>
-
+                </div>
+              </section>
+              <section aria-label={t('app.settingsShop')}>
+                <h3 className="eyebrow mb-1.5 text-fg-faint">{t('app.settingsShop')}</h3>
+                <div className="space-y-2.5">
                 {/* The two screens that hold the owner's own book sit directly
                     under the plan row, with their counts: "41 items" is also
                     the answer to "did my items save?". */}
@@ -505,7 +685,11 @@ function AppShell() {
                     {t('app.open')}
                   </span>
                 </button>
-
+                </div>
+              </section>
+              <section aria-label={t('app.settingsVoice')}>
+                <h3 className="eyebrow mb-1.5 text-fg-faint">{t('app.settingsVoice')}</h3>
+                <div className="space-y-2.5">
                 <button
                   type="button"
                   onClick={goToOffline}
@@ -568,6 +752,11 @@ function AppShell() {
                   </p>
                 </div>
 
+                </div>
+              </section>
+              <section aria-label={t('app.settingsApp')}>
+                <h3 className="eyebrow mb-1.5 text-fg-faint">{t('app.settingsApp')}</h3>
+                <div className="space-y-2.5">
                 {/* Language sits with the other device-level settings rather than
                     buried in a submenu: it is the first thing an English-reading
                     reviewer wants to find, and the first thing an owner might
@@ -665,6 +854,11 @@ function AppShell() {
                   </span>
                 </button>
 
+                </div>
+              </section>
+              <section aria-label={t('app.settingsData')}>
+                <h3 className="eyebrow mb-1.5 text-fg-faint">{t('app.settingsData')}</h3>
+                <div className="space-y-2.5">
                 <div className="rounded-2xl border border-line bg-card px-3.5 py-3 shadow-e1">
                   <p className="text-[0.8125rem] leading-relaxed text-fg-subtle">
                     {t('app.transactions', { n: negosyo.ledger.transactions.length })} ·{' '}
@@ -716,6 +910,8 @@ function AppShell() {
                     <SimulatedNote>{t('app.simulatedPayments')}</SimulatedNote>
                   </div>
                 </div>
+                </div>
+              </section>
               </div>
             </div>
           </div>
@@ -784,6 +980,74 @@ function AppShell() {
         />
       ) : null}
     </>
+  )
+}
+
+/**
+ * One row of the speed-dial: icon, name, and the live sub-line (the owed
+ * total, the item count) that answers "did my stuff save?" before the tap.
+ * Rows rise in from the bottom with a stagger (index.css, `.speed-row`),
+ * nearest the + key first.
+ */
+function SpeedRow({
+  index,
+  icon,
+  title,
+  sub,
+  onOpen,
+  active = false,
+}: {
+  index: number
+  icon: string
+  title: string
+  sub: string
+  onOpen: () => void
+  active?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onOpen}
+      aria-current={active ? 'page' : undefined}
+      className="speed-row flex w-full items-center gap-3 rounded-2xl border border-line bg-card px-3 py-2.5 text-left shadow-e1 transition hover:border-brand-500/40 active:scale-[0.98]"
+      style={{ animationDelay: `${(2 - index) * 45}ms` }}
+    >
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+          active ? 'bg-brand-800 text-white' : 'bg-sunken text-fg-muted'
+        }`}
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-4.5 w-4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d={icon} />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[0.875rem] font-bold text-fg">{title}</span>
+        <span className="num block truncate text-[0.75rem] text-fg-faint">{sub}</span>
+      </span>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 shrink-0 text-fg-faint"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+    </button>
   )
 }
 

@@ -315,12 +315,43 @@ describe('structured data', () => {
 })
 
 describe('the SEO furniture', () => {
-  it('robots points at the sitemap and blocks nothing', () => {
+  it('robots points at the sitemap and blocks no search crawler', () => {
     const robots = readFileSync(join(SITE, 'robots.txt'), 'utf8')
     expect(robots).toContain('Sitemap: %SITE_URL%/sitemap.xml')
     expect(robots).toMatch(/User-agent: \*/)
     expect(robots).toMatch(/Allow: \//)
-    expect(robots).not.toMatch(/^Disallow: \/\s*$/m)
+    // Split each User-agent block and check it on its own: the global block
+    // must stay open (a site-wide Disallow can still get indexed, contentless),
+    // while the training-only bots GPTBot, ClaudeBot and Google-Extended are
+    // the ones kept out — search crawlers, AI or otherwise, are never blocked.
+    const blocks = robots.split(/(?=^User-agent:)/m)
+    for (const block of blocks) {
+      const agent = block.match(/^User-agent:\s*(\S+)/m)?.[1]
+      if (agent === '*') expect(block).not.toMatch(/^Disallow: \//m)
+      else if (agent) {
+        expect(agent, `unexpected blocked bot: ${agent}`).toMatch(
+          /^(OAI-SearchBot|Claude-SearchBot|PerplexityBot|GPTBot|ClaudeBot|Google-Extended)$/,
+        )
+      }
+    }
+    for (const bot of ['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot']) {
+      const block = blocks.find((b) => b.includes(`User-agent: ${bot}`))
+      expect(block, `${bot} must stay allowed`).toMatch(/^Allow: \//m)
+    }
+  })
+
+  it('llms.txt names the site and links only the site and the app', () => {
+    const llms = readFileSync(join(SITE, 'llms.txt'), 'utf8')
+    expect(llms.startsWith('# ')).toBe(true)
+    // Links stay tokenised so the stamp step makes them absolute per origin;
+    // page links stay on SITE_URL, the one app link may live on APP_URL.
+    const links = [...llms.matchAll(/\((%[A-Z_]+%[^)\s]*)\)/g)].map((match) => match[1])
+    expect(links.length).toBeGreaterThan(0)
+    links.forEach((link, index) => {
+      const isAppLink = index === links.length - 1
+      if (isAppLink) expect(link.startsWith('%APP_URL%')).toBe(true)
+      else expect(link.startsWith('%SITE_URL%')).toBe(true)
+    })
   })
 
   it('the sitemap lists exactly the two canonical pages, and nothing else', () => {
