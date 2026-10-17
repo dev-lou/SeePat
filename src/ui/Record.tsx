@@ -156,9 +156,16 @@ export function RecordScreen({
    */
   const [channel, setChannel] = useState<PaymentChannel>('cash')
   const [flash, setFlash] = useState('')
-  // History filters: a store owner reconciles the current shift first, so the
-  // feed opens on today rather than on everything ever recorded.
-  const [range, setRange] = useState<HistoryRange>('today')
+  /*
+   * The feed opens on EVERYTHING, and the chips narrow it.
+   *
+   * It used to open on Today, on the reasoning that the shift is what an owner
+   * reconciles first. In practice that hid the thing people went looking for:
+   * "where is my history?" is answered by seeing 230 rows and a Load more
+   * button, not by a filter you have to find. Today and This week are one tap
+   * away, which is the cheaper mistake of the two.
+   */
+  const [range, setRange] = useState<HistoryRange>('all')
   const [direction, setDirection] = useState<DirectionFilter>('all')
   const [query, setQuery] = useState('')
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE)

@@ -1014,7 +1014,11 @@ export function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="flex gap-1.5 overflow-x-auto no-scrollbar rounded-2xl border border-white/80 bg-white/60 p-1.5 shadow-xs backdrop-blur-md"
+      /* Wrapping, not a hidden scroll: at the largest reading size on a 320px
+         phone "Ngayon | 7 araw | Puhunan" is wider than the track, and an
+         overflow-x strip hid the third option behind a scroll nobody can see.
+         The segments fall onto a second line instead, each still a full target. */
+      className="flex flex-wrap gap-1.5 rounded-2xl border border-white/80 bg-white/60 p-1.5 shadow-xs backdrop-blur-md"
     >
       {options.map((opt) => {
         // The active segment keeps the full `.tag[aria-pressed]` ink fill; only
@@ -1028,7 +1032,7 @@ export function SegmentedControl<T extends string>({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(opt.id)}
-            className={`tag min-h-11 flex-1 whitespace-nowrap px-3 ${active ? '' : '!border-transparent !bg-transparent !shadow-none'}`}
+            className={`tag min-h-11 flex-1 basis-[4.5rem] whitespace-nowrap px-3 ${active ? '' : '!border-transparent !bg-transparent !shadow-none'}`}
           >
             {opt.label}
           </button>
@@ -1392,9 +1396,15 @@ export function SimulatedNote({ children }: { children: ReactNode }) {
   const t = useT()
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3">
-      <div className="flex items-start gap-2.5">
+      {/* The stamp is a fixed width, so at the largest reading size it left the
+          sentence a column one word wide ("Every / payment / here / is…"). The
+          minimum measure on the text and the allowed wrap means the stamp keeps
+          its place while it fits and moves above the sentence when it does not. */}
+      <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
         <span className="stamp mt-0.5 shrink-0 text-amber-700">{t('shared.simulated')}</span>
-        <p className="text-[0.8125rem] leading-relaxed text-amber-800">{children}</p>
+        <p className="min-w-[7rem] flex-1 text-[0.8125rem] leading-relaxed text-amber-800">
+          {children}
+        </p>
       </div>
     </div>
   )

@@ -126,10 +126,9 @@ export function PlanScreen({ billing }: { billing: Billing }) {
       </Card>
 
       <div className="px-3.5">
-        <SimulatedNote>
-          <strong className="text-amber-800">{t('plan.simulatedLead')}</strong>{' '}
-          {t('plan.simulatedBody')}
-        </SimulatedNote>
+        {/* The note's own stamp already says SIMULATED, so the copy starts with
+            the sentence rather than repeating the word. */}
+        <SimulatedNote>{t('plan.simulatedBody')}</SimulatedNote>
       </div>
 
       {visibleTiers().map((tier) => {

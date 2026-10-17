@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Dashboard } from './Dashboard.tsx'
 import { RecordScreen } from './Record.tsx'
 import { VoiceScreen } from './Voice.tsx'
@@ -98,7 +98,10 @@ function AppShell() {
   // the confirm and the undo are the same value, so there is no window where the
   // dialog is up and the thing it protects has already changed.
   const [pendingErase, setPendingErase] = useState<Ledger | null>(null)
+  // Demo data replaces the whole book, so it is gated the same way an erase is.
+  const [pendingDemo, setPendingDemo] = useState(false)
   const [welcome, setWelcome] = useState(() => shouldShowWelcome(welcomeSeenVersion()))
+  const mainRef = useRef<HTMLElement | null>(null)
 
   // The splash has painted since the first byte (index.html); this is the app
   // saying it has rendered and the display face is settled, so the handoff is a
@@ -106,6 +109,19 @@ function AppShell() {
   useEffect(() => {
     finishBoot()
   }, [])
+
+  /*
+   * A new screen starts at its own top.
+   *
+   * The scrolling element is `main`, and it lived across every tab change, so
+   * opening Items from a scrolled Plan page landed the owner halfway down the
+   * item list with the "Add an item" button already above the fold — the page
+   * looked cut off rather than scrolled. Resetting here is the shell's job: no
+   * screen should have to know how far the previous one was read.
+   */
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 })
+  }, [tab])
 
 
 
@@ -170,19 +186,17 @@ function AppShell() {
           by mid-page. Behind the content (z-index -1), never inside a card. */}
       <div className="canvas-grid" aria-hidden />
       {/*
-       * The header: the mark, then the line that says what the app is for, then
-       * a hairline. It is translucent and blurred rather than solid, so content
-       * sliding under it stays visible and the app reads as one moving surface.
+       * The header: the owl and the plan, then the page's name, then a hairline.
+       * It is translucent and blurred rather than solid, so content sliding
+       * under it stays visible and the app reads as one moving surface.
        */}
       <header className="safe-top z-20 bg-page/65 px-4 pt-1 pb-2.5 backdrop-blur-xl">
-        {/* The lockup is the official artwork, never type we set ourselves: one
-            image, so the owl and the letterforms cannot drift from the brand. */}
-        {/* Brand row: the plan chip left, the lockup centred, settings right —
-            the mark alone, big and haloed, with no tagline under it. The page
-            eyebrow below the header already says where you are, so a second
-            line of words here is noise the header does not need. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          {/* Left: Prominent large brand logo */}
+        {/* Brand row: the owl left, the plan chip and settings right. The mark
+            is the generated owl-only crop, so no wordmark is squeezed into the
+            56px box and the page name below is the only title on screen. */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: the owl alone. The lockup's own lettering is illegible in a
+              56px box, and the page name is the only title this row needs. */}
           <div className="flex items-center justify-start">
             <button
               type="button"
@@ -191,18 +205,13 @@ function AppShell() {
               aria-label="SeePat"
             >
               <img
-                src="/seepat-logo.png"
-                alt="SeePat"
-                className="h-[56px] w-[56px] object-contain drop-shadow-xs"
+                src="/seepat-mark.png"
+                alt=""
+                width={56}
+                height={56}
+                className="h-14 w-14 object-contain drop-shadow-xs"
               />
             </button>
-          </div>
-
-          {/* Center: Page name, plain — the dot was decoration, not information. */}
-          <div className="flex items-center justify-center text-center">
-            <h1 className="text-[1.05rem] font-extrabold uppercase tracking-wider text-fg">
-              {t(PAGE_LABEL[tab])}
-            </h1>
           </div>
 
           {/* Right: Plan indicator chip + Settings button */}
@@ -256,10 +265,22 @@ function AppShell() {
             </button>
           </div>
         </div>
-        <div className="rule-set mt-2.5" aria-hidden />
+
+        {/*
+         * The page name is its own row rather than the middle of a three-column
+         * grid. At 390px the old row left roughly one short word between the owl
+         * and the settings key, so "OFFLINE NA BOSES" ran straight through the
+         * logo, and at the largest reading size "MONEY" did the same. A row of
+         * its own gives the title the full width in either language, at any text
+         * size, without truncating a page name.
+         */}
+        <h1 className="mt-1.5 min-w-0 text-[1.05rem] leading-tight font-extrabold uppercase tracking-wider text-fg">
+          {t(PAGE_LABEL[tab])}
+        </h1>
+        <div className="rule-set mt-2" aria-hidden />
       </header>
 
-      <main className="no-scrollbar flex-1 overflow-y-auto px-0 pt-0 pb-32">
+      <main ref={mainRef} className="no-scrollbar flex-1 overflow-y-auto px-0 pt-0 pb-32">
         {/* Keyed by tab so the staggered entrance replays on every screen change. */}
         <div key={tab} className="enter">
           {tab === 'twin' ? (
@@ -508,34 +529,39 @@ function AppShell() {
                 {/* SeePat's own voice, right beside the language row: both are
                     device-level answers to "how does this app talk to me". */}
                 <div className="rounded-2xl border border-line bg-card px-3.5 py-3 shadow-e1">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[0.9375rem] font-semibold text-fg">
-                      {t('app.speak')}
-                    </span>
-                    <div
-                      role="group"
-                      aria-label={t('app.speak')}
-                      className="flex shrink-0 gap-1 rounded-full bg-sunken p-1"
-                    >
-                      {[true, false].map((value) => {
-                        const selected = speakOn === value
-                        return (
-                          <button
-                            key={value ? 'on' : 'off'}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => setSpeakEnabled(value)}
-                            className={`min-h-10 rounded-full px-3.5 text-[0.875rem] font-bold transition-all duration-200 ${
-                              selected
-                                ? 'bg-brand-800 text-white shadow-pop'
-                                : 'text-fg-muted hover:text-fg'
-                            }`}
-                          >
-                            {value ? t('app.speakOn') : t('app.speakOff')}
-                          </button>
-                        )
-                      })}
-                    </div>
+                  {/*
+                   * Label above, control beneath, like the text-size row: at the
+                   * largest reading size "Nagsasalita si SeePat" and a switch
+                   * beside it do not both fit in a 320px sheet, and a segmented
+                   * control that overflows its card is worse than a taller row.
+                   * Full width also gives each option a bigger target.
+                   */}
+                  <span className="block text-[0.9375rem] font-semibold text-fg">
+                    {t('app.speak')}
+                  </span>
+                  <div
+                    role="group"
+                    aria-label={t('app.speak')}
+                    className="mt-2 flex w-full gap-1 rounded-full bg-sunken p-1"
+                  >
+                    {[true, false].map((value) => {
+                      const selected = speakOn === value
+                      return (
+                        <button
+                          key={value ? 'on' : 'off'}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setSpeakEnabled(value)}
+                          className={`min-h-10 flex-1 rounded-full px-2 text-[0.875rem] font-bold transition-all duration-200 ${
+                            selected
+                              ? 'bg-brand-800 text-white shadow-pop'
+                              : 'text-fg-muted hover:text-fg'
+                          }`}
+                        >
+                          {value ? t('app.speakOn') : t('app.speakOff')}
+                        </button>
+                      )
+                    })}
                   </div>
                   <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-fg-faint">
                     {t('app.speakNote')}
@@ -547,34 +573,32 @@ function AppShell() {
                     reviewer wants to find, and the first thing an owner might
                     switch back. */}
                 <div className="rounded-2xl border border-line bg-card px-3.5 py-3 shadow-e1">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[0.9375rem] font-semibold text-fg">
-                      {t('app.language')}
-                    </span>
-                    <div
-                      role="group"
-                      aria-label={t('app.language')}
-                      className="flex shrink-0 gap-1 rounded-full bg-sunken p-1"
-                    >
-                      {LANGS.map((option) => {
-                        const selected = lang === option.id
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => setLang(option.id)}
-                            className={`min-h-10 rounded-full px-3.5 text-[0.875rem] font-bold transition-all duration-200 ${
-                              selected
-                                ? 'bg-brand-800 text-white shadow-pop'
-                                : 'text-fg-muted hover:text-fg'
-                            }`}
-                          >
-                            {option.native}
-                          </button>
-                        )
-                      })}
-                    </div>
+                  <span className="block text-[0.9375rem] font-semibold text-fg">
+                    {t('app.language')}
+                  </span>
+                  <div
+                    role="group"
+                    aria-label={t('app.language')}
+                    className="mt-2 flex w-full gap-1 rounded-full bg-sunken p-1"
+                  >
+                    {LANGS.map((option) => {
+                      const selected = lang === option.id
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setLang(option.id)}
+                          className={`min-h-10 flex-1 rounded-full px-2 text-[0.875rem] font-bold transition-all duration-200 ${
+                            selected
+                              ? 'bg-brand-800 text-white shadow-pop'
+                              : 'text-fg-muted hover:text-fg'
+                          }`}
+                        >
+                          {option.native}
+                        </button>
+                      )
+                    })}
                   </div>
                   <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-faint">
                     {t('app.languageHint')}
@@ -598,7 +622,7 @@ function AppShell() {
                   <div
                     role="group"
                     aria-label={t('app.textSize')}
-                    className="mt-2.5 flex gap-1.5 rounded-2xl bg-sunken p-1.5"
+                    className="mt-2.5 flex flex-wrap gap-1.5 rounded-2xl bg-sunken p-1.5"
                   >
                     {READING_OPTIONS.map((option) => {
                       const selected = reading === option.id
@@ -608,7 +632,7 @@ function AppShell() {
                           type="button"
                           aria-pressed={selected}
                           onClick={() => setReading(option.id)}
-                          className={`min-h-11 flex-1 rounded-xl text-[0.875rem] font-bold transition-all duration-200 ${
+                          className={`min-h-11 flex-1 basis-[4.5rem] rounded-xl px-1 text-[0.875rem] font-bold transition-all duration-200 ${
                             selected
                               ? 'bg-brand-800 text-white shadow-pop'
                               : 'text-fg-muted hover:text-fg'
@@ -647,8 +671,12 @@ function AppShell() {
                     {t('app.voids', { n: negosyo.ledger.voids.length })}.{' '}
                     {t('app.storedLocally')}
                   </p>
-                  <div className="mt-2.5 flex gap-2">
-                    <Button variant="ghost" className="flex-1" onClick={negosyo.resetToDemo}>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <Button
+                      variant="ghost"
+                      className="min-w-[8rem] flex-1"
+                      onClick={() => setPendingDemo(true)}
+                    >
                       {t('app.demoData')}
                     </Button>
                     {/* The confirm is the fix for a real defect: this button used
@@ -656,7 +684,7 @@ function AppShell() {
                         toast, no undo — while deleting one row asked twice. */}
                     <Button
                       variant="danger"
-                      className="flex-1"
+                      className="min-w-[8rem] flex-1"
                       onClick={() => setPendingErase(negosyo.ledger)}
                     >
                       {t('app.clearAll')}
@@ -699,6 +727,34 @@ function AppShell() {
           already seeded, so "opening" it is instant. */}
       {welcome ? <Welcome negosyo={negosyo} onDone={() => setWelcome(false)} /> : null}
       </div>
+
+      {pendingDemo ? (
+        <ConfirmDialog
+          title={t('app.demoTitle')}
+          body={t('app.demoBody', { n: negosyo.ledger.transactions.length })}
+          confirmLabel={t('app.demoConfirm')}
+          cancelLabel={t('app.clearAllCancel')}
+          onCancel={() => setPendingDemo(false)}
+          onConfirm={() => {
+            const previous = negosyo.ledger
+            negosyo.resetToDemo()
+            setPendingDemo(false)
+            setMenuOpen(false)
+            // Same undo as an erase: the demo is a whole-book replacement, and
+            // one tap on a settings row should never be the end of the shop's
+            // real records.
+            toast.show({
+              title: t('app.demoLoaded'),
+              tone: 'success',
+              undoLabel: t('backup.undo'),
+              onUndo: () => {
+                negosyo.restore(previous)
+                toast.show({ title: t('app.clearUndone'), tone: 'info' })
+              },
+            })
+          }}
+        />
+      ) : null}
 
       {pendingErase ? (
         <ConfirmDialog

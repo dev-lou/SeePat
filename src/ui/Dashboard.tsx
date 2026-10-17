@@ -240,26 +240,21 @@ export function Dashboard({
           card below overlaps that foot — one dark header, one white instrument
           panel, no margins interrupting either. */}
       <HeroShell className="p-5.5 shadow-[0_20px_50px_-15px_rgba(8,16,50,0.55)]">
-        <div className="flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[0.75rem] font-extrabold tracking-wider text-gold-300 uppercase backdrop-blur-md border border-white/15">
-            <span className="h-1.5 w-1.5 rounded-full bg-gold-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-            <span>{t('dash.heroLabel')}</span>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenScore}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[0.8125rem] font-bold text-white backdrop-blur-md border border-white/20 shadow-xs hover:bg-white/25 active:scale-95 transition-all"
-          >
-            <span className="text-gold-300">★</span>
-            {/* The scale rides with the figure: "71" alone asks "out of what?",
-                and the band beside it says what the number means. "/100" stays
-                dim so the mark itself keeps the weight. */}
-            <span className="num font-black">
-              {score.value}
-              <span className="font-semibold text-white/60">/100</span>
-            </span>
-            <span className="text-white/80 font-semibold">· {bandLabel(score.band, lang)}</span>
-          </button>
+        {/*
+         * The label, not a badge.
+         *
+         * This row used to hold two rounded pills — "REAL PROFIT TODAY" and a
+         * score chip — and the pair read as generated dashboard furniture: two
+         * lozenges of chrome above a number that needs no frame. The score also
+         * lived twice on this screen (here and in the card below) and a third
+         * time as its own destination in the dock, so the pill was the least
+         * useful of the three. What is left is the one thing the figure needs:
+         * what it is and what day it covers.
+         */}
+        <div className="flex items-center gap-2">
+          <span className="text-[0.7rem] font-extrabold tracking-[0.18em] text-gold-300/90 uppercase">
+            {t('dash.heroLabel')}
+          </span>
         </div>
 
         <div className="figure-xl mt-4 text-[clamp(2.1rem,11.5vw,3.5rem)] leading-none font-black text-white tabular-nums drop-shadow-sm">
@@ -285,15 +280,15 @@ export function Dashboard({
         </div>
 
         <div className="fit-grid-3 mt-5 grid grid-cols-3 gap-2.5 border-t border-white/15 pt-4">
-          <div className="rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
+          <div className="money-cell min-w-0 rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
             <div className="text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">{t('dash.revenue')}</div>
             <div className="figure-lg mt-1 text-[1.0625rem] font-extrabold text-white leading-none">{formatPHP(today.revenueCentavos)}</div>
           </div>
-          <div className="rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
+          <div className="money-cell min-w-0 rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
             <div className="text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">{t('dash.expenses')}</div>
             <div className="figure-lg mt-1 text-[1.0625rem] font-extrabold text-white leading-none">{formatPHP(today.expensesCentavos)}</div>
           </div>
-          <div className="rounded-2xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-md p-3 border border-gold-300/40 shadow-[0_4px_16px_-4px_rgba(255,213,74,0.3)]">
+          <div className="money-cell min-w-0 rounded-2xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-md p-3 border border-gold-300/40 shadow-[0_4px_16px_-4px_rgba(255,213,74,0.3)]">
             <div className="text-[0.7rem] font-black tracking-wider text-gold-300 uppercase">{t('dash.cash')}</div>
             {/*
               * The box, and — when there is any — what is sitting in an e-wallet.
@@ -400,7 +395,7 @@ export function Dashboard({
         <button
           type="button"
           onClick={onOpenScore}
-          className="surface surface-raise group relative flex w-full items-center gap-4.5 overflow-hidden rounded-2xl p-4.5 text-left border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+          className="surface surface-raise group relative flex w-full flex-col items-start gap-3 overflow-hidden rounded-2xl p-4.5 text-left border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-4.5"
         >
         <div className="relative shrink-0">
           <ProgressRing value={score.value} size={78} stroke={9} gradient="deep">
@@ -408,7 +403,7 @@ export function Dashboard({
           </ProgressRing>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-[0.6875rem] font-extrabold uppercase tracking-wider text-brand-700">{t('dash.scoreTitle')}</span>
             <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.625rem] font-black uppercase tracking-wider text-emerald-800 border border-emerald-500/20">
               {bandLabel(score.band, lang)}
@@ -421,7 +416,7 @@ export function Dashboard({
             {score.strengths[0] ?? t('dash.scoreEmpty')}
           </p>
         </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sunken/80 text-fg-muted group-hover:bg-brand-600 group-hover:text-white transition-all duration-200 shadow-xs">
+        <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sunken/80 text-fg-muted group-hover:bg-brand-600 group-hover:text-white transition-all duration-200 shadow-xs min-[380px]:flex">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 5l7 7-7 7" />
           </svg>

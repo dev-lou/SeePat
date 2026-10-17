@@ -133,6 +133,13 @@ const PATTERNS: Pattern[] = [
       // Added so the English example questions below actually resolve rather than
       // landing in `unknown` — a suggestion that does not work is worse than none.
       /who\s+owes/i,
+      // The question an owner actually types. "How much utang do I have?" was
+      // the most obvious phrasing in the product's own vocabulary and it fell
+      // through to the fallback list, which reads as the app not knowing what
+      // utang is. The total is the first line of this answer anyway.
+      /how much.*(utang|debt|receivable)/i,
+      /magkano.*utang/i,
+      /(total|lahat).*(utang|receivable)/i,
     ],
   },
   {

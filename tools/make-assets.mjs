@@ -166,6 +166,25 @@ const lockup = await sharp(lockupBuf)
   .toBuffer()
 write('seepat-logo.png', lockup)
 
+/**
+ * The owl alone, served as `/seepat-mark.png`, for the app's header.
+ *
+ * The header used to draw the whole lockup in a 56px box, which squeezed the
+ * wordmark and the tagline inside the artwork down to a grey smudge beside the
+ * page title. The owl is the part a thumb and an eye recognise; the name is
+ * already live text in the tab bar, the splash and the manifest, so nothing is
+ * lost by cropping to the mark here. Same master and same crop as the favicons
+ * and the marketing site's header, so the two can never drift.
+ *
+ * 128px for a 56px box is a 2.3x screen, and the palette quantisation halves
+ * the bytes on a file that sits in the offline precache.
+ */
+const mark = await sharp(markBuf)
+  .resize({ width: 128, withoutEnlargement: true })
+  .png({ ...png, palette: true, quality: 92, dither: 0.5 })
+  .toBuffer()
+write('seepat-mark.png', mark)
+
 /* -------------------------------------------------------------- social card -- */
 
 /**

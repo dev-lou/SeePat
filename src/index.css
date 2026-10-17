@@ -1341,6 +1341,27 @@ body {
 }
 
 /*
+ * The same two rules for the reading sizes, because a bigger root font makes
+ * three cells need the room of four.
+ *
+ * At 125% on a 390px phone each cell is ~112px wide, which is not enough for
+ * "EXPENSES" and "₱40,544.95" side by side: the label broke mid-word and the
+ * cash figure ran out of its card. A viewport media query cannot see that — the
+ * phone is the same width — so the reading size, which the app already knows
+ * (src/reading.ts sets `data-read` on <html>), is what the layout keys off. The
+ * last cell spans the row for the same reason as it does on a small phone: the
+ * third figure is the one that summarises the other two.
+ */
+html[data-read='big'] .fit-grid-3,
+html[data-read='bigger'] .fit-grid-3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+html[data-read='big'] .fit-grid-3 > :last-child,
+html[data-read='bigger'] .fit-grid-3 > :last-child {
+  grid-column: 1 / -1;
+}
+
+/*
  * A money cell sizes its own figure.
  *
  * This is the piece that makes the whole responsive story hold. A peso amount

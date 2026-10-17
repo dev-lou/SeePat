@@ -262,6 +262,15 @@ export const UI = {
     fil: 'Naka-save sa device, hindi kailangan ng internet.',
   },
   'app.demoData': { en: 'Demo data', fil: 'Demo data' },
+  // "Demo data" replaces the whole book, exactly as "Erase everything" does, so
+  // it gets the same gate: the count in the body is the thing being replaced.
+  'app.demoTitle': { en: 'Load the demo data?', fil: 'Gamitin ang demo data?' },
+  'app.demoBody': {
+    en: 'This replaces the {n} records on this phone with the sample shop. Anything you recorded yourself is replaced too.',
+    fil: 'Papalitan nito ang {n} rekord sa phone na ito ng sample na tindahan. Mapapalitan din ang mga naitala mo mismo.',
+  },
+  'app.demoConfirm': { en: 'Yes, load the demo', fil: 'Oo, gamitin ang demo' },
+  'app.demoLoaded': { en: 'Demo data loaded.', fil: 'Naka-load ang demo data.' },
   'app.clearAll': { en: 'Erase everything', fil: 'Burahin lahat' },
   // The erase gate. Both strings name the figure that is about to be lost: an
   // owner deciding whether to tap this needs to know it is 236 records, not
@@ -620,7 +629,7 @@ export const UI = {
   'record.field.notNeeded': { en: 'not needed', fil: 'Hindi kailangan' },
   'record.select': { en: 'Choose…', fil: 'Pumili…' },
   'record.walkIn': { en: 'Walk-in', fil: 'Walk-in' },
-  'record.recentTitle': { en: 'Recently recorded', fil: 'Huling Naitala' },
+  'record.recentTitle': { en: 'Your records', fil: 'Mga naitala mo' },
   'record.kind.sale': { en: 'Sale', fil: 'Benta' },
   'record.kind.credit': { en: 'Utang', fil: 'Utang' },
   'record.kind.expense': { en: 'Expense', fil: 'Gastos' },
@@ -1046,7 +1055,6 @@ export const UI = {
     en: 'Cancel (at the end of the month)',
     fil: 'Kansel (sa katapusan ng buwan)',
   },
-  'plan.simulatedLead': { en: 'SIMULATED.', fil: 'SIMULADO.' },
   'plan.simulatedBody': {
     en: 'This is a demo, so no real payment happens and no card or wallet number leaves your phone. The plan is saved on this device only.',
     fil: 'Demo lamang ito, kaya walang totoong bayad na nangyayari at walang card o wallet number na lumalabas sa phone mo. Naka-save ang plano sa device na ito lang.',

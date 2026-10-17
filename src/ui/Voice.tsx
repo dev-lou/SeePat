@@ -501,7 +501,10 @@ export function VoiceScreen({
   return (
     <div className="space-y-4">
       <Card>
-        <SectionTitle hint={t('voice.engineLabel')}>{t('voice.title')}</SectionTitle>
+        {/* No hint here. "Listening with" was a label without a value at the
+            right edge of the card — clipped on a narrow phone, and the chips
+            directly below already answer it. */}
+        <SectionTitle>{t('voice.title')}</SectionTitle>
         <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 shadow-xs">
           {engines.map((e) => (
             <Chip key={e.id} active={engineId === e.id} onClick={() => setEngineId(e.id)}>

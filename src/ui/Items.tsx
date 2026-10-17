@@ -138,6 +138,10 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
           className={inputClass}
           type="text"
           autoFocus
+          /* Product names are Filipino, brand names and abbreviations. The
+             browser's dictionary underlines all three in red, so it is off:
+             a squiggle on "Pandesal" teaches the owner to distrust the field. */
+          spellCheck={false}
           value={name}
           placeholder={t('items.namePlaceholder')}
           onChange={(e) => setName(e.target.value)}
