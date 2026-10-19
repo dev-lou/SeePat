@@ -9,6 +9,7 @@ import { PlanScreen } from './Plan.tsx'
 import { OfflineScreen } from './Offline.tsx'
 import { ItemsScreen } from './Items.tsx'
 import { UtangScreen } from './Utang.tsx'
+import { ReceiptScreen } from './Receipt.tsx'
 import { Button, Chip, ConfirmDialog, SimulatedNote } from './components.tsx'
 import { ToastProvider, useToast } from './Toast.tsx'
 import { useNegosyo } from '../store.ts'
@@ -26,7 +27,7 @@ import { useReadingSize, useSetReadingSize } from '../reading.ts'
 import type { ReadingSize } from '../reading.ts'
 import { setSpeakEnabled, useSpeakEnabled } from './useSpeech.ts'
 
-type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline' | 'items' | 'utang'
+type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline' | 'items' | 'utang' | 'resibo'
 
 /**
  * The three reading sizes, in words rather than an A/A+/A++ glyph strip: the
@@ -64,6 +65,7 @@ const PAGE_LABEL: Record<Tab, UIStr> = {
   offline: 'app.offlineVoice',
   items: 'app.myItems',
   utang: 'app.utangList',
+  resibo: 'tab.receipt',
 }
 
 /**
@@ -425,6 +427,7 @@ function AppShell() {
           {tab === 'utang' ? (
             <UtangScreen negosyo={negosyo} onOpenLedger={() => setTab('tala')} />
           ) : null}
+          {tab === 'resibo' ? <ReceiptScreen negosyo={negosyo} /> : null}
         </div>
       </main>
 
@@ -482,6 +485,14 @@ function AppShell() {
                 title={t('app.utangList')}
                 sub={`${t('utang.total')} · ${formatPHP(negosyo.derived.receivablesCentavos)}`}
                 onOpen={goToUtang}
+              />
+              <SpeedRow
+                index={3}
+                icon="M4 8h3l2-2h6l2 2h3v11H4zM12 16a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"
+                title={t('tab.receipt')}
+                sub={t('receipt.captureBody')}
+                onOpen={() => goToTab('resibo')}
+                active={tab === 'resibo'}
               />
             </div>
           ) : null}

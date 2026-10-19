@@ -154,34 +154,57 @@ export function VoiceScreen({
   // it is — no auto-scroll — so the swap itself is what the owner sees.
   const typedMode = engineId === 'typed'
 
-  function buildDraft(text: string) {
+  /*
+   * A take is never the whole list. Both engines end a take early — the
+   * browser recognizer stops at the first pause (`continuous = false` in
+   * asr.ts), the offline mic stops 1.8s after speech ends (audio.ts) — so a
+   * long list arrives as several short takes. Appending keeps every take's
+   * items: tap the mic again and the new lines join the draft. Replacing is
+   * only for typed text, where the box already holds the whole sentence.
+   */
+  function buildDraft(text: string, append = false) {
     const draft = parseSpoken(text, ledger, lang)
     setDraftKind(draft.kind)
-    setDraftCustomer(draft.customerId)
-    setDraftUnresolved(draft.unresolved ?? [])
+    // A take that names nobody must not evict the customer an earlier take
+    // named: "…si Nena" followed by "…at tatlong coke" is still Nena's utang.
+    if (draft.customerId !== undefined || !append) setDraftCustomer(draft.customerId)
     // A spoken expense is an amount, not a basket: "nagbayad ako ng kuryente 500"
     // has no line to edit, so its figure is kept separately from the line total.
-    setDraftAmount(draft.amountCentavos ? String(draft.amountCentavos / 100) : '')
-    // Every new draft opens on its first page: the owner is looking at a fresh
-    // sentence, and leaving the pager on page 3 would hide its first items.
-    setPage(0)
-    setEdited(
-      draft.lines.map((line, index) => {
-        const sku = ledger.skus.find((s) => s.id === line.skuId)
-        return {
-          key: `${index}-${line.skuId}`,
-          skuId: line.skuId,
-          skuName: line.skuName,
-          qtyDisplay: String(fromBaseQty(sku, line.qty)),
-          // Back into the unit the owner prices in: a line stores the price of
-          // one base unit, and asking about rice in grams is asking the wrong
-          // question (see pricePerDisplayUnit).
-          priceDisplay: String(pricePerDisplayUnit(sku?.baseUnit ?? 'pc', line.unitPriceCentavos) / 100),
-        }
-      }),
-    )
+    if (draft.amountCentavos || !append) {
+      setDraftAmount(draft.amountCentavos ? String(draft.amountCentavos / 100) : '')
+    }
+    const fresh = draft.lines.map((line, index) => {
+      const sku = ledger.skus.find((s) => s.id === line.skuId)
+      return {
+        // Unique per take, not per position: two takes both starting at
+        // index 0 with the same item would otherwise share a React key and
+        // the second line would never render.
+        key: `${Date.now()}-${index}-${line.skuId}`,
+        skuId: line.skuId,
+        skuName: line.skuName,
+        qtyDisplay: String(fromBaseQty(sku, line.qty)),
+        // Back into the unit the owner prices in: a line stores the price of
+        // one base unit, and asking about rice in grams is asking the wrong
+        // question (see pricePerDisplayUnit).
+        priceDisplay: String(pricePerDisplayUnit(sku?.baseUnit ?? 'pc', line.unitPriceCentavos) / 100),
+      }
+    })
+    if (append && edited && edited.length > 0 && fresh.length > 0) {
+      const merged = [...edited, ...fresh]
+      setEdited(merged)
+      // Land on the last page, where the just-added lines are: opening on
+      // page 1 would hide the very items the owner just said.
+      setPage(Math.max(0, Math.ceil(merged.length / DRAFT_PAGE) - 1))
+      setDraftUnresolved((current) => [...current, ...(draft.unresolved ?? [])])
+    } else {
+      // Every new draft opens on its first page: the owner is looking at a fresh
+      // sentence, and leaving the pager on page 3 would hide its first items.
+      setPage(0)
+      setEdited(fresh)
+      setDraftUnresolved(draft.unresolved ?? [])
+    }
     setPosted('')
-    setError(draft.lines.length === 0 ? t('voice.error.noItems') : '')
+    setError(draft.lines.length === 0 && (!append || (edited?.length ?? 0) === 0) ? t('voice.error.noItems') : '')
   }
 
   function startListening() {
@@ -202,10 +225,12 @@ export function VoiceScreen({
       (result) => {
         setTranscript(result.transcript)
         if (result.final) {
-          sessionRef.current.final = result.transcript
+          // Stashed, not shown: the words join the box once, in onEnd below.
+          // Writing them here too would put every take in twice.
+          const session = sessionRef.current
+          session.final = session.final ? `${session.final} ${result.transcript}` : result.transcript
           setListening(false)
           setStatus(null)
-          setDraftText(result.transcript)
         } else {
           sessionRef.current.partial = result.transcript
         }
@@ -226,7 +251,9 @@ export function VoiceScreen({
         setStatus(null)
         const session = sessionRef.current
         if (session.final) {
-          setDraftText(session.final)
+          // The take's words join whatever is already in the box: a second
+          // take continues the list instead of erasing the first take.
+          setDraftText((current) => (current ? `${current} ${session.final}` : session.final))
           /*
            * Parse as soon as a complete take lands, so the flow is speak → check
            * → confirm instead of speak → tap → tap. Nothing is posted by doing
@@ -238,7 +265,7 @@ export function VoiceScreen({
            * Half a sentence parses to wrong quantities, and quantities are the
            * part that must never be inferred.
            */
-          buildDraft(session.final)
+          buildDraft(session.final, true)
           return
         }
         /*
@@ -252,7 +279,7 @@ export function VoiceScreen({
          * quantities on its own.
          */
         if (session.partial.trim().length > 0 && !session.failed) {
-          setDraftText(session.partial)
+          setDraftText((current) => (current ? `${current} ${session.partial}` : session.partial))
           return
         }
         // Nothing usable came back. If the engine already explained why, that
@@ -268,13 +295,19 @@ export function VoiceScreen({
     engineRef.current = null
     setListening(false)
     setStatus(null)
-    if (transcript) setDraftText(transcript)
+    // Stopped mid-sentence, so these words are unfinished — they join the box
+    // for hand-finishing or for the next take to continue from.
+    if (transcript) setDraftText((current) => (current ? `${current} ${transcript}` : transcript))
   }
 
   function cancelDraft() {
     setEdited(null)
     setPage(0)
     setDraftUnresolved([])
+    // The box is the draft's memory: leaving last time's words in it would
+    // merge them into the next take's lines.
+    setDraftText('')
+    setDraftAmount('')
   }
 
   function confirm() {
@@ -321,6 +354,12 @@ export function VoiceScreen({
     }
 
     if (!edited || edited.length === 0) return
+    // Human-in-the-loop guard: a manually added line starts empty, and an
+    // empty qty/price must block — never post a zero-qty or NaN line.
+    const bad = edited.some(
+      (l) => !l.skuId || !(Number(l.qtyDisplay) > 0) || !(Number(l.priceDisplay) > 0),
+    )
+    if (bad) return
     const lines = edited.map((l) => {
       const sku = ledger.skus.find((s) => s.id === l.skuId)
       return {
@@ -410,6 +449,10 @@ export function VoiceScreen({
     }
     setEdited(null)
     setTranscript('')
+    // Same as cancelling: the next take must start from silence, not from
+    // the words that were just recorded.
+    setDraftText('')
+    setDraftAmount('')
   }
 
   // Sipat's face is wired to the real pipeline, not to a timer: it looks like it
@@ -480,6 +523,9 @@ export function VoiceScreen({
   const hasDraft = edited !== null
   // An expense draft has an amount and no lines, so the sheet shows one field.
   const expenseMode = draftKind === 'expense'
+  const voiceInvalid = (edited ?? []).some(
+    (l) => !l.skuId || !(Number(l.qtyDisplay) > 0) || !(Number(l.priceDisplay) > 0),
+  )
 
   /*
    * The type-it surface, rendered above or below the mic hero depending on the
@@ -720,6 +766,11 @@ export function VoiceScreen({
           <p className="mt-3 text-[0.8125rem] leading-relaxed text-fg-subtle">
             {t('voice.confirmIntro')}
           </p>
+          {(edited?.length ?? 0) > 0 ? (
+            <p className="mt-2 rounded-xl border border-brand-500/25 bg-brand-50/70 px-3.5 py-2.5 text-[0.8125rem] leading-relaxed text-brand-800">
+              {t('voice.appendHint')}
+            </p>
+          ) : null}
 
           {/* A word the parser could not place is the only sign that part of the
               sentence was lost — so it is shown before the numbers, not after. */}
@@ -757,8 +808,18 @@ export function VoiceScreen({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0 flex-1 text-base leading-snug font-medium text-fg">
-                      {line.skuName}
+                      {line.skuName || t('receipt.newItem')}
                     </span>
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 items-center px-2 text-[0.8125rem] font-bold text-red-700"
+                      onClick={() =>
+                        setEdited((current) => (current ?? []).filter((l) => l.key !== line.key))
+                      }
+                      aria-label={t('voice.removeLine')}
+                    >
+                      ×
+                    </button>
                     <CustomSelect
                       value={line.skuId}
                       size="sm"
@@ -858,6 +919,23 @@ export function VoiceScreen({
                 </Button>
               </div>
             ) : null}
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => {
+                const key = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`
+                setEdited((current) => [
+                  ...(current ?? []),
+                  { key, skuId: '', skuName: '', qtyDisplay: '1', priceDisplay: '' },
+                ])
+                setPage(Math.max(0, Math.ceil(((edited?.length ?? 0) + 1) / DRAFT_PAGE) - 1))
+              }}
+            >
+              {t('voice.addLine')}
+            </Button>
+            {voiceInvalid ? (
+              <p className="text-[0.875rem] font-semibold text-red-700">{t('voice.needAll')}</p>
+            ) : null}
           </div>
           )}
 
@@ -909,7 +987,7 @@ export function VoiceScreen({
             </Button>
             <Button
               className="min-h-12 flex-1"
-              disabled={!expenseMode && lineCount === 0}
+              disabled={!expenseMode && (lineCount === 0 || voiceInvalid)}
               onClick={confirm}
             >
               {t('voice.confirmAndRecord')}

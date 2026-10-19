@@ -298,6 +298,26 @@ describe('constrained voice parsing', () => {
     expect(draft.lines.find((l) => l.skuId === 'skyflakes')?.qty).toBe(2)
   })
 
+  it('drafts every item in a long list, not just the first two', () => {
+    // Regression: an owner listing six items got a two-line draft. The parser
+    // was proven innocent — it drafts all six — so a short draft means the
+    // take was cut short upstream, and the screen now lets takes accumulate.
+    const draft = parseSpoken(
+      'nakabenta ako ng dalawang coke tatlong skyflakes apat na sardinas limang itlog anim na tinapay pitong kopiko',
+      ledger,
+      'fil',
+    )
+    expect(draft.lines.map((l) => l.skuId)).toEqual([
+      'coke',
+      'skyflakes',
+      'sardinas',
+      'itlog',
+      'tinapay',
+      'kopiko',
+    ])
+    expect(draft.unresolved).toEqual([])
+  })
+
   it('does not list an item it understood as a word it did not understand', () => {
     // The confirmation sheet used to read "Not understood: bigas" underneath a
     // correct Bigas line, which is how an owner learns to ignore the one warning

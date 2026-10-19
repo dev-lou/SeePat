@@ -53,7 +53,7 @@ interface TxnBase {
    * How the record was captured. Stored as a key rather than the word "Boses"
    * so a ledger written in one language still reads correctly in the other.
    */
-  source?: 'manual' | 'voice'
+  source?: 'manual' | 'voice' | 'camera'
 }
 
 /**
