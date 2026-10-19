@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describe as rowTitle } from './Record.tsx'
+import { describe as rowTitle, oversoldLines } from './Record.tsx'
 import { DEMO_CUSTOMERS, DEMO_SKUS } from '../engine/demo.ts'
 import type { Ledger, SaleLine, Transaction } from '../engine/index.ts'
 
@@ -140,6 +140,56 @@ describe('the row is a search key as well as a title', () => {
     // goods is what makes "coke" work in the search box.
     const txn = sale([{ skuId: coke.id, qty: 5, unitPriceCentavos: 2500 }])
     expect(rowTitle(txn, ledger, 'en').toLowerCase()).toContain('coke')
+  })
+})
+
+describe('the honest-sale gate', () => {
+  // The sale that used to sail through and poison the books: more Sardinas
+  // out than ever came in, stock driven negative, cost silently estimated.
+  // These pin the check that now stops it before anything is committed.
+  const inventory = (qty: Record<string, number>) =>
+    Object.fromEntries(Object.entries(qty).map(([id, q]) => [id, { qty: q }]))
+
+  it('catches a sale bigger than the stock on hand', () => {
+    const caught = oversoldLines(ledger, inventory({ coke: 5 }), [{ skuId: 'coke', qty: 10 }])
+    expect(caught).toHaveLength(1)
+    expect(caught[0]).toMatchObject({ skuId: 'coke', name: 'Coke Mismo', wanted: 10, onHand: 5 })
+  })
+
+  it('lets an exact-quantity sale through — an empty shelf still balances', () => {
+    expect(oversoldLines(ledger, inventory({ coke: 5 }), [{ skuId: 'coke', qty: 5 }])).toEqual([])
+  })
+
+  it('lets a covered sale through', () => {
+    expect(oversoldLines(ledger, inventory({ coke: 50 }), [{ skuId: 'coke', qty: 3 }])).toEqual([])
+  })
+
+  it('treats unknown stock as zero — a sale with no purchase behind it is caught', () => {
+    const caught = oversoldLines(ledger, inventory({}), [{ skuId: 'coke', qty: 1 }])
+    expect(caught).toHaveLength(1)
+    expect(caught[0].onHand).toBe(0)
+  })
+
+  it('talks kilos, not grams, for weighed goods', () => {
+    // 2 kg wanted against 1.5 kg on hand, both stored as grams.
+    const caught = oversoldLines(ledger, inventory({ bigas: 1500 }), [{ skuId: 'bigas', qty: 2000 }])
+    expect(caught).toHaveLength(1)
+    expect(caught[0]).toMatchObject({ name: 'Bigas', wanted: 2, onHand: 1.5 })
+  })
+
+  it('names a deleted item by its id instead of crashing', () => {
+    const bare = { ...ledger, skus: [] }
+    const caught = oversoldLines(bare, inventory({}), [{ skuId: 'gone', qty: 1 }])
+    expect(caught).toHaveLength(1)
+    expect(caught[0].name).toBe('gone')
+  })
+
+  it('reports every oversold line, so a three-item sale names all three gaps', () => {
+    const caught = oversoldLines(ledger, inventory({ coke: 1 }), [
+      { skuId: 'coke', qty: 5 },
+      { skuId: 'lucky', qty: 2 },
+    ])
+    expect(caught.map((c) => c.skuId).sort()).toEqual(['coke', 'lucky'])
   })
 })
 

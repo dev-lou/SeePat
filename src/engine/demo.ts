@@ -1,5 +1,6 @@
 import { pesos } from './money.ts'
 import { addDays, startOfLocalDay } from './period.ts'
+import seedData from './seed-data.json'
 import type {
   Customer,
   Ledger,
@@ -16,39 +17,18 @@ import type {
  * product useful before there is history.
  */
 
-export const DEMO_SKUS: Sku[] = [
-  { id: 'coke', name: 'Coke Mismo', unit: 'pc', baseUnit: 'pc', aliases: ['coke', 'coca cola', 'kola'] },
-  { id: 'lucky', name: 'Lucky Me Pancit Canton', unit: 'pc', baseUnit: 'pc', aliases: ['lucky me', 'pancit canton', 'lucky'] },
-  { id: 'sardinas', name: 'Sardinas 555', unit: 'pc', baseUnit: 'pc', aliases: ['sardinas', '555'] },
-  { id: 'bigas', name: 'Bigas', unit: 'kg', baseUnit: 'g', aliases: ['bigas', 'rice'] },
-  { id: 'itlog', name: 'Itlog', unit: 'pc', baseUnit: 'pc', aliases: ['itlog', 'egg'] },
-  { id: 'mantika', name: 'Mantika', unit: 'pc', baseUnit: 'pc', aliases: ['mantika', 'oil'] },
-  { id: 'tinapay', name: 'Tinapay', unit: 'pc', baseUnit: 'pc', aliases: ['tinapay', 'bread'] },
-  { id: 'shampoo', name: 'Shampoo Sachet', unit: 'pc', baseUnit: 'pc', aliases: ['shampoo', 'sachet'] },
-  { id: 'skyflakes', name: 'Skyflakes', unit: 'pc', baseUnit: 'pc', aliases: ['skyflakes', 'sky flakes'] },
-  { id: 'kopiko', name: 'Kopiko', unit: 'pc', baseUnit: 'pc', aliases: ['kopiko', 'kape', 'coffee'] },
-]
-
-export const DEMO_CUSTOMERS: Customer[] = [
-  { id: 'aling_nena', name: 'Aling Nena', aliases: ['nena', 'aling nena'] },
-  { id: 'mang_tonyo', name: 'Mang Tonyo', aliases: ['tonyo', 'mang tonyo'] },
-  { id: 'kuya_ben', name: 'Kuya Ben', aliases: ['ben', 'kuya ben'] },
-  { id: 'ate_rosa', name: 'Ate Rosa', aliases: ['rosa', 'ate rosa'] },
-]
+/**
+ * The sample catalog lives in `seed-data.json`, not in code: it is rows for
+ * the local store, the same shape as rows the owner adds themselves. The
+ * engine never touches it — only this sample-history builder reads it.
+ *
+ * Re-exported (not re-declared) so existing importers keep working.
+ */
+export const DEMO_SKUS: Sku[] = seedData.skus as Sku[]
+export const DEMO_CUSTOMERS: Customer[] = seedData.customers as Customer[]
 
 /** Unit costs and prices in pesos, as a sari-sari store would actually price them. */
-const GOODS: Record<string, { cost: number; price: number; daily: number }> = {
-  coke: { cost: 18, price: 25, daily: 9 },
-  lucky: { cost: 11, price: 17, daily: 6 },
-  sardinas: { cost: 21, price: 30, daily: 3 },
-  bigas: { cost: 0.052, price: 0.072, daily: 8000 },
-  itlog: { cost: 7.5, price: 10, daily: 12 },
-  mantika: { cost: 32, price: 45, daily: 2 },
-  tinapay: { cost: 34, price: 48, daily: 4 },
-  shampoo: { cost: 5.5, price: 9, daily: 5 },
-  skyflakes: { cost: 7, price: 11, daily: 3 },
-  kopiko: { cost: 6, price: 10, daily: 4 },
-}
+const GOODS: Record<string, { cost: number; price: number; daily: number }> = seedData.goods
 
 const DAYS = 21
 
@@ -233,6 +213,4 @@ export function seedLedger(now: Date): Ledger {
   }
 }
 
-export function emptyLedger(): Ledger {
-  return { skus: DEMO_SKUS, customers: DEMO_CUSTOMERS, transactions: [], voids: [] }
-}
+

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { AreaChart } from './charts.tsx'
 import {
   Bar,
+  Button,
   Card,
-  ChecklistCard,
   CollapsibleSection,
   Delta,
   Donut,
@@ -13,22 +14,17 @@ import {
   ProgressRing,
   SectionTitle,
   SegmentedControl,
+  Sheet,
   useCountUp,
 } from './components.tsx'
 import { PatSays } from './PatSays.tsx'
 import { bandLabel, formatPHP, formatPercent } from '../engine/index.ts'
 import { computeRestock } from '../engine/restock.ts'
 import { topSellers } from '../engine/movers.ts'
-import { buildWeeklyReport } from '../report.ts'
+import { buildWeeklyReport, periodReport, reportRange } from '../report.ts'
+import type { ReportKind } from '../report.ts'
 import type { Negosyo } from '../store.ts'
-import { monthShort, pick, useLang, useT, weekdayLong, weekdayShort } from '../i18n/index.ts'
-import {
-  checklistVisible,
-  dismissChecklist,
-  getChecklist,
-  markChecklistStep,
-} from '../onboarding.ts'
-import type { ChecklistStep } from '../onboarding.ts'
+import { dayMonth, monthShort, pick, useLang, useT, weekdayLong, weekdayShort } from '../i18n/index.ts'
 
 // The capital breakdown in the product's own palette — brand blue, gold, flag
 // red — with two data hues after that, because five categories cannot be told
@@ -50,19 +46,106 @@ function HeadingRule() {
   return <div className="-mt-2 mb-3.5 border-t border-line" aria-hidden />
 }
 
-export type DashTab = 'tala' | 'boses' | 'tanong' | 'score'
+/*
+ * Shortcut icons: hand-drawn-feel stroke icons (Lucide-style, 24-grid) drawn
+ * inline — no emoji, no image fetch, nothing to fail offline. Each shortcut
+ * owns a tint from the product palette so the row reads as five distinct
+ * destinations, not five grey buttons.
+ */
+function ShortcutIcon({ d, tint }: { d: ReactNode; tint: string }) {
+  return (
+    <span aria-hidden className={`flex h-9 w-9 items-center justify-center rounded-xl ${tint}`}>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {d}
+      </svg>
+    </span>
+  )
+}
+
+const ICON_PRINTER = (
+  <>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+    <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+    <rect x="6" y="14" width="12" height="8" rx="1" />
+  </>
+)
+
+const ICON_CLIPBOARD = (
+  <>
+    <rect x="8" y="2" width="8" height="4" rx="1" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="M12 11h4" />
+    <path d="M12 16h4" />
+    <path d="M8 11h.01" />
+    <path d="M8 16h.01" />
+  </>
+)
+
+const ICON_PACKAGE = (
+  <>
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+    <path d="m3.3 7 8.7 5 8.7-5" />
+    <path d="M12 22V12" />
+  </>
+)
+
+const ICON_RECEIPT = (
+  <>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+    <path d="M14 8H8" />
+    <path d="M16 12H8" />
+    <path d="M13 16H8" />
+  </>
+)
+
+const ICON_DATABASE = (
+  <>
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M3 5v14a9 3 0 0 0 18 0V5" />
+    <path d="M3 12a9 3 0 0 0 18 0" />
+  </>
+)
+
+const ICON_CHAT = (
+  <>
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <path d="M12 17h.01" />
+  </>
+)
 
 export function Dashboard({
   negosyo,
   onOpenScore,
   onOpenUtang,
-  onGo,
+  onOpenSupplier,
+  onOpenOffline,
+  onOpenItems,
+  onOpenReceipt,
+  onOpenAsk,
 }: {
   negosyo: Negosyo
   onOpenScore: () => void
   /** The utang book — offered wherever the screen names money owed. */
   onOpenUtang?: () => void
-  onGo: (tab: DashTab) => void
+  /** The supplier debts — where the "owed to suppliers" total can be seen. */
+  onOpenSupplier?: () => void
+  /** Backup + offline voice live on the Offline screen — one tap away. */
+  onOpenOffline?: () => void
+  /** My items — one tap from the Money page instead of via More. */
+  onOpenItems?: () => void
+  /** Receipt scan — one tap from the Money page instead of via More. */
+  onOpenReceipt?: () => void
+  /** Ask about the numbers — one tap from the Money page instead of via More. */
+  onOpenAsk?: () => void
 }) {
   const { today, week, twin, derived, composition, provenance, score, ledger } = negosyo
   const lang = useLang()
@@ -84,6 +167,24 @@ export function Dashboard({
       : t('dash.delta', { sign: deltaPct >= 0 ? '+' : '', pct: deltaPct.toFixed(0) })
 
   const heroValue = useCountUp(today.netProfitCentavos)
+
+  // How the hero number is built, as rows that add up to it: sales minus the
+  // cost of the goods sold minus expenses (minus spoilage & losses when there
+  // is any). Without these the owner sees Sales next to a much smaller profit
+  // with no visible subtraction in between — which reads as a bug in the app
+  // rather than the price the goods themselves were bought for.
+  const mathRows: { label: string; amountCentavos: number; sign: '+' | '−' }[] = [
+    { label: t('dash.mathSales'), amountCentavos: today.revenueCentavos, sign: '+' },
+    { label: t('dash.mathCogs'), amountCentavos: today.cogsCentavos, sign: '−' },
+    { label: t('dash.mathExpenses'), amountCentavos: today.expensesCentavos, sign: '−' },
+  ]
+  if (today.shrinkageCentavos > 0) {
+    mathRows.push({ label: t('dash.mathShrinkage'), amountCentavos: today.shrinkageCentavos, sign: '−' })
+  }
+  // A day with nothing in it needs no explanation; the strip would be four
+  // rows of zeroes under a ₱0.00 hero.
+  const mathVisible =
+    today.revenueCentavos > 0 || today.expensesCentavos > 0 || today.shrinkageCentavos > 0
 
   // Date words come from the language tables, not the device locale: "Tuesday,
   // Sep 15" sitting inside an all-Tagalog screen is the seam that makes a
@@ -137,36 +238,6 @@ export function Dashboard({
   // Urgent, so it sits outside the panels and above the fold — but closable,
   // because a banner nobody can dismiss is a banner nobody reads twice.
   const [bannerDismissed, setBannerDismissed] = useState(false)
-  const [checklist, setChecklist] = useState(getChecklist)
-
-  // The first sale completes the checklist by itself: no tap required, the
-  // ledger is the proof the step happened.
-  useEffect(() => {
-    setChecklist((prev) => {
-      if (ledger.transactions.length === 0 || prev.done.includes('sale')) return prev
-      return markChecklistStep(prev, 'sale')
-    })
-  }, [ledger.transactions.length])
-
-  function handleChecklistStep(id: string) {
-    if (id === 'sale') {
-      onGo('tala')
-      return
-    }
-    setChecklist((prev) => markChecklistStep(prev, id as ChecklistStep))
-    if (id === 'voice') onGo('boses')
-    else if (id === 'score') onOpenScore()
-  }
-
-  const checklistSteps = [
-    {
-      id: 'sale',
-      label: t('dash.checklist.sale'),
-      done: ledger.transactions.length > 0 || checklist.done.includes('sale'),
-    },
-    { id: 'voice', label: t('dash.checklist.voice'), done: checklist.done.includes('voice') },
-    { id: 'score', label: t('dash.checklist.score'), done: checklist.done.includes('score') },
-  ]
 
   // Restock advice from data already on the phone: days of stock left per SKU.
   // Zero serving cost: it reads the owner's own stock and her own week, so it is
@@ -180,19 +251,71 @@ export function Dashboard({
   // the two together so the screen can never contradict the answer.
   const bestSellers = topSellers(ledger, week.salesBySku, 5)
 
+  // The report covers any range — day, week, month, year, current or past —
+  // and the same figures feed the on-screen preview and the printed page, so
+  // what the owner checks is what the paper carries.
+  const [repKind, setRepKind] = useState<ReportKind>('week')
+  const [repOffset, setRepOffset] = useState(0)
+  const repRange = reportRange(repKind, repOffset, negosyo.now)
+  const repFigures = periodReport(ledger, repRange.start, repRange.end)
+  const thisYear = negosyo.now.getFullYear()
+  const repYearSuffix = repRange.end.getFullYear() !== thisYear ? ` ${repRange.end.getFullYear()}` : ''
+  const rangeLabel =
+    repKind === 'day'
+      ? `${weekdayLong(repRange.end, lang)}, ${monthShort(repRange.end, lang)} ${repRange.end.getDate()}${repYearSuffix}`
+      : repKind === 'week'
+        ? `${dayMonth(repRange.start, lang)}–${dayMonth(repRange.end, lang)}${repYearSuffix}`
+        : repKind === 'month'
+          ? `${monthShort(repRange.start, lang)} ${repRange.start.getFullYear()}`
+          : `${repRange.start.getFullYear()}`
+  const repTitleKey =
+    repKind === 'day'
+      ? 'report.titleDay'
+      : repKind === 'week'
+        ? 'report.titleWeek'
+        : repKind === 'month'
+          ? 'report.titleMonth'
+          : 'report.titleYear'
+  const reportInput = {
+    weekLabel: rangeLabel,
+    revenueCentavos: repFigures.revenueCentavos,
+    cogsCentavos: repFigures.cogsCentavos,
+    expensesCentavos: repFigures.expensesCentavos,
+    shrinkageCentavos: repFigures.shrinkageCentavos,
+    netProfitCentavos: repFigures.netProfitCentavos,
+    cashCentavos: repFigures.cashCentavos,
+    walletCentavos: repFigures.walletCentavos,
+    receivablesCentavos: repFigures.receivablesCentavos,
+    recordsCount: repFigures.recordsCount,
+  }
+  const previewRows = [
+    { label: t('report.rowSales'), value: formatPHP(reportInput.revenueCentavos) },
+    { label: t('report.rowCogs'), value: formatPHP(reportInput.cogsCentavos) },
+    { label: t('report.rowExpenses'), value: formatPHP(reportInput.expensesCentavos) },
+    ...(reportInput.shrinkageCentavos > 0
+      ? [{ label: t('report.rowShrinkage'), value: formatPHP(reportInput.shrinkageCentavos) }]
+      : []),
+    { label: t('report.rowProfit'), value: formatPHP(reportInput.netProfitCentavos) },
+    // The drawer line is the dashboard card's own number, repeated here so
+    // the sheet and the card can never disagree the way "cash on hand"
+    // once did (card: drawer only, sheet: everything including e-wallets).
+    {
+      label: t('report.rowDrawer'),
+      value: formatPHP(reportInput.cashCentavos - reportInput.walletCentavos),
+    },
+    ...(reportInput.walletCentavos !== 0
+      ? [{ label: t('report.rowWallet'), value: formatPHP(reportInput.walletCentavos) }]
+      : []),
+    { label: t('report.rowOwed'), value: formatPHP(reportInput.receivablesCentavos) },
+    { label: t('report.rowRecords'), value: String(reportInput.recordsCount) },
+  ]
+  const [reportOpen, setReportOpen] = useState(false)
+
   function printWeek() {
     if (typeof window === 'undefined') return
     const pre = document.getElementById('seepat-weekly-report')
     if (pre) {
-      pre.textContent = buildWeeklyReport({
-        weekLabel: todayLabel,
-        revenueCentavos: week.revenueCentavos,
-        expensesCentavos: week.revenueCentavos - week.netProfitCentavos,
-        netProfitCentavos: week.netProfitCentavos,
-        cashCentavos: twin.cashCentavos,
-        receivablesCentavos: derived.receivablesCentavos,
-        recordsCount: ledger.transactions.length,
-      })
+      pre.textContent = buildWeeklyReport(reportInput, t(repTitleKey, { label: rangeLabel }))
     }
     window.print()
   }
@@ -287,6 +410,19 @@ export function Dashboard({
           {formatPHP(Math.round(heroValue))}
         </div>
 
+        {mathVisible ? (
+          <dl className="mx-auto mt-3 w-full max-w-60 space-y-1">
+            {mathRows.map((row) => (
+              <div key={row.label} className="flex items-baseline justify-between gap-3">
+                <dt className="text-[0.75rem] font-semibold text-white/60">{row.label}</dt>
+                <dd className="num text-[0.8125rem] font-bold whitespace-nowrap text-white/90 tabular-nums">
+                  {row.sign} {formatPHP(row.amountCentavos)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+
         <div className="mt-4">
           <AreaChart
             values={sales.map((d) => d.amountCentavos)}
@@ -296,37 +432,99 @@ export function Dashboard({
           />
         </div>
 
-        <div className="fit-grid-3 mt-5 grid grid-cols-3 gap-2.5 border-t border-white/15 pt-4">
-          <div className="money-cell min-w-0 rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
-            <div className="text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">{t('dash.revenue')}</div>
-            <div className="figure-lg mt-1 text-[1.0625rem] font-extrabold text-white leading-none">{formatPHP(today.revenueCentavos)}</div>
-          </div>
-          <div className="money-cell min-w-0 rounded-2xl bg-white/[0.08] backdrop-blur-md p-3 border border-white/10">
-            <div className="text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">{t('dash.expenses')}</div>
-            <div className="figure-lg mt-1 text-[1.0625rem] font-extrabold text-white leading-none">{formatPHP(today.expensesCentavos)}</div>
-          </div>
-          <div className="money-cell min-w-0 rounded-2xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-md p-3 border border-gold-300/40 shadow-[0_4px_16px_-4px_rgba(255,213,74,0.3)]">
-            <div className="text-[0.7rem] font-black tracking-wider text-gold-300 uppercase">{t('dash.cash')}</div>
-            {/*
-              * The box, and — when there is any — what is sitting in an e-wallet.
-              *
-              * The hero figure used to be money on hand, which quietly included
-              * GCash: an owner counting the drawer at night would find less than
-              * the app claimed and have no way to tell why. So the headline is
-              * now the countable number, and the float is named underneath it in
-              * smaller type. It only appears when it is non-zero, because a zero
-              * row on every screen is noise.
-              */}
-            <div className="figure-lg mt-1 text-[1.0625rem] font-black text-gold-300 leading-none">
+        {/*
+          * The countable money, full width. Sales and expenses used to sit here
+          * as cards — but the breakdown strip under the hero already carries
+          * both, so the cards repeated the same two numbers twice on one
+          * screen. The box is the only figure here that appears nowhere else.
+          *
+          * The box, and — when there is any — what is sitting in an e-wallet.
+          * The hero figure used to be money on hand, which quietly included
+          * GCash: an owner counting the drawer at night would find less than
+          * the app claimed and have no way to tell why. So the headline is
+          * now the countable number, and the float is named underneath it in
+          * smaller type. It only appears when it is non-zero, because a zero
+          * row on every screen is noise.
+          */}
+        <div className="money-cell mt-5 rounded-2xl border border-gold-300/40 bg-gradient-to-b from-white/15 to-white/5 px-3.5 py-3 shadow-[0_4px_16px_-4px_rgba(255,213,74,0.3)] backdrop-blur-md">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[0.7rem] font-black tracking-wider text-gold-300 uppercase">{t('dash.cash')}</div>
+              {derived.walletCentavos > 0 ? (
+                <div className="mt-1 text-[0.75rem] leading-snug font-bold text-gold-200/90">
+                  {t('dash.wallet', { amount: formatPHP(derived.walletCentavos) })}
+                </div>
+              ) : null}
+            </div>
+            <div className="figure-lg num shrink-0 text-[1.25rem] font-black leading-none text-gold-300">
               {formatPHP(derived.cashInBoxCentavos)}
             </div>
-            {derived.walletCentavos > 0 ? (
-              <div className="mt-1 text-[0.75rem] leading-snug font-bold text-gold-200/90">
-                {t('dash.wallet', { amount: formatPHP(derived.walletCentavos) })}
-              </div>
+          </div>
+          {/*
+            * Why the box can be full on a day the profit is negative: this is
+            * every peso in the drawer — earlier days' takings and starting
+            * cash included — while the hero is today's earnings alone. Without
+            * this line a red −₱2,000 next to ₱42,000 reads as a contradiction.
+            */}
+          <p className="mt-1.5 text-[0.75rem] leading-snug font-semibold text-white/55">
+            {t('dash.cashNote')}
+          </p>
+        </div>
+
+        {/*
+         * The two debts, always visible when either exists: who owes the owner
+         * (tap → the Utang book, where each name can be collected), and what
+         * the owner owes suppliers (supplier credit, cash loans taken — the
+         * other half of "where did the money go?"). Hidden at zero, because a
+         * zero row on every screen is noise.
+         */}
+        {derived.receivablesCentavos > 0 || derived.totalLiabilitiesCentavos > 0 ? (
+          <div className="mt-3 space-y-2 border-t border-white/15 pt-3.5">
+            {derived.receivablesCentavos > 0 ? (
+              <button
+                type="button"
+                onClick={onOpenUtang}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.08] px-3.5 py-2.5 text-left backdrop-blur-md transition active:translate-y-px"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">
+                    {t('dash.statReceivables')}
+                  </span>
+                  <span className="num mt-0.5 block text-[1.0625rem] font-extrabold leading-none text-white">
+                    {formatPHP(derived.receivablesCentavos)}
+                  </span>
+                  <span className="mt-0.5 block text-[0.75rem] font-semibold text-white/60">
+                    {t('dash.debtors', {
+                      n: Object.values(twin.receivables).filter((v) => v > 0).length,
+                    })}
+                  </span>
+                </span>
+                <span aria-hidden className="shrink-0 text-[1.125rem] font-bold text-white/60">
+                  ›
+                </span>
+              </button>
+            ) : null}
+            {derived.totalLiabilitiesCentavos > 0 ? (
+              <button
+                type="button"
+                onClick={onOpenSupplier}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.08] px-3.5 py-2.5 text-left backdrop-blur-md transition active:translate-y-px"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[0.7rem] font-bold tracking-wider text-white/70 uppercase">
+                    {t('dash.statPayables')}
+                  </span>
+                  <span className="num mt-0.5 block text-[1.0625rem] font-extrabold leading-none text-white">
+                    {formatPHP(derived.totalLiabilitiesCentavos)}
+                  </span>
+                </span>
+                <span aria-hidden className="shrink-0 text-[1.125rem] font-bold text-white/60">
+                  ›
+                </span>
+              </button>
             ) : null}
           </div>
-        </div>
+        ) : null}
 
         {/*
          * Sales and cash are different numbers, and utang is the only reason
@@ -371,19 +569,76 @@ export function Dashboard({
         </div>
       ) : null}
 
-      {/* First-run guide: three steps, resumable, gone once done or hidden. */}
-      {checklistVisible(checklist) ? (
-        <div className="px-3.5">
-          <ChecklistCard
-            title={t('dash.checklist.title')}
-            steps={checklistSteps}
-            onStep={handleChecklistStep}
-            onDismiss={() => setChecklist((prev) => dismissChecklist(prev))}
-            dismissLabel={t('dash.checklist.dismiss')}
-          />
+      {/* Shortcuts: the things owners hunted for — the printed weekly report,
+          the utang statement, items, receipt scan, asking, and backup — one tap
+          from the Money page instead of buried in a view, a book, or More. */}
+      <div className="px-3.5">
+        <div className="rounded-2xl border border-line/70 bg-white/70 p-3">
+          <div className="text-[0.7rem] font-bold tracking-wider text-fg-faint uppercase">
+            {t('dash.shortcutsTitle')}
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+            >
+              <ShortcutIcon d={ICON_PRINTER} tint="bg-brand-500/10 text-brand-700" />
+              {t('dash.shortcutPrint')}
+            </button>
+            {onOpenUtang ? (
+              <button
+                type="button"
+                onClick={onOpenUtang}
+                className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+              >
+                <ShortcutIcon d={ICON_CLIPBOARD} tint="bg-emerald-500/10 text-emerald-800" />
+                {t('dash.shortcutUtang')}
+              </button>
+            ) : null}
+            {onOpenItems ? (
+              <button
+                type="button"
+                onClick={onOpenItems}
+                className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+              >
+                <ShortcutIcon d={ICON_PACKAGE} tint="bg-amber-500/15 text-amber-800" />
+                {t('dash.shortcutItems')}
+              </button>
+            ) : null}
+            {onOpenReceipt ? (
+              <button
+                type="button"
+                onClick={onOpenReceipt}
+                className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+              >
+                <ShortcutIcon d={ICON_RECEIPT} tint="bg-violet-500/10 text-violet-800" />
+                {t('dash.shortcutReceipt')}
+              </button>
+            ) : null}
+            {onOpenAsk ? (
+              <button
+                type="button"
+                onClick={onOpenAsk}
+                className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+              >
+                <ShortcutIcon d={ICON_CHAT} tint="bg-teal-500/10 text-teal-800" />
+                {t('dash.shortcutAsk')}
+              </button>
+            ) : null}
+            {onOpenOffline ? (
+              <button
+                type="button"
+                onClick={onOpenOffline}
+                className="inline-flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border border-line-strong px-2 py-2.5 text-[0.8125rem] font-bold text-fg-muted transition active:translate-y-px"
+              >
+                <ShortcutIcon d={ICON_DATABASE} tint="bg-sky-500/10 text-sky-800" />
+                {t('dash.shortcutBackup')}
+              </button>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-
+      </div>
       {/* The view switch: Ngayon | 7 araw | Puhunan. Tabs stay destinations;
           this chooses which panel shows, so only one of them is ever open. */}
       <div className="px-3.5">
@@ -398,6 +653,75 @@ export function Dashboard({
           ]}
         />
       </div>
+
+      {/* Always mounted so the Print shortcut works from any view: `printWeek`
+          fills this element and prints in the same tick. */}
+      <PrintSheet>
+        <pre
+          id="seepat-weekly-report"
+          className="print-sheet print-sheet-body print-report"
+          aria-hidden
+        />
+      </PrintSheet>
+
+      {/* Report preview: check the figures first, print second. The printed
+          page carries exactly these numbers (see `reportInput`), so the preview
+          is a promise the paper keeps. */}
+      {reportOpen ? (
+        <Sheet title={t('report.previewTitle')} hint={t('report.previewHint')} closeLabel={t('app.close')} onClose={() => setReportOpen(false)}>
+          <SegmentedControl
+            label={t('report.previewTitle')}
+            value={repKind}
+            onChange={(kind) => {
+              setRepKind(kind)
+              setRepOffset(0)
+            }}
+            options={[
+              { id: 'day', label: t('report.periodDay') },
+              { id: 'week', label: t('report.periodWeek') },
+              { id: 'month', label: t('report.periodMonth') },
+              { id: 'year', label: t('report.periodYear') },
+            ]}
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setRepOffset((o) => o - 1)}
+              aria-label={t('report.prevPeriod')}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line-strong px-3 text-[1.125rem] font-bold text-fg-muted transition active:translate-y-px"
+            >
+              ‹
+            </button>
+            <span className="min-w-0 flex-1 truncate text-center text-[0.875rem] font-bold text-fg">{rangeLabel}</span>
+            <button
+              type="button"
+              onClick={() => setRepOffset((o) => Math.min(0, o + 1))}
+              disabled={repOffset >= 0}
+              aria-label={t('report.nextPeriod')}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line-strong px-3 text-[1.125rem] font-bold text-fg-muted transition active:translate-y-px disabled:opacity-40"
+            >
+              ›
+            </button>
+          </div>
+          <ul className="mt-2 divide-y divide-line border-y border-line">
+            {previewRows.map((row) => (
+              <li key={row.label} className="flex items-baseline justify-between gap-4 py-2">
+                <span className="text-[0.875rem] text-fg-subtle">{row.label}</span>
+                <span className="num text-[0.9375rem] font-bold text-fg">{row.value}</span>
+              </li>
+            ))}
+          </ul>
+          <Button
+            className="mt-3 w-full"
+            onClick={() => {
+              setReportOpen(false)
+              printWeek()
+            }}
+          >
+            {t('report.print')}
+          </Button>
+        </Sheet>
+      ) : null}
 
       {view === 'today' ? (
       <>
@@ -473,27 +797,11 @@ export function Dashboard({
         </div>
         <button
           type="button"
-          onClick={printWeek}
+          onClick={() => setReportOpen(true)}
           className="mt-3.5 inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[0.875rem] font-bold text-fg-muted transition active:translate-y-px"
         >
           {t('report.print')}
         </button>
-        {/*
-         * The print-only surface: hidden on screen, the only thing on paper.
-         *
-         * `printWeek` fills this element and prints it in the same tick, so the
-         * sheet is permanent and its content is not: a `pre` React owns and the
-         * printer overwrites is exactly what this needs to be. `PrintSheet`
-         * handles the portal and the print marker together — see it for why the
-         * marker cannot be set from here.
-         */}
-        <PrintSheet>
-          <pre
-            id="seepat-weekly-report"
-            className="print-sheet print-sheet-body print-report"
-            aria-hidden
-          />
-        </PrintSheet>
       </Card>
       <div className="px-3.5">
       <CollapsibleSection id="dash-restock" title={t('restock.title')} defaultOpen={restock.length > 0}>

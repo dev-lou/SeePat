@@ -114,14 +114,46 @@ describe('weekly report', () => {
     const text = buildWeeklyReport({
       weekLabel: 'Oct 15',
       revenueCentavos: 10000,
+      cogsCentavos: 2000,
       expensesCentavos: 3000,
-      netProfitCentavos: 7000,
+      shrinkageCentavos: 0,
+      netProfitCentavos: 5000,
       cashCentavos: 5000,
+      walletCentavos: 0,
       receivablesCentavos: 2000,
       recordsCount: 12,
     })
     expect(text).toContain('₱100.00')
     expect(text).toContain('Records: 12')
     expect(text).not.toMatch(/\{\w+\}/)
+  })
+
+  it('shows the cost of goods, so sales minus the subtractions equals the profit', () => {
+    const input = {
+      weekLabel: 'Oct 15',
+      revenueCentavos: 10000,
+      cogsCentavos: 2000,
+      expensesCentavos: 3000,
+      shrinkageCentavos: 500,
+      netProfitCentavos: 4500,
+      cashCentavos: 5000,
+      walletCentavos: 1500,
+      receivablesCentavos: 2000,
+      recordsCount: 12,
+    }
+    // The contract the dashboard strip keeps too: every printed subtraction
+    // reconciles to the printed profit.
+    expect(input.revenueCentavos - input.cogsCentavos - input.expensesCentavos - input.shrinkageCentavos).toBe(
+      input.netProfitCentavos,
+    )
+    const text = buildWeeklyReport(input)
+    expect(text).toContain('Cost of goods: ₱20.00')
+    expect(text).toContain('Spoilage & losses: ₱5.00')
+    expect(text).toContain('Net profit: ₱45.00')
+    // Cash prints split so the sheet can never contradict the dashboard
+    // card again: drawer plus wallet reconciles to total cash.
+    expect(text).toContain('Cash in drawer: ₱35.00')
+    expect(text).toContain('In GCash/Maya: ₱15.00')
+    expect(text).not.toContain('Cash on hand')
   })
 })

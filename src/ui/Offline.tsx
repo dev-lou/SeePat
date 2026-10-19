@@ -6,8 +6,9 @@ import type { Negosyo } from '../store.ts'
 import { useToast } from './Toast.tsx'
 import { Pat } from './Pat.tsx'
 import {
-  OFFLINE_MODELS,
+  INSTALLABLE_MODELS,
   RUNTIME_APPROX_MB,
+  WHISPER_MODEL,
   installVoiceModel,
   removeVoiceModel,
   useVoiceModel,
@@ -361,12 +362,13 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
           {t('offline.modelIntro')}
         </p>
 
-        {OFFLINE_MODELS.map((info) => {
+        {INSTALLABLE_MODELS.map((info) => {
           const isWhisper = info.installable
           // This row's model is the one on the phone; a row for the other
           // installable model offers a switch instead of a second download.
           const isThis = installed && model?.key === info.key
           const rowBusy = busy && activeKey === info.key
+          const isDefault = info.key === WHISPER_MODEL.key
 
           return (
             <div
@@ -381,6 +383,10 @@ export function OfflineScreen({ negosyo, goToPlan }: { negosyo: Negosyo; goToPla
                     <span className="min-w-0 text-[0.875rem] leading-snug font-medium text-fg">
                       {pick(lang, info.label)}
                     </span>
+                    <Pill tone="neutral">{pick(lang, info.tradeoff)}</Pill>
+                    {isDefault ? (
+                      <Pill tone="good">{t('offline.defaultPill')}</Pill>
+                    ) : null}
                     {isWhisper ? (
                       <Pill tone="good">{t('offline.freePill')}</Pill>
                     ) : (

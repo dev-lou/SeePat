@@ -164,8 +164,8 @@ function guessTotal(lines: string[]): Centavos | null {
 interface ParsedLine {
   qty: number
   nameCandidate: string
-  unitPriceCentavos: Centavos | null
-  lineTotalCentavos: Centavos | null
+  unitPriceCentavos: Centavos
+  lineTotalCentavos: Centavos
 }
 
 /**
@@ -193,21 +193,14 @@ function parseLine(raw: string): ParsedLine | null {
   tokens.forEach((tok, i) => {
     if (parseMoneyToken(tok.replace(/[.,;:]+$/, '')) !== null) moneyIdx.push(i)
   })
-  // Bare integers ("3") are not prices until proven otherwise: Tesseract
-  // garbage is full of stray digits, and treating each as ₱3.00 invents money.
-  // A money token only counts as a price with centavos ("12.00"); without one
-  // the line falls through to the price-less candidate below, where the
-  // document gate decides its fate. Real thermal printers write centavos, so
-  // genuine lines are unaffected — a bare-int real line just asks for its
-  // price by hand instead of getting a wrong one for free.
+  // Price-only gate: a line without a decimal price ("12.00") is never goods.
+  // Tesseract garbage is full of stray words ("po", "BIGAS", store headers)
+  // and bare digits ("pad Pps ve 3 SL" → ₱3.00). Thermal printers always write
+  // centavos, so requiring one kills header/junk drafts without touching real
+  // receipts. A price-less real line is better missed (add it with + Add item)
+  // than a phantom ₱0 line the owner must delete.
   const pricedIdx = moneyIdx.filter((i) => /\d+\.\d{1,2}/.test(tokens[i]))
-  if (pricedIdx.length === 0) {
-    // No price at all — keep as review-only candidate if it looks like goods.
-    if (tokens.length >= 1 && /[a-zA-Z]{2,}/.test(text)) {
-      return { qty: 1, nameCandidate: deindexed, unitPriceCentavos: null, lineTotalCentavos: null }
-    }
-    return null
-  }
+  if (pricedIdx.length === 0) return null
   const moneyIdx2 = pricedIdx
 
   const lastMoney = moneyIdx2[moneyIdx2.length - 1]
@@ -275,40 +268,15 @@ export function parseReceiptText(ocrText: string, ledger: Ledger, lang: Lang = '
   const supplierGuess = guessSupplier(rawLines)
   const receiptTotalCentavos = guessTotal(rawLines)
 
-  // Document gate: a photo of a face has no real prices, while a genuine
-  // receipt always prints at least one decimal price ("12.00"). Price-less
-  // guess lines are only kept when some line in the same photo carries one —
-  // otherwise every OCR fragment ("po") becomes a phantom item.
-  //
-  // Decimals are required deliberately: Tesseract garbage is full of stray
-  // bare digits ("pad Pps ve 3 SL"), and a lone "3" parses as ₱3.00. Thermal
-  // printers write prices with centavos, so grounding on decimal money kills
-  // face-photo drafts without touching real receipts.
-  const hasPricedLine = rawLines.some((raw) =>
-    raw
-      .replace(/[|]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean)
-      .some(
-        (tok) =>
-          /\d+\.\d{1,2}/.test(tok) && parseMoneyToken(tok.replace(/[.,;:]+$/, '')) !== null,
-      ),
-  )
-
   const lines: ReceiptDraftLine[] = []
   for (const raw of rawLines) {
-    // Store headers carry no prices and are never goods: "PUREGOLD DINGLE"
-    // would otherwise become a phantom ₱0 line the owner must delete.
-    if (!/\d/.test(raw) && SUPPLIER_HINTS.some((h) => normalize(raw).includes(h.trim()))) continue
     const parsed = parseLine(raw)
     if (!parsed) continue
-    if (parsed.unitPriceCentavos === null && !hasPricedLine) continue
     const { skuId, score } = matchSku(parsed.nameCandidate, ledger)
     const sku = ledger.skus.find((s) => s.id === skuId)
-    const needsPrice = parsed.unitPriceCentavos === null
     // Unit price implied from total/qty when the printer only shows the total.
-    let unitPrice = parsed.unitPriceCentavos ?? 0
-    if (parsed.unitPriceCentavos !== null && parsed.lineTotalCentavos !== null && parsed.qty > 1) {
+    let unitPrice = parsed.unitPriceCentavos
+    if (parsed.qty > 1) {
       const implied = Math.round(parsed.lineTotalCentavos / parsed.qty)
       if (Math.abs(implied - parsed.unitPriceCentavos) <= Math.max(2, parsed.unitPriceCentavos * 0.02)) {
         unitPrice = parsed.unitPriceCentavos
@@ -316,11 +284,10 @@ export function parseReceiptText(ocrText: string, ledger: Ledger, lang: Lang = '
         unitPrice = implied
       }
     }
-    const lineTotal = parsed.lineTotalCentavos ?? Math.round(unitPrice * parsed.qty)
-    const confidence = needsPrice ? 0.3 : skuId ? Math.min(0.95, 0.55 + score * 0.4) : 0.45
+    const lineTotal = parsed.lineTotalCentavos
+    const confidence = skuId ? Math.min(0.95, 0.55 + score * 0.4) : 0.45
     const reasons: string[] = []
     if (!skuId) reasons.push('new-item')
-    if (needsPrice) reasons.push('no-price')
     if (score > 0 && score < 0.85 && skuId) reasons.push('fuzzy-match')
     lines.push({
       rawText: raw,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   capitalComposition,
   capitalProvenance,
@@ -188,8 +188,31 @@ export interface Negosyo {
 }
 
 export function useNegosyo(): Negosyo {
-  const [now] = useState(() => new Date())
+  const [now, setNow] = useState(() => new Date())
   const [ledger, setLedger] = useState<Ledger>(() => load() ?? seedLedger(now))
+  const refreshNow = useCallback(() => {
+    // `now` bounds every windowed figure (today, this week, the report range).
+    // It used to be captured once at mount, so a record written minutes later
+    // carried a timestamp NEWER than the bound — and vanished from every
+    // period figure (but not from the totals, which are unbounded). The owner
+    // watched a sale land in the cash box while today's sales stayed ₱0.00
+    // until the next reload. Time moves when the book does, and once a minute
+    // besides, so midnight rollover cannot strand yesterday's date on screen.
+    setNow(new Date())
+  }, [])
+  useEffect(() => {
+    const tick = window.setInterval(refreshNow, 60_000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshNow()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      window.clearInterval(tick)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [refreshNow])
   // The language is a dependency of every derived value that carries words, which
   // is what makes switching languages re-derive the Score and the capital
   // narrative rather than leaving stale Tagalog on screen. The arithmetic is
@@ -215,10 +238,14 @@ export function useNegosyo(): Negosyo {
     [twin, week, ledger, now, lang],
   )
 
-  const update = useCallback((next: Ledger) => {
-    persist(next)
-    setLedger(next)
-  }, [])
+  const update = useCallback(
+    (next: Ledger) => {
+      persist(next)
+      setLedger(next)
+      refreshNow()
+    },
+    [refreshNow],
+  )
 
   const add = useCallback(
     (txn: Transaction) => {
@@ -227,53 +254,70 @@ export function useNegosyo(): Negosyo {
         persist(next)
         return next
       })
+      refreshNow()
     },
-    [],
+    [refreshNow],
   )
 
-  const voidTransaction = useCallback((id: TxnId) => {
-    setLedger((current) => {
-      const next: Ledger = {
-        ...current,
-        voids: [...current.voids, { txnId: id, at: new Date().toISOString(), by: 'owner' }],
-      }
-      persist(next)
-      return next
-    })
-  }, [])
+  const voidTransaction = useCallback(
+    (id: TxnId) => {
+      setLedger((current) => {
+        const next: Ledger = {
+          ...current,
+          voids: [...current.voids, { txnId: id, at: new Date().toISOString(), by: 'owner' }],
+        }
+        persist(next)
+        return next
+      })
+      refreshNow()
+    },
+    [refreshNow],
+  )
 
-  const removeTransaction = useCallback((id: TxnId) => {
-    setLedger((current) => {
-      const next: Ledger = {
-        ...current,
-        transactions: current.transactions.filter((t) => t.id !== id),
-        voids: current.voids.filter((v) => v.txnId !== id),
-      }
-      persist(next)
-      return next
-    })
-  }, [])
+  const removeTransaction = useCallback(
+    (id: TxnId) => {
+      setLedger((current) => {
+        const next: Ledger = {
+          ...current,
+          transactions: current.transactions.filter((t) => t.id !== id),
+          voids: current.voids.filter((v) => v.txnId !== id),
+        }
+        persist(next)
+        return next
+      })
+      refreshNow()
+    },
+    [refreshNow],
+  )
 
-  const restoreTransaction = useCallback((txn: Transaction, index?: number) => {
-    setLedger((current) => {
-      if (current.transactions.some((t) => t.id === txn.id)) return current
-      const transactions =
-        typeof index === 'number'
-          ? [...current.transactions.slice(0, index), txn, ...current.transactions.slice(index)]
-          : [...current.transactions, txn]
-      const next: Ledger = { ...current, transactions }
-      persist(next)
-      return next
-    })
-  }, [])
+  const restoreTransaction = useCallback(
+    (txn: Transaction, index?: number) => {
+      setLedger((current) => {
+        if (current.transactions.some((t) => t.id === txn.id)) return current
+        const transactions =
+          typeof index === 'number'
+            ? [...current.transactions.slice(0, index), txn, ...current.transactions.slice(index)]
+            : [...current.transactions, txn]
+        const next: Ledger = { ...current, transactions }
+        persist(next)
+        return next
+      })
+      refreshNow()
+    },
+    [refreshNow],
+  )
 
   const resetToDemo = useCallback(() => {
     update(seedLedger(new Date()))
   }, [update])
 
   const clearAll = useCallback(() => {
-    setLedger((current) => {
-      const next: Ledger = { ...current, transactions: [], voids: [] }
+    // Erase means erase: the sample catalog goes too, so the book afterwards
+    // contains only what the owner adds. (It used to keep the demo SKUs and
+    // customers, which made "erase everything" a lie — sample names kept
+    // showing up in a supposedly empty store.)
+    setLedger(() => {
+      const next: Ledger = { skus: [], customers: [], transactions: [], voids: [] }
       persist(next)
       return next
     })

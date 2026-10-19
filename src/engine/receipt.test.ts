@@ -101,12 +101,12 @@ describe('parseReceiptText', () => {
     expect(draft.lines).toHaveLength(0)
   })
 
-  it('keeps price-less goods when a priced line grounds the receipt', () => {
-    // A real receipt where one line lost its price is still a receipt: the
-    // priced line proves the photo is a receipt, the bare line stays review-only.
+  it('drops price-less lines even when a priced line is present', () => {
+    // Price-only gate: "BIGAS" has no decimal price, so it is junk until the
+    // owner adds it by hand — the priced line still drafts normally.
     const draft = parseReceiptText(['BIGAS', 'COKE MISMO 15.00'].join('\n'), ledger())
-    expect(draft.lines.length).toBeGreaterThanOrEqual(1)
-    expect(draft.lines.some((l) => l.unitPriceCentavos === 1500)).toBe(true)
+    expect(draft.lines).toHaveLength(1)
+    expect(draft.lines[0].unitPriceCentavos).toBe(1500)
   })
 })
 

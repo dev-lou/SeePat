@@ -24,6 +24,41 @@ export function addDays(date: Date, days: number): Date {
   return next
 }
 
+/** Last millisecond of the local day containing `date`. */
+export function endOfLocalDay(date: Date): Date {
+  return new Date(startOfLocalDay(addDays(date, 1)).getTime() - 1)
+}
+
+/** Same date N months over, clamped to the target month (Jan 31 + 1 → Feb 28). */
+export function addMonths(date: Date, months: number): Date {
+  const day = date.getDate()
+  const anchored = new Date(date.getFullYear(), date.getMonth(), 1)
+  anchored.setMonth(anchored.getMonth() + months)
+  const last = new Date(anchored.getFullYear(), anchored.getMonth() + 1, 0).getDate()
+  anchored.setDate(Math.min(day, last))
+  return anchored
+}
+
+/** First millisecond of the month containing `date`. */
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0)
+}
+
+/** Last millisecond of the month containing `date`. */
+export function endOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+}
+
+/** First millisecond of the year containing `date`. */
+export function startOfYear(date: Date): Date {
+  return new Date(date.getFullYear(), 0, 1, 0, 0, 0, 0)
+}
+
+/** Last millisecond of the year containing `date`. */
+export function endOfYear(date: Date): Date {
+  return new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999)
+}
+
 /** Window start for "the last N days", inclusive of today. */
 export function windowStart(days: number, now: Date): Date {
   return startOfLocalDay(addDays(now, -(days - 1)))

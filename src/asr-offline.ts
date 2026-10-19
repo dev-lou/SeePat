@@ -119,6 +119,8 @@ export interface OfflineModelInfo {
   /** False for models that exist but cannot legally ship in a paid product. */
   installable: boolean
   why: Bilingual
+  /** One-line speed-vs-accuracy tradeoff, shown as a badge on the download card. */
+  tradeoff: Bilingual
 }
 
 export const WHISPER_MODEL: OfflineModelInfo = {
@@ -149,6 +151,10 @@ export const WHISPER_MODEL: OfflineModelInfo = {
   why: {
     en: 'It stays on your phone, and you may use it in your business. It hears short Taglish better than the smallest option, but the voice that uses the internet is still more accurate — so this is the one to use when there is no signal.',
     fil: 'Nananatili ito sa phone mo, at puwede mong gamitin sa negosyo. Mas nakakarinig ito ng maikling Taglish kaysa sa pinakamaliit na bersyon, pero mas tumpak pa rin ang boses na gumagamit ng internet — kaya ito ang gamitin kapag walang signal.',
+  },
+  tradeoff: {
+    en: 'Balanced · default',
+    fil: 'Balanseng pagpipilian · default',
   },
 }
 
@@ -184,6 +190,46 @@ export const WHISPER_SMALL_MODEL: OfflineModelInfo = {
   why: {
     en: 'Hears Tagalog clearly better than the smaller download, but it costs about three times the data and answers more slowly — a five-second sentence can take half a minute on a phone. Pick this only if the small one keeps mishearing you and you have data and patience to spare.',
     fil: 'Mas malinaw na nakakarinig ng Tagalog kaysa sa mas maliit na download, pero mga tatlong beses ang gastos sa data at mas mabagal sumagot — ang limang segundong pangungusap ay puwedeng umabot ng kalahating minuto sa phone. Piliin ito kung palaging nagkakamali ang maliit at may data at pasensya ka.',
+  },
+  tradeoff: {
+    en: 'Most accurate · 3× slower',
+    fil: 'Pinakatumpak · 3× na mas mabagal',
+  },
+}
+
+/**
+ * The fastest download: same Whisper family one size down from base.
+ *
+ * Roughly half the weights (~39MB) and ~2× faster per utterance than base on
+ * the same phone, at the cost of weaker Tagalog on short shop utterances.
+ * Offered as the "mabilis, pero mas madalas magkamali" option for owners on
+ * tight data or a slow phone — base stays the default because it hears short
+ * Taglish materially better. Same MIT licence, same offline cache as base.
+ */
+export const WHISPER_TINY_MODEL: OfflineModelInfo = {
+  key: 'whisper-tiny',
+  label: {
+    en: 'Offline voice — fastest (small download)',
+    fil: 'Boses na offline — pinakamabilis (maliit na download)',
+  },
+  repo: 'onnx-community/whisper-tiny',
+  approxMB: 39,
+  languages: {
+    en: 'Tagalog, Taglish and English, plus more than 90 other languages',
+    fil: 'Tagalog, Taglish at English, at mahigit 90 pang wika',
+  },
+  license: {
+    en: 'Built on Whisper. Open source, and free to use in a business.',
+    fil: 'Gawa mula sa Whisper. Open source, at libreng gamitin sa negosyo.',
+  },
+  installable: true,
+  why: {
+    en: 'Answers about twice as fast as the default and costs half the data — but it mishears short Tagalog more often. Pick this if the default feels too slow or too big, and switch up if it keeps getting words wrong.',
+    fil: 'Mga dalawang beses na mas mabilis sumagot kaysa sa default at kalahati ang gastos sa data — pero mas madalas magkamali sa maikling Tagalog. Piliin ito kung masyadong mabagal o malaki ang default, at lumipat pataas kung palaging nagkakamali.',
+  },
+  tradeoff: {
+    en: 'Fastest · mishears more',
+    fil: 'Pinakamabilis · mas madalas magkamali',
   },
 }
 
@@ -253,9 +299,13 @@ export const VOSK_MODEL: OfflineModelInfo = {
     en: 'This is the only offline voice here that is Tagalog alone — but to use it, this app would have to be free to everyone, because the licence does not allow a paid product. That is the only reason it is not offered.',
     fil: 'Ito lang ang boses offline dito na Tagalog lamang — pero para magamit ito, kailangang libre ang app para sa lahat, dahil hindi pinapayagan ng lisensya nito ang produktong may bayad. Iyon lang ang dahilan kung bakit hindi ito inaalok.',
   },
+  tradeoff: {
+    en: 'Not offered',
+    fil: 'Hindi inaalok',
+  },
 }
 
-export const OFFLINE_MODELS: OfflineModelInfo[] = [WHISPER_MODEL, WHISPER_SMALL_MODEL, VOSK_MODEL]
+export const OFFLINE_MODELS: OfflineModelInfo[] = [WHISPER_TINY_MODEL, WHISPER_MODEL, WHISPER_SMALL_MODEL, VOSK_MODEL]
 
 /** Catalogue entries the app can actually download. Base stays the default. */
 export const INSTALLABLE_MODELS: OfflineModelInfo[] = OFFLINE_MODELS.filter((m) => m.installable)
@@ -488,6 +538,47 @@ async function loadTranscriber(
   return loading
 }
 
+/**
+ * Cut leading/trailing near-silence before the model sees the audio.
+ *
+ * A press-and-hold take always carries dead air: the finger press, the pause
+ * before speaking, the 1.8s silence that ends the take. Whisper time is roughly
+ * linear in audio length, so every dead second is paid for twice — once waiting
+ * for the take to end, once in transcription. Trimming to first/last voiced
+ * frame (±200ms padding) shortens the model input without touching speech.
+ * Exported for tests: trimming must never eat the whole take.
+ */
+export function trimSilence(samples: Float32Array, sampleRate: number = TARGET_SAMPLE_RATE): Float32Array {
+  if (samples.length <= sampleRate / 2) return samples
+  const frameLen = Math.floor(sampleRate * 0.02)
+  const threshold = 0.02
+  let first = 0
+  let last = samples.length
+  const rmsAt = (start: number): number => {
+    let sum = 0
+    const end = Math.min(samples.length, start + frameLen)
+    for (let i = start; i < end; i += 1) sum += samples[i] * samples[i]
+    return Math.sqrt(sum / Math.max(1, end - start))
+  }
+  for (let pos = 0; pos + frameLen < samples.length; pos += frameLen) {
+    if (rmsAt(pos) >= threshold) {
+      first = pos
+      break
+    }
+  }
+  for (let pos = samples.length - frameLen; pos > first; pos -= frameLen) {
+    if (rmsAt(pos) >= threshold) {
+      last = Math.min(samples.length, pos + frameLen)
+      break
+    }
+  }
+  const pad = Math.floor(sampleRate * 0.2)
+  const start = Math.max(0, first - pad)
+  const end = Math.min(samples.length, last + pad)
+  if (end - start < Math.floor(sampleRate * 0.4)) return samples
+  return samples.slice(start, end)
+}
+
 export async function transcribeOffline(samples: Float32Array): Promise<string> {
   // The installed record names the weights: base and small are different
   // downloads, and transcribing with one while the other is cached would
@@ -512,18 +603,24 @@ export async function transcribeOffline(samples: Float32Array): Promise<string> 
    * is English-by-another-name in this library version, so un-forcing it
    * would trade one hallucination for a worse one.
    */
-  const durationS = samples.length / TARGET_SAMPLE_RATE
+  // Trimmed once so both the gate below and the model see the same shorter
+  // clip: less audio ≈ proportionally less Whisper time. `return_timestamps`
+  // off skips the timestamp token pass entirely — pure overhead for a sale.
+  const clipped = trimSilence(samples)
+  const durationS = clipped.length / TARGET_SAMPLE_RATE
   const output =
     durationS > 15
-      ? await transcriber(samples, {
+      ? await transcriber(clipped, {
           language: SPOKEN_LANGUAGE,
           task: 'transcribe',
           chunk_length_s: 30,
           stride_length_s: 5,
+          return_timestamps: false,
         })
-      : await transcriber(samples, {
+      : await transcriber(clipped, {
           language: SPOKEN_LANGUAGE,
           task: 'transcribe',
+          return_timestamps: false,
         })
   const text = Array.isArray(output) ? output.map((o) => o.text).join(' ') : output.text
   return text.trim()

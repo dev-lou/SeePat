@@ -314,6 +314,7 @@ export const UI = {
   'app.speakOff': { en: 'Off', fil: 'Sarado' },
   'app.myItems': { en: 'My items', fil: 'Mga paninda ko' },
   'app.utangList': { en: 'Utang list', fil: 'Listahan ng utang' },
+  'app.supplierDebts': { en: 'Supplier debts', fil: 'Utang sa supplier' },
 
   // --- Tabs ---------------------------------------------------------------
   //
@@ -343,8 +344,16 @@ export const UI = {
   },
   'dash.revenue': { en: 'Sales', fil: 'Benta' },
   'dash.expenses': { en: 'Expenses', fil: 'Gastos' },
-  'dash.cash': { en: 'Cash in the box', fil: 'Cash sa kahon' },
+  'dash.cash': { en: 'Cash on hand', fil: 'Pera sa kamay' },
   'dash.wallet': { en: '{amount} in GCash/Maya', fil: '{amount} sa GCash/Maya' },
+  'dash.cashNote': {
+    en: 'Physical cash in your drawer right now.',
+    fil: 'Cash na hawak mo ngayon.',
+  },
+  'dash.mathSales': { en: 'Sales', fil: 'Benta' },
+  'dash.mathCogs': { en: 'Cost of goods', fil: 'Halaga ng paninda' },
+  'dash.mathExpenses': { en: 'Expenses', fil: 'Gastos' },
+  'dash.mathShrinkage': { en: 'Spoilage & losses', fil: 'Nasira at nawala' },
   'dash.scoreTitle': { en: 'Sipat Score', fil: 'Sipat Score' },
   'dash.scoreEmpty': {
     en: 'Not enough data yet for a full reading.',
@@ -407,8 +416,23 @@ export const UI = {
     fil: '{amount} ng benta ngayong araw ay utang — kasama sa kita, pero hindi pa cash.',
   },
   'dash.collectCta': { en: 'See who owes you', fil: 'Tingnan kung sino ang may utang' },
+  'dash.debtors': { en: '{n} people', fil: '{n} katao' },
   'dash.seeWeek': { en: 'See the full week', fil: 'Tingnan ang buong linggo' },
   'dash.seeCapital': { en: 'See where the capital sits', fil: 'Tingnan kung nasaan ang puhunan' },
+  'dash.shortcutsTitle': { en: 'Shortcuts', fil: 'Mga shortcut' },
+  'dash.shortcutPrint': { en: 'Print report', fil: 'I-print ang ulat' },
+  'dash.shortcutUtang': { en: 'Utang list', fil: 'Listahan ng utang' },
+  'dash.shortcutItems': { en: 'My items', fil: 'Mga paninda' },
+  'dash.shortcutReceipt': { en: 'Receipt', fil: 'Resibo' },
+  'dash.shortcutAsk': { en: 'Ask', fil: 'Tanong' },
+  'dash.shortcutBackup': { en: 'Backup', fil: 'Backup' },
+  'plan.nudgeTitle': { en: 'See more in your numbers with PRO', fil: 'Mas marami kang makikita sa numero mo sa PRO' },
+  'plan.nudgeBody': {
+    en: 'AI answers about your profit, a safe online copy of your records, and printable reports — ₱99 a month. Your records stay free forever.',
+    fil: 'AI na sagot tungkol sa kita mo, ligtas na kopya ng talaan mo online, at mga ulat na pwedeng i-print — ₱99 kada buwan. Libre pa rin ang talaan mo habambuhay.',
+  },
+  'plan.nudgeCta': { en: 'See PRO', fil: 'Tingnan ang PRO' },
+  'plan.nudgeLater': { en: 'Not now', fil: 'Hindi muna' },
   // --- Record: grouped entry + history filters -----------------------------
   'record.moreModes': { en: 'More', fil: 'Iba pa' },
   'record.hideModes': { en: 'Less', fil: 'Itago' },
@@ -668,6 +692,17 @@ export const UI = {
   'record.deleteCancel': { en: 'Keep it', fil: 'Huwag burahin' },
   'record.deleted': { en: 'Record deleted.', fil: 'Nabura ang rekord.' },
   'record.deleteUndone': { en: 'Record restored.', fil: 'Naibalik ang rekord.' },
+  'record.oversellTitle': { en: 'Not enough stock', fil: 'Kulang ang stock' },
+  'record.oversellBody': {
+    en: 'You listed {qty} {unit} of {name}, but only {n} {unit} is on hand — selling it would drive the stock negative and its cost would be estimated.',
+    fil: 'Naglista ka ng {qty} {unit} ng {name}, pero {n} {unit} lang ang stock — kapag ibinenta mo, magiging negatibo ang stock at tantyahan ang halaga.',
+  },
+  'record.oversellPurchase': { en: 'Record the purchase', fil: 'Itala ang bili' },
+  'record.oversellPurchaseHint': {
+    en: 'If a delivery was never recorded, record the purchase first. If the count itself is wrong, correct it in My items.',
+    fil: 'Kung may delivery na hindi naitala, itala muna ang bili. Kung mali mismo ang bilang, itama ito sa My items.',
+  },
+  'record.oversellAnyway': { en: 'Sell anyway', fil: 'Ibenta pa rin' },
   'record.flash.purchaseCredit': {
     en: 'Recorded: {amount} purchase, owed to the supplier.',
     fil: 'Naitala: {amount} na bili, utang sa supplier.',
@@ -745,6 +780,13 @@ export const UI = {
   'items.count': { en: '{n} items', fil: '{n} paninda' },
   'items.search': { en: 'Search your items…', fil: 'Hanapin ang paninda mo…' },
   'items.lastPrice': { en: 'last sold at {amount}', fil: 'huling benta sa {amount}' },
+  'items.stockField': { en: 'Stock on hand (count the shelf)', fil: 'Stock sa shelf (bilangin)' },
+  'items.stockNeedNumber': {
+    en: 'Stock must be a number, zero or more.',
+    fil: 'Dapat numero ang stock, zero o mas malaki.',
+  },
+  'items.stockSaved': { en: 'Stock updated.', fil: 'Na-update ang stock.' },
+  'items.stock': { en: '{n} {unit} on hand', fil: '{n} {unit} ang stock' },
   'items.noPrice': { en: 'no sale yet', fil: 'wala pang benta' },
   'items.emptyTitle': { en: 'No items yet', fil: 'Wala pang paninda' },
   'items.emptyBody': {
@@ -769,6 +811,28 @@ export const UI = {
   'items.deleteConfirm': { en: 'Delete', fil: 'Burahin' },
   'items.deleteCancel': { en: 'Keep it', fil: 'Huwag burahin' },
   'items.manage': { en: 'My items', fil: 'Mga paninda ko' },
+  // --- Restock ------------------------------------------------------------
+  // The fastest honest purchase: stock arrives, the owner is already looking
+  // at the shelf list, so the item is picked here — not on the recording
+  // screen — and the purchase lands in the log exactly like one written there.
+  'items.restock': { en: '+ Restock', fil: '+ Mag-restock' },
+  'items.restockTitle': { en: 'Restock', fil: 'Mag-restock' },
+  'items.restockItem': { en: 'Item', fil: 'Paninda' },
+  'items.restockQty': { en: 'How many are you adding?', fil: 'Ilan ang idadagdag mo?' },
+  'items.restockCost': { en: 'Cost each (₱)', fil: 'Puhunan bawat isa (₱)' },
+  'items.restockNeedItem': {
+    en: 'Pick the item you bought.',
+    fil: 'Piliin ang binili mong paninda.',
+  },
+  'items.restockNeedNumbers': {
+    en: 'Type how many you added and what each cost.',
+    fil: 'Ilagay kung ilan ang idinagdag at magkano ang bawat isa.',
+  },
+  'items.restockSave': { en: 'Save restock', fil: 'I-save ang restock' },
+  'items.restocked': {
+    en: 'Restocked: {name} (+{qty} {unit}).',
+    fil: 'Nadagdagan ang {name} (+{qty} {unit}).',
+  },
 
   // --- Utang (who owes you) ------------------------------------------------
   'utang.title': { en: 'Utang list', fil: 'Listahan ng utang' },
@@ -864,6 +928,30 @@ export const UI = {
     en: 'Choose “Save as PDF” in the print dialog if you want to keep a copy.',
     fil: 'Piliin ang "Save as PDF" sa print dialog kung gusto mong may kopya ka.',
   },
+
+  // --- Supplier debts -----------------------------------------------------
+  'supplier.title': { en: 'Supplier debts', fil: 'Utang sa supplier' },
+  'supplier.hint': { en: 'what you still owe suppliers', fil: 'utang mo pa sa supplier' },
+  'supplier.total': { en: 'Still owed', fil: 'Babayaran pa' },
+  'supplier.none': { en: 'You owe suppliers nothing right now.', fil: 'Wala kang utang sa supplier ngayon.' },
+  'supplier.noneBody': {
+    en: 'When you take goods and pay later, what is still unpaid appears here — so the dashboard total always has a list behind it.',
+    fil: 'Kapag kumuha ka ng paninda at mamaya pa nagbayad, lalabas dito ang hindi pa bayad — para laging may listahan sa likod ng total sa dashboard.',
+  },
+  'supplier.creditPurchase': { en: 'Credit purchase', fil: 'Biling utang' },
+  'supplier.creditExpense': { en: 'Credit expense', fil: 'Gastos na utang' },
+  'supplier.paymentMade': { en: 'Paid the supplier', fil: 'Bayad sa supplier' },
+  'supplier.pay': { en: 'Pay the supplier', fil: 'Magbayad sa supplier' },
+  'supplier.payTitle': { en: 'Payment to the supplier', fil: 'Bayad sa supplier' },
+  'supplier.payField': { en: 'Amount paid (₱)', fil: 'Halagang binayaran (₱)' },
+  'supplier.payFull': { en: 'Full {amount}', fil: 'Buong {amount}' },
+  'supplier.payConfirm': { en: 'Record the payment', fil: 'Itala ang bayad' },
+  'supplier.paid': {
+    en: 'Recorded: {amount} paid to the supplier.',
+    fil: 'Naitala: {amount} na bayad sa supplier.',
+  },
+  'supplier.payNeedAmount': { en: 'Type the amount paid.', fil: 'Isulat ang halagang binayaran.' },
+  'supplier.openLedger': { en: 'See the records', fil: 'Tingnan ang mga naitala' },
 
   // --- Voice --------------------------------------------------------------
   'voice.title': { en: 'Sipat Voice', fil: 'Sipat Voice' },
@@ -988,6 +1076,7 @@ export const UI = {
   'receipt.ocrWarming': { en: 'Getting the reader ready…', fil: 'Inihahanda ang tagabasa…' },
   'receipt.ocrNotReady': { en: 'First use downloads once — keep internet on.', fil: 'Ang unang gamit ay nagda-download nang isang beses — panatilihing bukas ang internet.' },
   'receipt.takePhoto': { en: 'Take a photo', fil: 'Kuhanan ng larawan' },
+  'receipt.uploadPhoto': { en: 'Upload image', fil: 'Mag-upload ng larawan' },
   'receipt.trySample': { en: 'Try a sample', fil: 'Subukan ang sample' },
   'receipt.working': { en: 'Reading…', fil: 'Binabasa…' },
   'receipt.reviewTitle': { en: 'Check the draft', fil: 'Suriin ang draft' },
@@ -1067,6 +1156,7 @@ export const UI = {
     fil: 'Ang ginagamit mong boses ngayon ay kailangan ng internet, dahil ipinapadala nito ang sinasabi mo sa Google. I-download mo ito at maiintindihan ng phone mo ang sinasabi mo kahit walang signal. Libre ito, at tumatakbo sa phone mo — hindi sa amin.',
   },
   'offline.freePill': { en: 'FREE', fil: 'LIBRE' },
+  'offline.defaultPill': { en: 'Default', fil: 'Default' },
   'offline.cannotShip': { en: 'Cannot be shipped', fil: 'Hindi maaaring i-ship' },
   'offline.installedPill': { en: 'Installed', fil: 'Naka-install' },
   'offline.licensePrefix': { en: 'Licence:', fil: 'Lisensya:' },
@@ -1231,6 +1321,27 @@ export const UI = {
   'restock.days': { en: '{n} days left', fil: '{n} araw na lang' },
   'restock.out': { en: 'out of stock', fil: 'ubos na' },
   'report.print': { en: 'Print the week', fil: 'I-print ang linggo' },
+  'report.previewTitle': { en: 'Weekly report', fil: 'Ulat ng linggo' },
+  'report.previewHint': { en: 'check before printing', fil: 'suriin bago i-print' },
+  'report.rowSales': { en: 'Sales', fil: 'Benta' },
+  'report.rowCogs': { en: 'Cost of goods', fil: 'Halaga ng paninda' },
+  'report.rowExpenses': { en: 'Expenses', fil: 'Gastos' },
+  'report.rowShrinkage': { en: 'Spoilage & losses', fil: 'Nasira at nawala' },
+  'report.rowProfit': { en: 'Net profit', fil: 'Kita' },
+  'report.rowDrawer': { en: 'Cash in drawer', fil: 'Cash sa kahon' },
+  'report.rowWallet': { en: 'In GCash/Maya', fil: 'Sa GCash/Maya' },
+  'report.rowOwed': { en: 'Owed to you', fil: 'Utang sa iyo' },
+  'report.rowRecords': { en: 'Records', fil: 'Mga tala' },
+  'report.periodDay': { en: 'Day', fil: 'Araw' },
+  'report.periodWeek': { en: 'Week', fil: 'Linggo' },
+  'report.periodMonth': { en: 'Month', fil: 'Buwan' },
+  'report.periodYear': { en: 'Year', fil: 'Taon' },
+  'report.prevPeriod': { en: 'Previous period', fil: 'Nakaraang panahon' },
+  'report.nextPeriod': { en: 'Next period', fil: 'Susunod na panahon' },
+  'report.titleDay': { en: 'SeePat — daily summary ({label})', fil: 'SeePat — pang-araw-araw na buod ({label})' },
+  'report.titleWeek': { en: 'SeePat — weekly summary ({label})', fil: 'SeePat — lingguhang buod ({label})' },
+  'report.titleMonth': { en: 'SeePat — monthly summary ({label})', fil: 'SeePat — buwanang buod ({label})' },
+  'report.titleYear': { en: 'SeePat — yearly summary ({label})', fil: 'SeePat — taunang buod ({label})' },
 
   // --- Pat, the owl -------------------------------------------------------
   // Pat's own words are never written here: its sentence is always a

@@ -472,7 +472,6 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           aria-label={t('receipt.captureTitle')}
           onChange={(e) => {
@@ -495,10 +494,13 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
           >
             {working ? t('receipt.working') : t('receipt.takePhoto')}
           </Button>
-          <Button variant="ghost" className="w-full" onClick={() => void useSample()} disabled={working}>
-            {t('receipt.trySample')}
+          <Button variant="ghost" className="w-full" onClick={() => fileRef.current?.click()} disabled={working}>
+            {t('receipt.uploadPhoto')}
           </Button>
         </div>
+        <Button variant="ghost" className="mt-2 w-full" onClick={() => void useSample()} disabled={working}>
+          {t('receipt.trySample')}
+        </Button>
         {photoUrl ? (
           <img src={photoUrl} alt="" className="mt-3 max-h-56 w-full rounded-2xl border border-line object-cover" />
         ) : null}

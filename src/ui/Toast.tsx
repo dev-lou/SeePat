@@ -211,7 +211,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             onTouchStart={handlePause}
             onTouchEnd={handleResume}
             onTouchCancel={handleResume}
-            className={`pointer-events-auto group relative overflow-hidden flex items-center gap-3 rounded-full border border-white/20 bg-[#0b0b0f]/95 py-2.5 px-4.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-2xl transition-all ${
+            className={`pointer-events-auto group relative overflow-hidden flex items-center gap-3 rounded-2xl border border-line-strong bg-white/95 py-2.5 px-4 shadow-[0_20px_50px_-12px_rgba(8,16,50,0.35)] backdrop-blur-2xl transition-all ${
               current.exiting ? 'dynamic-island-exit' : 'dynamic-island-enter'
             } ${
               current.tone === 'success'
@@ -227,12 +227,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border shadow-xs font-black text-[0.75rem] ${
                 current.tone === 'success'
-                  ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-400'
+                  ? 'bg-emerald-500/15 border-emerald-600/30 text-emerald-700'
                   : current.tone === 'warn'
-                    ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                    ? 'bg-amber-500/15 border-amber-600/30 text-amber-700'
                     : current.tone === 'error'
-                      ? 'bg-red-500/20 border-red-400/50 text-red-400'
-                      : 'bg-brand-500/20 border-brand-400/50 text-brand-300'
+                      ? 'bg-red-500/15 border-red-600/30 text-red-700'
+                      : 'bg-brand-500/15 border-brand-600/30 text-brand-700'
               }`}
             >
               {current.tone === 'success' ? '✓' : current.tone === 'warn' ? '!' : current.tone === 'error' ? '✕' : 'ℹ'}
@@ -240,15 +240,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
             {/* Message Body */}
             <div className="min-w-0 flex-1">
-              {/* `line-clamp-2` rather than `truncate`: a validation message is
-                  the one place the toast has something to say, and "Add an item,
-                  a quantity, and a pri…" is not a message. Two lines fit every
-                  string in the table at both reading sizes. */}
-              <p className="text-[0.875rem] font-bold text-white tracking-wide line-clamp-2 drop-shadow-xs">
+              {/* Full text, always: the card grows instead of clipping, so
+                  "Recorded: ₱2,000.00 of capital." reads whole — never "of…". */}
+              <p className="text-[0.875rem] font-bold text-fg tracking-wide">
                 {current.title}
               </p>
               {current.description ? (
-                <p className="text-[0.75rem] font-medium text-white/75 line-clamp-2 mt-0.5">
+                <p className="text-[0.75rem] font-medium text-fg-subtle mt-0.5">
                   {current.description}
                 </p>
               ) : null}
@@ -262,10 +260,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   current.onUndo?.()
                   dismiss()
                 }}
-                className="shrink-0 flex min-h-11 items-center gap-1.5 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 px-3.5 py-2 text-[0.75rem] font-black uppercase tracking-wider text-gold-300 backdrop-blur-md border border-white/25 shadow-xs transition-all"
+                className="shrink-0 flex min-h-11 items-center gap-1.5 rounded-full bg-brand-600/10 hover:bg-brand-600/20 active:scale-95 px-3.5 py-2 text-[0.75rem] font-black uppercase tracking-wider text-brand-700 backdrop-blur-md border border-brand-600/30 shadow-xs transition-all"
               >
                 <span>{current.undoLabel ?? 'Undo'}</span>
-                <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-black/45 px-1.5 py-0.5 text-[0.6875rem] font-mono font-black text-gold-200 tabular-nums shadow-inner">
+                <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[0.6875rem] font-mono font-black text-white tabular-nums shadow-inner">
                   {timeLeft}s
                 </span>
               </button>
@@ -276,7 +274,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={dismiss}
               aria-label="Dismiss"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/50 hover:text-white active:scale-90 transition-all"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fg-faint hover:text-fg active:scale-90 transition-all"
             >
               <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
                 <path
@@ -288,7 +286,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </button>
 
             {/* Luminous Progress Countdown Bar */}
-            <div className="absolute bottom-0 inset-x-5 h-[2px] overflow-hidden rounded-full bg-white/10">
+            <div className="absolute bottom-0 inset-x-5 h-[2px] overflow-hidden rounded-full bg-black/10">
               <div
                 className={`h-full rounded-full ${
                   current.tone === 'success'

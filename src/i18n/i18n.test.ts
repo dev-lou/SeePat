@@ -216,6 +216,7 @@ describe('engine copy carried as data is bilingual', () => {
       bothLanguages(model.languages, `model languages ${model.key}`)
       bothLanguages(model.license, `model licence ${model.key}`)
       bothLanguages(model.why, `model rationale ${model.key}`)
+      bothLanguages(model.tradeoff, `model tradeoff ${model.key}`)
     }
   })
 

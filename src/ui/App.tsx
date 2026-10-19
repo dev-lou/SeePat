@@ -9,6 +9,7 @@ import { PlanScreen } from './Plan.tsx'
 import { OfflineScreen } from './Offline.tsx'
 import { ItemsScreen } from './Items.tsx'
 import { UtangScreen } from './Utang.tsx'
+import { SupplierScreen } from './Supplier.tsx'
 import { ReceiptScreen } from './Receipt.tsx'
 import { Button, Chip, ConfirmDialog, SimulatedNote } from './components.tsx'
 import { ToastProvider, useToast } from './Toast.tsx'
@@ -22,12 +23,23 @@ import { LANGS, pick, useLang, useSetLang, useT } from '../i18n/index.ts'
 import type { UIStr } from '../i18n/index.ts'
 import { Welcome } from './Welcome.tsx'
 import { clearWelcomeSeen, shouldShowWelcome, welcomeSeenVersion } from '../onboarding.ts'
+import { readPersisted, writePersisted } from '../storage.ts'
 import { finishBoot } from '../boot.ts'
 import { useReadingSize, useSetReadingSize } from '../reading.ts'
 import type { ReadingSize } from '../reading.ts'
 import { setSpeakEnabled, useSpeakEnabled } from './useSpeech.ts'
 
-type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline' | 'items' | 'utang' | 'resibo'
+type Tab = 'twin' | 'tala' | 'boses' | 'tanong' | 'score' | 'plan' | 'offline' | 'items' | 'utang' | 'supplier' | 'resibo'
+
+const PRO_NUDGE = { key: 'seepat.pro.nudge.v1' }
+
+/** Local calendar day — the nudge sleeps until tomorrow, not for 24 hours. */
+function nudgeDay(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
+}
 
 /**
  * The three reading sizes, in words rather than an A/A+/A++ glyph strip: the
@@ -65,6 +77,7 @@ const PAGE_LABEL: Record<Tab, UIStr> = {
   offline: 'app.offlineVoice',
   items: 'app.myItems',
   utang: 'app.utangList',
+  supplier: 'app.supplierDebts',
   resibo: 'tab.receipt',
 }
 
@@ -263,6 +276,40 @@ function AppShell() {
     setMoreOpen(false)
   }
 
+  const goToSupplier = () => {
+    setTab('supplier')
+    setMenuOpen(false)
+    setMoreOpen(false)
+  }
+
+  const goToReceipt = () => {
+    setTab('resibo')
+    setMenuOpen(false)
+    setMoreOpen(false)
+  }
+
+  const goToAsk = () => {
+    setTab('tanong')
+    setMenuOpen(false)
+    setMoreOpen(false)
+  }
+
+  // The daily PRO nudge: free owners see one upgrade popup per day, on the
+  // Money page, dismissible with either button or the backdrop — and never
+  // again that day once dismissed. PRO owners never see it at all.
+  const [nudgeOpen, setNudgeOpen] = useState(false)
+  useEffect(() => {
+    if (tab === 'twin' && billing.tier === 'free' && readPersisted(PRO_NUDGE) !== nudgeDay()) {
+      setNudgeOpen(true)
+    } else {
+      setNudgeOpen(false)
+    }
+  }, [tab, billing.tier])
+  function dismissNudge() {
+    writePersisted(PRO_NUDGE, nudgeDay())
+    setNudgeOpen(false)
+  }
+
   function setDemoTier(tier: TierId) {
     if (tier === 'free') billing.downgrade()
     else billing.purchase(tier, 'gcash')
@@ -398,7 +445,11 @@ function AppShell() {
               negosyo={negosyo}
               onOpenScore={() => setTab('score')}
               onOpenUtang={goToUtang}
-              onGo={setTab}
+              onOpenSupplier={goToSupplier}
+              onOpenOffline={goToOffline}
+              onOpenItems={goToItems}
+              onOpenReceipt={goToReceipt}
+              onOpenAsk={goToAsk}
             />
           ) : null}
           {tab === 'tala' ? (
@@ -427,9 +478,27 @@ function AppShell() {
           {tab === 'utang' ? (
             <UtangScreen negosyo={negosyo} onOpenLedger={() => setTab('tala')} />
           ) : null}
+          {tab === 'supplier' ? (
+            <SupplierScreen negosyo={negosyo} onOpenLedger={() => setTab('tala')} />
+          ) : null}
           {tab === 'resibo' ? <ReceiptScreen negosyo={negosyo} /> : null}
         </div>
       </main>
+
+      {nudgeOpen ? (
+        <ConfirmDialog
+          title={t('plan.nudgeTitle')}
+          body={t('plan.nudgeBody')}
+          confirmLabel={t('plan.nudgeCta')}
+          cancelLabel={t('plan.nudgeLater')}
+          tone="brand"
+          onConfirm={() => {
+            dismissNudge()
+            goToPlan()
+          }}
+          onCancel={dismissNudge}
+        />
+      ) : null}
 
       {/*
        * The dock — one floating white pill with four keys in a row: Money,
@@ -488,6 +557,13 @@ function AppShell() {
               />
               <SpeedRow
                 index={3}
+                icon="M4 7h16v10H4zM8 7V5h8v2M8 11h8"
+                title={t('app.supplierDebts')}
+                sub={`${t('supplier.total')} · ${formatPHP(negosyo.derived.totalLiabilitiesCentavos)}`}
+                onOpen={goToSupplier}
+              />
+              <SpeedRow
+                index={4}
                 icon="M4 8h3l2-2h6l2 2h3v11H4zM12 16a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"
                 title={t('tab.receipt')}
                 sub={t('receipt.captureBody')}
@@ -690,6 +766,24 @@ function AppShell() {
                     </span>
                     <span className="num block text-[0.8125rem] text-fg-faint">
                       {t('utang.total')} · {formatPHP(negosyo.derived.receivablesCentavos)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[0.875rem] font-bold text-brand-700">
+                    {t('app.open')}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToSupplier}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card px-3.5 py-3 text-left shadow-e1 transition active:bg-sunken"
+                >
+                  <span>
+                    <span className="block text-[0.9375rem] font-semibold text-fg">
+                      {t('app.supplierDebts')}
+                    </span>
+                    <span className="num block text-[0.8125rem] text-fg-faint">
+                      {t('supplier.total')} · {formatPHP(negosyo.derived.totalLiabilitiesCentavos)}
                     </span>
                   </span>
                   <span className="shrink-0 text-[0.875rem] font-bold text-brand-700">

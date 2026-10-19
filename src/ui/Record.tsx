@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Button, Card, Chip, CustomSelect, EmptyState, Field, SectionTitle, inputClass } from './components.tsx'
+import { Button, Card, Chip, ConfirmDialog, CustomSelect, EmptyState, Field, SectionTitle, inputClass } from './components.tsx'
 import { useToast } from './Toast.tsx'
 import {
   formatPHP,
   pesos,
   pricePerBaseUnit,
   pricePerDisplayUnit,
+  qtyPerDisplayUnit,
   suggestedCost,
   suggestedPrice,
   unitPriceDrifts,
 } from '../engine/index.ts'
-import type { PaymentChannel, Sku, Transaction } from '../engine/index.ts'
+import type { Ledger, PaymentChannel, Sku, Transaction } from '../engine/index.ts'
 import { newTxnId } from '../store.ts'
 import type { Negosyo } from '../store.ts'
 import { UI, clockTime, dayMonth, tr, useLang, useT } from '../i18n/index.ts'
@@ -128,6 +129,51 @@ function toBaseQty(sku: Sku | undefined, displayQty: number): number {
   return Math.round(displayQty)
 }
 
+export interface OversoldLine {
+  skuId: string
+  name: string
+  unit: string
+  /** Wanted and on-hand, in the unit the owner counts in — never base grams. */
+  wanted: number
+  onHand: number
+}
+
+/**
+ * The honest-sale gate as a pure function, so tests can pin it.
+ *
+ * Every returned line is a sale the ledger cannot cover: committing it would
+ * push the stock negative and force the next Weeks screen to estimate that
+ * item's cost. An exact-quantity sale is NOT oversold — the shelf is empty
+ * afterwards, but the books still balance.
+ */
+export function oversoldLines(
+  ledger: Ledger,
+  inventory: { readonly [skuId: string]: { readonly qty: number } | undefined },
+  saleLines: { readonly skuId: string; readonly qty: number }[],
+): OversoldLine[] {
+  return saleLines.flatMap((l) => {
+    const sku = ledger.skus.find((s) => s.id === l.skuId)
+    const onHandBase = Math.max(0, inventory[l.skuId]?.qty ?? 0)
+    if (l.qty <= onHandBase) return []
+    const baseUnit = sku?.baseUnit ?? 'pc'
+    // The same rounding the items list reads back with, so the gate never
+    // disagrees with the shelf count the owner just saw there.
+    const shown = (baseQty: number) =>
+      baseUnit === 'g'
+        ? Math.round(qtyPerDisplayUnit(baseUnit, baseQty) * 10) / 10
+        : Math.round(qtyPerDisplayUnit(baseUnit, baseQty))
+    return [
+      {
+        skuId: l.skuId,
+        name: sku?.name ?? l.skuId,
+        unit: sku?.unit ?? baseUnit,
+        wanted: shown(l.qty),
+        onHand: shown(onHandBase),
+      },
+    ]
+  })
+}
+
 export function RecordScreen({
   negosyo,
   onOpenItems,
@@ -178,6 +224,9 @@ export function RecordScreen({
   // Deleting is always gated: the row key arms this, the dialog confirms it,
   // and the toast afterwards still offers undo. No silent deletes.
   const [pendingDelete, setPendingDelete] = useState<{ txn: Transaction; index: number } | null>(null)
+  // A sale the gate caught: nothing is committed while this is set — the
+  // dialog either reroutes to the missing purchase or re-posts with force.
+  const [pendingOversell, setPendingOversell] = useState<OversoldLine | null>(null)
 
   function confirmDelete() {
     const target = pendingDelete
@@ -194,6 +243,40 @@ export function RecordScreen({
         toast.show({ title: t('record.deleteUndone'), tone: 'success' })
       },
     })
+  }
+
+  /**
+   * The oversell dialog's way out: the stock the sale needs was never
+   * recorded, so the form becomes a purchase of exactly that item — quantity
+   * prefilled with what the sale asked for, price prefilled with the last
+   * known cost, so recording the delivery is two taps, not a new errand.
+   */
+  function recordMissingPurchase() {
+    const caught = pendingOversell
+    setPendingOversell(null)
+    if (!caught) return
+    const sku = ledger.skus.find((s) => s.id === caught.skuId)
+    const stored = suggestedCost(ledger, caught.skuId)
+    const display = pricePerDisplayUnit(sku?.baseUnit ?? 'pc', stored)
+    changeMode('purchase')
+    setLines([
+      {
+        key: String(Date.now()),
+        skuId: caught.skuId,
+        qty: String(caught.wanted),
+        price: display > 0 ? String(display / 100) : '',
+      },
+    ])
+  }
+
+  /**
+   * The oversell dialog's trapdoor: the owner has read the warning and owns
+   * the consequences, so the exact same lines post with the gate lifted.
+   * Nothing about them is edited on the way through.
+   */
+  function sellAnyway() {
+    setPendingOversell(null)
+    post(true)
   }
 
   /**
@@ -256,7 +339,9 @@ export function RecordScreen({
     void sku
   }
 
-  function post() {
+  // `force` bypasses the honest-sale gate — only the oversell dialog's own
+  // "Sell anyway" passes true, so every other caller keeps the protection.
+  function post(force = false) {
     const at = new Date().toISOString()
 
     if (isLineMode) {
@@ -264,7 +349,6 @@ export function RecordScreen({
       if (usable.length === 0) {
         const msg = t('record.flash.needItems')
         setFlash(msg)
-        toast.show({ title: msg, tone: 'warn' })
         return
       }
 
@@ -292,7 +376,6 @@ export function RecordScreen({
         const msg = onCredit
           ? t('record.flash.purchaseCredit', { amount: formatPHP(total) })
           : t('record.flash.purchase', { amount: formatPHP(total) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -319,6 +402,20 @@ export function RecordScreen({
       })
       const total = saleLines.reduce((s, l) => s + l.qty * l.unitPriceCentavos, 0)
 
+      // The honest-sale gate: a sale bigger than the stock on hand is how the
+      // ledger goes negative and starts estimating costs (the WATCH OUT that
+      // fires after the damage is done). Both cash and utang sales pass
+      // through here, so the check lives before the two commit branches, not
+      // inside either. Purchases skip it — stock arriving can never oversell.
+      // `force` is only ever true from the dialog's own "Sell anyway".
+      if (!force) {
+        const oversold = oversoldLines(ledger, negosyo.twin.inventory, saleLines)
+        if (oversold.length > 0) {
+          setPendingOversell(oversold[0])
+          return
+        }
+      }
+
       if (mode === 'credit_sale') {
         /*
          * A nameless utang is uncollectable: it lands in "Owed to you" with
@@ -330,7 +427,6 @@ export function RecordScreen({
         if (!customerId) {
           const msg = t('record.utangNeedName')
           setFlash(msg)
-          toast.show({ title: msg, tone: 'warn' })
           return
         }
         const txn: Transaction = {
@@ -342,7 +438,6 @@ export function RecordScreen({
         }
         add(txn)
         const msg = t('record.flash.credit', { amount: formatPHP(total) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -367,7 +462,6 @@ export function RecordScreen({
         }
         add(txn)
         const msg = t('record.flash.sale', { amount: formatPHP(total) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -389,7 +483,6 @@ export function RecordScreen({
     if (value <= 0) {
       const msg = t('record.flash.needAmount')
       setFlash(msg)
-      toast.show({ title: msg, tone: 'warn' })
       return
     }
 
@@ -404,7 +497,6 @@ export function RecordScreen({
         }
         add(txn)
         const msg = t('record.flash.expense', { amount: formatPHP(value) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -423,7 +515,6 @@ export function RecordScreen({
         if (!customerId) {
           const msg = t('record.flash.needCustomer')
           setFlash(msg)
-          toast.show({ title: msg, tone: 'warn' })
           return
         }
         const txn: Transaction = {
@@ -435,7 +526,6 @@ export function RecordScreen({
         }
         add(txn)
         const msg = t('record.flash.payment', { amount: formatPHP(value) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -454,7 +544,6 @@ export function RecordScreen({
         const txn: Transaction = { id: newTxnId('cap'), at, kind: 'capital_injection', amountCentavos: value }
         add(txn)
         const msg = t('record.flash.capital', { amount: formatPHP(value) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -473,7 +562,6 @@ export function RecordScreen({
         const txn: Transaction = { id: newTxnId('wdr'), at, kind: 'owner_withdrawal', amountCentavos: value }
         add(txn)
         const msg = t('record.flash.withdrawal', { amount: formatPHP(value) })
-        setFlash(msg)
         toast.show({
           title: msg,
           tone: 'success',
@@ -867,7 +955,8 @@ export function RecordScreen({
           </div>
         )}
 
-        <Button className="mt-4 w-full" onClick={post}>
+        {/* A wrapper, not a bare handler: React passes the click event as the first argument, and post reads that slot as the oversell-gate bypass. */}
+        <Button className="mt-4 w-full" onClick={() => post()}>
           {t('record.submit')}
         </Button>
 
@@ -1136,6 +1225,23 @@ export function RecordScreen({
           what={describe(pendingDelete.txn, ledger, lang)}
           onCancel={() => setPendingDelete(null)}
           onConfirm={confirmDelete}
+        />
+      ) : null}
+
+      {pendingOversell ? (
+        <ConfirmDialog
+          title={t('record.oversellTitle')}
+          body={`${t('record.oversellBody', {
+            qty: pendingOversell.wanted,
+            unit: pendingOversell.unit,
+            name: pendingOversell.name,
+            n: pendingOversell.onHand,
+          })} ${t('record.oversellPurchaseHint')}`}
+          confirmLabel={t('record.oversellPurchase')}
+          cancelLabel={t('record.oversellAnyway')}
+          tone="brand"
+          onConfirm={recordMissingPurchase}
+          onCancel={sellAnyway}
         />
       ) : null}
     </div>
