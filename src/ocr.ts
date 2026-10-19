@@ -44,6 +44,26 @@ async function loadTesseract(): Promise<NonNullable<typeof tesseractWorker>> {
   return tesseractWorker
 }
 
+/** True once the Tesseract worker (WASM + English weights) is loaded and cached. */
+export function isOcrReady(): boolean {
+  return tesseractWorker !== null
+}
+
+/**
+ * Warm the real OCR engine in the background: download WASM + weights while
+ * online so the first *real* scan doesn't pay the cost in front of the owner.
+ * Swallows failures (offline on first open just stays unready) — the scan
+ * path reports the actionable error instead. Returns true when ready.
+ */
+export async function warmOcrEngine(): Promise<boolean> {
+  try {
+    await loadTesseract()
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Canned text for “Subukan ang sample” — identical shape to a real scan. */
 export const MOCK_RECEIPT_TEXT = [
   'PUREGOLD DINGLE',

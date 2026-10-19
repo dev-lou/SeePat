@@ -10,7 +10,7 @@ import {
   receiptToTransaction,
 } from '../engine/index.ts'
 import type { ReceiptDraft } from '../engine/index.ts'
-import { downscaleImage, explainOcrError, runOcr } from '../ocr.ts'
+import { downscaleImage, explainOcrError, isOcrReady, runOcr, warmOcrEngine } from '../ocr.ts'
 import type { OcrEngineId } from '../ocr.ts'
 import { markReceipt, newReceiptId, saveReceipt, useReceipts } from '../receipts.ts'
 import { newTxnId } from '../store.ts'
@@ -272,6 +272,26 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [facing, setFacing] = useState<Facing>('environment')
+  // Real-OCR readiness: null while warming, true once WASM+weights are cached.
+  const [ocrReady, setOcrReady] = useState<boolean | null>(isOcrReady() ? true : null)
+
+  // Warm the reader while the owner is still framing the photo — a real scan
+  // then starts instantly instead of downloading mid-tap. Fire-and-forget:
+  // offline on first open just stays unready until a scan succeeds.
+  useEffect(() => {
+    if (engine !== 'tesseract' || isOcrReady()) {
+      if (isOcrReady()) setOcrReady(true)
+      return
+    }
+    let live = true
+    void warmOcrEngine().then((ready) => {
+      if (live && ready) setOcrReady(true)
+      else if (live) setOcrReady(false)
+    })
+    return () => {
+      live = false
+    }
+  }, [engine])
   const { receipts } = useReceipts(refreshKey)
 
   const draft = useMemo(
@@ -299,7 +319,18 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
       // Mock is only for "Try a sample" — photos always get real OCR.
       const realEngine: OcrEngineId = engine === 'mock' ? 'tesseract' : engine
       const result = await runOcr(small, realEngine)
+      setOcrReady(true)
       if (!result.text.trim()) {
+        setOcrText('')
+        setRows(null)
+        setOcrError(t('receipt.noText'))
+        return
+      }
+      const parsedPreview = parseReceiptText(result.text, ledger, lang)
+      // A face (or any non-receipt) reads as words with no prices and no
+      // goods — drafting "Shampoo Sachet" off the fragment "po" is how the
+      // last phantom happened. Say so and ask for a retake instead.
+      if (parsedPreview.lines.length === 0) {
         setOcrText('')
         setRows(null)
         setOcrError(t('receipt.noText'))
@@ -426,7 +457,16 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
           ))}
         </div>
         {engine === 'tesseract' ? (
-          <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-faint">{t('receipt.engineNote')}</p>
+          <>
+            <p className="mt-2 text-[0.8125rem] leading-relaxed text-fg-faint">{t('receipt.engineNote')}</p>
+            <p className="mt-1 text-[0.8125rem] font-semibold text-fg-subtle">
+              {ocrReady === true
+                ? `✓ ${t('receipt.ocrReady')}`
+                : ocrReady === null
+                  ? t('receipt.ocrWarming')
+                  : t('receipt.ocrNotReady')}
+            </p>
+          </>
         ) : null}
         <input
           ref={fileRef}

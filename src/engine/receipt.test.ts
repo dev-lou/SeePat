@@ -65,6 +65,49 @@ describe('parseReceiptText', () => {
     expect(draft.lines).toHaveLength(0)
     expect(draft.needsConfirmation).toBe(true)
   })
+
+  it('never drafts an item off a 2-letter fragment inside a longer name', () => {
+    // Regression: a face photo OCR'd as "po", and "po" sits inside
+    // "shampoo" — the old substring match drafted a Shampoo Sachet line.
+    const draft = parseReceiptText('po', ledger())
+    expect(draft.lines).toHaveLength(0)
+  })
+
+  it('drops price-less fragments when nothing in the photo has a price', () => {
+    // A non-receipt photo reads as stray words; with no money token anywhere
+    // there is nothing grounding a draft, so nothing is drafted.
+    const draft = parseReceiptText(['po', 'face here'].join('\n'), ledger())
+    expect(draft.lines).toHaveLength(0)
+  })
+
+  it('drafts nothing from a face photo full of stray digits', () => {
+    // Regression: Tesseract read a selfie as 15 garbage fragments, two with
+    // lone bare digits ("pad Pps ve 3 SL") that parsed as ₱3.00 each.
+    // Thermal printers write centavos — bare digits are not prices.
+    const face = [
+      'S17 Sedat LMR ie eT',
+      'ARISES Ee',
+      'ORE',
+      'Be =D pc',
+      'x = SA',
+      '3 gira IY es [re',
+      'E Foy; Tee E',
+      ': i ES',
+      '= Fr ps',
+      'ag » ibd iad',
+      'pad Pps ve 3 SL',
+    ].join('\n')
+    const draft = parseReceiptText(face, ledger())
+    expect(draft.lines).toHaveLength(0)
+  })
+
+  it('keeps price-less goods when a priced line grounds the receipt', () => {
+    // A real receipt where one line lost its price is still a receipt: the
+    // priced line proves the photo is a receipt, the bare line stays review-only.
+    const draft = parseReceiptText(['BIGAS', 'COKE MISMO 15.00'].join('\n'), ledger())
+    expect(draft.lines.length).toBeGreaterThanOrEqual(1)
+    expect(draft.lines.some((l) => l.unitPriceCentavos === 1500)).toBe(true)
+  })
 })
 
 describe('receiptToTransaction', () => {

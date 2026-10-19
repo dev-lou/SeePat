@@ -109,7 +109,10 @@ function matchSku(candidate: string, ledger: Ledger): { skuId: SkuId | null; sco
     for (const label of names) {
       const target = normalize(label)
       if (!target) continue
-      if (norm === target || norm.includes(target) || target.includes(norm)) {
+      // Substring matches need at least 3 letters: "po" is inside "shampoo",
+      // and a 2-letter OCR fragment must never draft a phantom item off it.
+      // (Exact equality below still applies at any length.)
+      if (norm === target || (norm.length >= 3 && (norm.includes(target) || target.includes(norm)))) {
         const score = Math.min(1, (Math.min(norm.length, target.length) + 2) / (Math.max(norm.length, target.length) + 2))
         if (score > bestScore) {
           bestScore = score
@@ -190,16 +193,25 @@ function parseLine(raw: string): ParsedLine | null {
   tokens.forEach((tok, i) => {
     if (parseMoneyToken(tok.replace(/[.,;:]+$/, '')) !== null) moneyIdx.push(i)
   })
-  if (moneyIdx.length === 0) {
+  // Bare integers ("3") are not prices until proven otherwise: Tesseract
+  // garbage is full of stray digits, and treating each as ₱3.00 invents money.
+  // A money token only counts as a price with centavos ("12.00"); without one
+  // the line falls through to the price-less candidate below, where the
+  // document gate decides its fate. Real thermal printers write centavos, so
+  // genuine lines are unaffected — a bare-int real line just asks for its
+  // price by hand instead of getting a wrong one for free.
+  const pricedIdx = moneyIdx.filter((i) => /\d+\.\d{1,2}/.test(tokens[i]))
+  if (pricedIdx.length === 0) {
     // No price at all — keep as review-only candidate if it looks like goods.
     if (tokens.length >= 1 && /[a-zA-Z]{2,}/.test(text)) {
       return { qty: 1, nameCandidate: deindexed, unitPriceCentavos: null, lineTotalCentavos: null }
     }
     return null
   }
+  const moneyIdx2 = pricedIdx
 
-  const lastMoney = moneyIdx[moneyIdx.length - 1]
-  const prevMoney = moneyIdx.length > 1 ? moneyIdx[moneyIdx.length - 2] : null
+  const lastMoney = moneyIdx2[moneyIdx2.length - 1]
+  const prevMoney = moneyIdx2.length > 1 ? moneyIdx2[moneyIdx2.length - 2] : null
   const lineTotal = parseMoneyToken(tokens[lastMoney].replace(/[.,;:]+$/, ''))!
   const unitPrice = prevMoney !== null ? parseMoneyToken(tokens[prevMoney].replace(/[.,;:]+$/, ''))! : lineTotal
 
@@ -263,6 +275,26 @@ export function parseReceiptText(ocrText: string, ledger: Ledger, lang: Lang = '
   const supplierGuess = guessSupplier(rawLines)
   const receiptTotalCentavos = guessTotal(rawLines)
 
+  // Document gate: a photo of a face has no real prices, while a genuine
+  // receipt always prints at least one decimal price ("12.00"). Price-less
+  // guess lines are only kept when some line in the same photo carries one —
+  // otherwise every OCR fragment ("po") becomes a phantom item.
+  //
+  // Decimals are required deliberately: Tesseract garbage is full of stray
+  // bare digits ("pad Pps ve 3 SL"), and a lone "3" parses as ₱3.00. Thermal
+  // printers write prices with centavos, so grounding on decimal money kills
+  // face-photo drafts without touching real receipts.
+  const hasPricedLine = rawLines.some((raw) =>
+    raw
+      .replace(/[|]/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean)
+      .some(
+        (tok) =>
+          /\d+\.\d{1,2}/.test(tok) && parseMoneyToken(tok.replace(/[.,;:]+$/, '')) !== null,
+      ),
+  )
+
   const lines: ReceiptDraftLine[] = []
   for (const raw of rawLines) {
     // Store headers carry no prices and are never goods: "PUREGOLD DINGLE"
@@ -270,6 +302,7 @@ export function parseReceiptText(ocrText: string, ledger: Ledger, lang: Lang = '
     if (!/\d/.test(raw) && SUPPLIER_HINTS.some((h) => normalize(raw).includes(h.trim()))) continue
     const parsed = parseLine(raw)
     if (!parsed) continue
+    if (parsed.unitPriceCentavos === null && !hasPricedLine) continue
     const { skuId, score } = matchSku(parsed.nameCandidate, ledger)
     const sku = ledger.skus.find((s) => s.id === skuId)
     const needsPrice = parsed.unitPriceCentavos === null
