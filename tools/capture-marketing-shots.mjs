@@ -49,7 +49,8 @@ if (LANG !== 'en' && LANG !== 'fil') throw new Error(`unknown language: ${LANG}`
  * The copy each step waits for, per language. Keys mirror the i18n keys they
  * come from so a copy change is a one-line fix in one place:
  * tab.twin, tab.ledger, tab.voice, tab.ask, tab.score, dash.cash, ask.ask,
- * the capital answer in engine/narrator.ts, voice.typeTitle,
+ * askEx.capitalWhereLabel, the capital composition labels in engine/capital.ts,
+ * voice.typeTitle,
  * voice.draftSheetTitle, score.dimensions, and the Sale hint on the ledger
  * write side (Cash / GCash).
  */
@@ -61,13 +62,18 @@ const MARKERS = {
     tabAsk: 'Ask',
     more: 'Quick actions',
     tabScore: 'Score',
-    money: 'Cash in the box',
+    money: 'Cash on hand',
     askButton: 'Ask',
-    askAnswer: 'is your total capital right now',
+    askStarter: 'Where is my capital',
+    askAnswer: 'Cash in the box',
     voice: 'Type What You Said',
     draft: 'Confirm the record',
     score: 'What makes up the Score',
     ledger: 'Cash / GCash',
+    tabReceipt: 'Receipt',
+    receipt: 'Scan a supplier receipt',
+    sample: 'Try a sample',
+    receiptDraft: 'Check the draft',
   },
   fil: {
     tabMoney: 'Pera',
@@ -76,13 +82,18 @@ const MARKERS = {
     tabAsk: 'Tanong',
     more: 'Mabilisang kilos',
     tabScore: 'Score',
-    money: 'Cash sa kahon',
+    money: 'Pera sa kamay',
     askButton: 'Tanong',
-    askAnswer: 'ang kabuuang puhunan mo ngayon',
+    askStarter: 'Nasaan ang puhunan',
+    askAnswer: 'Cash sa kahon',
     voice: 'I-type ang Sinabi Mo',
     draft: 'Kumpirmahin ang tala',
     score: 'Ano ang Bumubuo sa Score',
     ledger: 'Cash / GCash',
+    tabReceipt: 'Resibo',
+    receipt: 'I-scan ang resibo ng supplier',
+    sample: 'Subukan ang sample',
+    receiptDraft: 'Suriin ang draft',
   },
 }[LANG]
 
@@ -197,10 +208,12 @@ async function main() {
     features: [{ name: 'prefers-color-scheme', value: 'light' }],
   })
   // Before the first paint: skip the first-run welcome deck (the page shows the
-  // product, not the tour that appears in front of it once) and set the
-  // language through the app's own storage key.
+  // product, not the tour that appears in front of it once), set the language
+  // through the app's own storage key, and mark the daily PRO nudge seen —
+  // otherwise it opens over the Money tab on a fresh profile and the hero
+  // shot is a popup, not the product.
   await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `localStorage.setItem('seepat.welcome.v1','1');localStorage.setItem('seepat.lang.v1','${LANG}');`,
+    source: `localStorage.setItem('seepat.welcome.v1','1');localStorage.setItem('seepat.lang.v1','${LANG}');localStorage.setItem('seepat.pro.nudge.v1',(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') })());`,
   })
 
   const evaluate = async (expression) => {
@@ -222,7 +235,10 @@ async function main() {
     }
   }
 
-  const hasText = (text) => `document.body.textContent.includes(${JSON.stringify(text)})`
+  // Case-insensitive: the dashboard uppercases its labels through CSS, so the
+  // source text and the shown text differ in case but not in words.
+  const hasText = (text) =>
+    `document.body.textContent.toLowerCase().includes(${JSON.stringify(text.toLowerCase())})`
 
   await cdp.send('Page.navigate', { url: BASE })
   await waitFor("!!document.querySelector('nav')", 'the app shell')
@@ -274,19 +290,13 @@ async function main() {
     `(() => { const b = [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(MARKERS.tabAsk)})); if (!b) return false; b.click(); return true })()`,
   )
   await sleep(650)
+  // Tap the capital starter, not the keyboard: it asks through the same path
+  // as a typed question, and a headless IME is one fewer thing to break.
   await waitFor("!!document.querySelector('main input')", 'the ask input')
-  await evaluate(`(() => {
-    const input = document.querySelector('main input');
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-    setter.call(input, 'Nasaan ang puhunan ko?');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    return true;
-  })()`)
-  await sleep(250)
   const asked = await evaluate(
-    `(() => { const b = [...document.querySelectorAll('main button')].find((x) => x.textContent.trim() === ${JSON.stringify(MARKERS.askButton)}); if (!b) return false; b.click(); return true })()`,
+    `(() => { const b = [...document.querySelectorAll('main button')].find((x) => x.textContent.includes(${JSON.stringify(MARKERS.askStarter)})); if (!b) return false; b.click(); return true })()`,
   )
-  if (!asked) throw new Error('the Ask button was not found')
+  if (!asked) throw new Error('the capital starter was not found')
   await waitFor(hasText(MARKERS.askAnswer), 'the capital answer')
   await shot('ask')
 
@@ -320,6 +330,25 @@ async function main() {
   await clickTab(MARKERS.tabLedger)
   await waitFor(hasText(MARKERS.ledger), 'the ledger screen')
   await shot('ledger')
+
+  // 6 — Receipt: a supplier receipt photographed, read, and drafted as a
+  //     purchase. The mock "sample" path is used on purpose: it is
+  //     deterministic (a real photo would read whatever the lens saw), it
+  //     exercises the same draft UI a scan lands on, and it needs no camera
+  //     in a headless browser. Reached through the More menu like Ask.
+  console.log('Receipt…')
+  await clickTab(MARKERS.more)
+  await evaluate(
+    `(() => { const b = [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(MARKERS.tabReceipt)})); if (!b) return false; b.click(); return true })()`,
+  )
+  await sleep(650)
+  await waitFor(hasText(MARKERS.receipt), 'the receipt screen')
+  const sampled = await evaluate(
+    `(() => { const b = [...document.querySelectorAll('main button')].find((x) => x.textContent.trim() === ${JSON.stringify(MARKERS.sample)}); if (!b) return false; b.click(); return true })()`,
+  )
+  if (!sampled) throw new Error('the sample receipt button was not found')
+  await waitFor(hasText(MARKERS.receiptDraft), 'the receipt draft')
+  await shot('receipt')
 
   cleanup()
   await sleep(300)

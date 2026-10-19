@@ -92,7 +92,7 @@ Two things worth knowing about the deploy, because both are load-bearing:
 
 ## Screenshots
 
-The six screenshots per language are the **real app**, captured at the real
+The seven screenshots per language are the **real app**, captured at the real
 390×844 viewport at 2×, then converted to WebP. They are regenerated from the
 repository root, which is where the app lives:
 

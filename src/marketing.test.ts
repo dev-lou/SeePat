@@ -252,6 +252,7 @@ describe('the two pages are a pair, not two pages', () => {
       '/assets/shots/en-voice.webp',
       '/assets/shots/en-voice-draft.webp',
       '/assets/shots/en-ledger.webp',
+      '/assets/shots/en-receipt.webp',
       '/assets/shots/en-score.webp',
     ])
     expect(attr(PAGES.fil, /src="(\/assets\/shots\/[^"]+)"/g)).toEqual([
@@ -260,6 +261,7 @@ describe('the two pages are a pair, not two pages', () => {
       '/assets/shots/fil-voice.webp',
       '/assets/shots/fil-voice-draft.webp',
       '/assets/shots/fil-ledger.webp',
+      '/assets/shots/fil-receipt.webp',
       '/assets/shots/fil-score.webp',
     ])
     for (const shot of [...attr(PAGES.en, /src="(\/assets\/shots\/[^"]+)"/g)]) {

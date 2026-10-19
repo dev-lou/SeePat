@@ -165,10 +165,10 @@ describe('gating', () => {
 
   it('refuses a planned feature at every tier, including the paid one', () => {
     // The pricing page may not list vapor (see `liveFeatures`), and `can()` may
-    // not unlock it either. A screen that gated itself on `receipt_ocr` would
-    // otherwise render a working door onto an empty room.
+    // not unlock it either. A screen that gated itself on `receipt_cloud_retry`
+    // would otherwise render a working door onto an empty room.
     for (const key of [
-      'receipt_ocr',
+      'receipt_cloud_retry',
       'multi_user',
       'forecasting',
       'supplier_intelligence',
@@ -265,10 +265,12 @@ describe('cancelling cannot leave the owner holding a paid asset', () => {
 describe('the honesty rule: never sell vapor', () => {
   it('lists only live features on the pricing page', () => {
     const live = liveFeatures()
-    // Receipt OCR, staff access, forecasting, benchmarking, supplier intel
-    // and bulk reports have no working code — they must stay planned.
+    // The cloud second-read for receipts, staff access, forecasting, supplier
+    // intel, benchmarking and bulk reports have no working code — they must
+    // stay planned. (The on-device receipt scan is already live, but it is
+    // free and ungated, so it is not a PRO feature at all.)
     for (const key of [
-      'receipt_ocr',
+      'receipt_cloud_retry',
       'multi_user',
       'forecasting',
       'supplier_intelligence',

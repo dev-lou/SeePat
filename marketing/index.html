@@ -125,7 +125,7 @@
                 "name": "SeePat FREE",
                 "price": "0",
                 "priceCurrency": "PHP",
-                "description": "Everything that runs on the phone, free for life: sales, expenses, utang, the capital breakdown, answers, voice and the Sipat Score."
+                "description": "Everything that runs on the phone, free for life: sales, expenses, utang, the capital breakdown, answers, voice, receipt scanning and the Sipat Score."
               },
               {
                 "@type": "Offer",
@@ -140,6 +140,7 @@
               "Profit that is not just the cash in the box",
               "Where your capital actually sits",
               "Utang with part-payments and running balances",
+              "Supplier receipts read into purchases",
               "GCash, Maya and bank kept apart from cash",
               "Works with no signal",
               "Answers that show the numbers behind them",
@@ -155,7 +156,7 @@
                 "name": "Does SeePat work without internet?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes — that is the whole point. Your sales, your utang, your capital and the score are all worked out on the phone itself. The part that understands speech is downloaded once, on Wi-Fi, and after that the app keeps working with no signal at all. Nothing you record leaves your phone."
+                  "text": "Yes — that is the whole point. Your sales, your utang, your capital and the score are all worked out on the phone itself. The part that understands speech is downloaded once, on Wi-Fi, and after that the app keeps working with no signal at all. The receipt reader downloads once the same way, then reads supplier receipts on the phone. Nothing you record leaves your phone."
                 }
               },
               {
@@ -171,7 +172,7 @@
                 "name": "What does SeePat cost?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Everything that works on your phone is free, and stays free: the records, utang, the capital breakdown, the answers, voice and the Sipat Score. SeePat PRO is ₱99 a month for the parts that need the internet, starting with longer written explanations. You cannot be charged today — payments are not switched on yet."
+                  "text": "Everything that works on your phone is free, and stays free: the records, utang, the capital breakdown, the answers, voice, receipt scanning and the Sipat Score. SeePat PRO is ₱99 a month for the parts that need the internet, starting with longer written explanations. You cannot be charged today — payments are not switched on yet."
                 }
               },
               {
@@ -225,6 +226,7 @@
         <nav class="site-nav" aria-label="Sections">
           <a href="#why">Why SeePat</a>
           <a href="#voice">Voice</a>
+          <a href="#receipt">Receipts</a>
           <a href="#how">How it works</a>
           <a href="#price">Price</a>
           <a href="#faq">FAQ</a>
@@ -284,7 +286,7 @@
                 height="1688"
                 fetchpriority="high"
                 decoding="async"
-                alt="The SeePat home screen on a phone: real profit today of ₱440.64, described as already minus what was paid for the goods and today's expenses, a sales trend line, and a note that ₱140.00 of today's sales is utang — counted in profit, but not yet cash."
+                alt="The SeePat home screen on a phone: a Good morning greeting from Pat the owl, today's real profit with the week's sales line, cash on hand of ₱38,998.95, ₱4,158.65 owed to you by 4 people, and ₱15,307.90 owed to suppliers — with Money, Tala, Score and More below, and the voice mic beside them."
               />
             </div>
           </div>
@@ -438,7 +440,7 @@
                 height="1688"
                 loading="lazy"
                 decoding="async"
-                alt="The Ask My Negosyo screen: the question “Nasaan ang puhunan ko?” answered with ₱36,393.30 as the total capital right now, followed by a bar breakdown — cash in the box, stock, owed to you, equipment and tools."
+                alt="The Ask My Negosyo screen: the starter question “Where is my capital?” answered with ₱36,393.30 as the total capital right now, followed by the breakdown — cash in the box at ₱38,998.95, stock at what you paid at ₱6,543.60, and what customers still owe — above buttons to ask by typing or by voice."
               />
             </div>
           </div>
@@ -485,7 +487,7 @@
                 height="1688"
                 loading="lazy"
                 decoding="async"
-                alt="The Sipat Voice screen: an owl holding a microphone button, with the prompt “Press and say the transaction” and a one-tap switch to type it instead."
+                alt="The Sipat Voice screen: a choice of internet voice, typing instead, or downloaded offline voice — with the mic card below: an owl in headphones, the prompt “Press and say the transaction”, and the note that it is best for Taglish and never charged per word."
               />
             </div>
             <div class="phone phone--second">
@@ -495,7 +497,7 @@
                 height="1688"
                 loading="lazy"
                 decoding="async"
-                alt="The confirmation sheet after a spoken sale: Coke Mismo at ₱25 each, quantity 10, and Lucky Me Pancit Canton at ₱17, quantity 5 — each line editable, with a note that nothing is saved until the tap that confirms it."
+                alt="The confirmation sheet after a spoken sale: nothing is saved until the tap at the bottom, the record kind set to Sale, and the heard lines — Coke Mismo, 10 pieces at ₱25 each, and Lucky Me Pancit Canton — each editable, with a tip that tapping the mic again adds to the draft instead of replacing it."
               />
             </div>
           </div>
@@ -534,7 +536,7 @@
                   height="1688"
                   loading="lazy"
                   decoding="async"
-                  alt="The ledger screen: three big record types — sale, utang and expense, with more behind one tap — a row asking where the money went in with cash in the box, GCash, Maya and bank transfer as choices, and the item, quantity and price form below."
+                  alt="The Tala screen: Sale, Utang and Expense modes — Sale set to money going into cash in the box, with GCash, Maya and bank transfer beside it — and the item, quantity and price form below, over a history of 233 records."
                 />
               </div>
             </div>
@@ -566,6 +568,55 @@
               <p>Kept out of your expenses, so the shop's profit is about the shop.</p>
             </li>
           </ul>
+        </div>
+      </section>
+
+      <!-- ─── Supplier receipts ─────────────────────────────────────────── -->
+      <section class="band band--dark" id="receipt" aria-labelledby="receipt-title">
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Supplier receipts</p>
+            <h2 class="h2" id="receipt-title">
+              The supplier hands you a receipt. <span class="swipe">That is a purchase.</span>
+            </h2>
+            <div class="stack" style="margin-top: 1.1rem">
+              <p class="lede">
+                Purchases are the records nobody keeps: a long thermal receipt that fades in your
+                pocket, while your stock numbers quietly stop matching what is on the shelf.
+                Photograph it and SeePat reads the lines, matches them to your items, and writes
+                up the purchase as a draft.
+              </p>
+              <p>
+                You check every line before anything is recorded. The draft says plainly which
+                lines need a look, warns you if the total does not match, and never posts on its
+                own — the same rule as voice: nothing is saved until you agree.
+              </p>
+              <p>
+                The reader is downloaded once and runs on your phone. It reads with no signal,
+                and it costs nothing per scan — which is why receipt scanning is in the free plan
+                rather than behind it.
+              </p>
+            </div>
+
+            <ul class="hero__badges">
+              <li class="pill">Photo → draft → confirm</li>
+              <li class="pill">Runs on your phone</li>
+              <li class="pill">Free, reader included</li>
+            </ul>
+          </div>
+
+          <div class="phones">
+            <div class="phone">
+              <img
+                src="/assets/shots/en-receipt.webp"
+                width="780"
+                height="1688"
+                loading="lazy"
+                decoding="async"
+                alt="The Receipt screen: a supplier receipt read into a draft — supplier Puregold Dingle, two lines from the receipt with one flagged “please check”, each line editable — with photo, upload and “try a sample” buttons above, and nothing recorded until it is confirmed."
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -612,7 +663,7 @@
                 height="1688"
                 loading="lazy"
                 decoding="async"
-                alt="The Sipat Score screen: 79 out of 100 marked good, with a “do first” note to collect the ₱4,158.65 of utang still unpaid, and the parts of the score — profit, and cash you can spend — shown with how much each one counts."
+                alt="The Sipat Score screen: 73 out of 100 marked Good, with a “do first” note to collect the ₱4,158.65 of utang still unpaid before ordering again, and the parts of the score — profit and cash you can spend at 100 each — shown with how much each one counts."
               />
             </div>
           </div>
@@ -646,6 +697,7 @@
                 <li>Utang with part-payments and running balances</li>
                 <li>Your capital, broken down — nasaan ang puhunan</li>
                 <li>Record by voice, download included</li>
+                <li>Supplier receipts read into purchases, checked by you first</li>
                 <li>Answers that show the numbers behind them</li>
                 <li>Sipat Score, its history, and what to restock</li>
                 <li>A backup file you save and keep</li>
@@ -662,7 +714,7 @@
               <ul>
                 <li>Longer written explanations of the same numbers<span class="tag">Not yet live</span></li>
                 <li>A copy of your records kept online, so a lost phone is not a lost business<span class="tag">Not yet live</span></li>
-                <li>Photos of receipts turned into records<span class="tag">Not yet live</span></li>
+                <li>A second read for receipts the phone cannot make out<span class="tag">Not yet live</span></li>
                 <li>What to buy next, and how your shop compares<span class="tag">Not yet live</span></li>
               </ul>
               <span class="btn btn--soon" aria-disabled="true">Coming soon on Google Play</span>
@@ -692,8 +744,9 @@
               <p>
                 Yes — that is the whole point. Your sales, your utang, your capital and the score are
                 all worked out on the phone itself. The part that understands speech is downloaded
-                once, on Wi-Fi, and after that the app keeps working with no signal at all. Nothing
-                you record leaves your phone.
+                once, on Wi-Fi, and after that the app keeps working with no signal at all. The
+                receipt reader downloads once the same way, then reads supplier receipts on the
+                phone. Nothing you record leaves your phone.
               </p>
             </details>
             <details>
@@ -707,7 +760,7 @@
               <summary>What does SeePat cost?</summary>
               <p>
                 Everything that works on your phone is free, and stays free: the records, utang, the
-                capital breakdown, the answers, voice and the Sipat Score. SeePat PRO is ₱99 a month
+                capital breakdown, the answers, voice, receipt scanning and the Sipat Score. SeePat PRO is ₱99 a month
                 for the parts that need the internet, starting with longer written explanations. You
                 cannot be charged today — payments are not switched on yet.
               </p>
@@ -788,6 +841,7 @@
             <ul>
               <li><a href="#why">Why SeePat</a></li>
               <li><a href="#voice">Voice</a></li>
+              <li><a href="#receipt">Receipts</a></li>
               <li><a href="#how">How it works</a></li>
               <li><a href="#price">Price</a></li>
               <li><a href="#faq">FAQ</a></li>

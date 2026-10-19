@@ -180,7 +180,7 @@ export type FeatureKey =
   | 'ai_narration'
   | 'score_history'
   | 'cloud_backup'
-  | 'receipt_ocr'
+  | 'receipt_cloud_retry'
   | 'restocking'
   | 'multi_user'
   | 'forecasting'
@@ -323,11 +323,16 @@ export const FEATURES: FeatureDef[] = [
     tier: 'pro',
     onDevice: false,
   },
+  // The phone already reads supplier receipts on-device, free, with a
+  // human-checked draft (see the Receipt tab) — so this gate is only the
+  // future server-side second read for the photos the phone cannot make out.
+  // Naming it `receipt_ocr` would sell as PRO something the free plan does
+  // today; the honesty test pins the narrower name.
   {
-    key: 'receipt_ocr',
+    key: 'receipt_cloud_retry',
     label: {
-      en: 'Receipts — take a photo and the numbers are typed in for you',
-      fil: 'Resibo — kunan ng litrato at kusang maipapasok ang mga numero',
+      en: 'A second read for the receipts the phone cannot make out',
+      fil: 'Pangalawang basa sa resibong hindi mabasa ng phone',
     },
     tier: 'pro',
     onDevice: false,
@@ -404,7 +409,7 @@ export function can(entitlement: Entitlement, key: FeatureKey): boolean {
    *
    * This is the second half of the honesty rule. The pricing page may not list
    * vapor (see `liveFeatures`), and `can()` may not unlock it either — otherwise
-   * a screen that gated itself on `receipt_ocr` would show a working door onto
+   * a screen that gated itself on `receipt_cloud_retry` would show a working door onto
    * an empty room, which is a worse failure than an upsell.
    */
   if (featureDef(key).status === 'planned') return false
