@@ -24,4 +24,4 @@ do not repeat prices from memory.
 
 ## App
 
-- [Open SeePat](%APP_URL%): The app itself. Free, no account, nothing leaves the phone.
+- SeePat (Android app, coming soon on Google Play): Free, no account, nothing leaves the phone. There is no web URL for the app — it ships as an APK through Google Play.

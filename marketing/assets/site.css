@@ -542,6 +542,26 @@ td,
   font-size: 0.9375rem;
 }
 
+/*
+ * Coming-soon badge, not a button that acts. The app ships as an APK through
+ * Google Play — there is no URL to open — so a control that looks pressable
+ * would be a lie. Muted fill, dashed edge, no lift on hover: it promises a
+ * listing rather than faking a destination. Rendered as a span, never an
+ * anchor, so no crawler or test can mistake it for a link that goes nowhere.
+ */
+.btn--soon {
+  --btn-bg: #eef0f6;
+  --btn-fg: var(--subtle);
+  border: 1.5px dashed var(--line-strong);
+  box-shadow: none;
+  cursor: default;
+}
+
+.btn--soon:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-row {
   display: flex;
   flex-wrap: wrap;

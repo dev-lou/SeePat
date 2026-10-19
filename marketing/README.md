@@ -34,7 +34,7 @@ Four variables, all stamped at build time. Locally they live in `.env` (copy
 | Variable | Required | What it does |
 |---|---|---|
 | `SITE_URL` | yes, in a deliberate deploy | The origin, no trailing slash. Every canonical, hreflang, `og:url` and sitemap entry is built from it. |
-| `APP_URL` | no | Where the app lives, when that is a different origin. Every "open the app" button points here. Defaults to `SITE_URL`. |
+| `APP_URL` | no | Reserved for the day the app has a linkable address. Unused right now: SeePat ships as an APK through Google Play, so the CTAs are coming-soon badges with no `href` and nothing points here. Defaults to `SITE_URL`. |
 | `CONTACT_EMAIL` | no | Printed in the footer and in the Organization structured data. When it is empty the footer **omits the line entirely** rather than showing an empty label. |
 | `GOOGLE_SITE_VERIFICATION` | no | Search Console's HTML-tag token. When empty, no meta tag is written at all. |
 

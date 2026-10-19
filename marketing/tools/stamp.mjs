@@ -14,8 +14,7 @@
  * out, and the output is inspectable by hand at any time (`npm run serve`).
  *
  * TOKENS
- *   %SITE_URL%                  this site's origin, no trailing slash
- *   %APP_URL%                   where the app lives (defaults to SITE_URL)
+ *   %SITE_URL%                  this site's origin, no trailing slash  *   %APP_URL%                   reserved: where the app will live if it ever has a URL (defaults to SITE_URL). Currently unused — the app ships as an APK, so no page links here.
  *   %CONTACT_EMAIL%             contact address (see the optional block below)
  *   %GOOGLE_SITE_VERIFICATION%  Search Console token
  *   %YEAR%                      current year, for the copyright line

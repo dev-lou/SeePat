@@ -196,11 +196,10 @@ else {
   if (/%[A-Z_]+%/.test(llms)) fail('llms.txt has an unstamped token')
   const httpLinks = [...llms.matchAll(/\((https?:[^)\s]+)\)/g)].map((match) => match[1])
   if (!httpLinks.length) fail('llms.txt has no absolute links')
-  // Every link stays on-site except the last one: the app link, which may
-  // live on APP_URL (a different origin) when the app is deployed apart.
-  httpLinks.forEach((link, index) => {
-    const isAppLink = index === httpLinks.length - 1
-    if (!isAppLink && en.canonical && !link.startsWith(en.canonical)) {
+  // Every link stays on-site: the app ships as an APK through Google Play,
+  // so there is no app URL to link to — llms.txt names it in plain text.
+  httpLinks.forEach((link) => {
+    if (en.canonical && !link.startsWith(en.canonical)) {
       fail(`llms.txt links off-site: ${link}`)
     }
   })

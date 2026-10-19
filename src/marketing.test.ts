@@ -280,8 +280,13 @@ describe('structured data', () => {
       expect(app.name).toBe('SeePat')
       expect(app.applicationCategory).toBe('BusinessApplication')
       expect(app.isAccessibleForFree).toBe(true)
-      expect(app.url).toBe('%APP_URL%')
-      expect(String(app.operatingSystem)).toContain('Web browser')
+      // No app URL is marked up: SeePat ships as an APK through Google Play,
+      // so there is no web address to claim — a url here would be a lie.
+      expect(app.url).toBeUndefined()
+      // APK-only: the app ships through Google Play, so Android is the only
+      // platform claimed anywhere, markup included.
+      expect(String(app.operatingSystem)).toContain('Android')
+      expect(String(app.operatingSystem)).not.toContain('iOS')
 
       const offers = app.offers as { price: string; priceCurrency: string }[]
       expect(offers.map((offer) => offer.price)).toEqual(['0', '99'])
@@ -344,13 +349,12 @@ describe('the SEO furniture', () => {
     const llms = readFileSync(join(SITE, 'llms.txt'), 'utf8')
     expect(llms.startsWith('# ')).toBe(true)
     // Links stay tokenised so the stamp step makes them absolute per origin;
-    // page links stay on SITE_URL, the one app link may live on APP_URL.
+    // every link stays on SITE_URL — the app ships as an APK, so llms.txt
+    // names it in plain text instead of linking a URL that does not exist.
     const links = [...llms.matchAll(/\((%[A-Z_]+%[^)\s]*)\)/g)].map((match) => match[1])
     expect(links.length).toBeGreaterThan(0)
-    links.forEach((link, index) => {
-      const isAppLink = index === links.length - 1
-      if (isAppLink) expect(link.startsWith('%APP_URL%')).toBe(true)
-      else expect(link.startsWith('%SITE_URL%')).toBe(true)
+    links.forEach((link) => {
+      expect(link.startsWith('%SITE_URL%')).toBe(true)
     })
   })
 
