@@ -199,8 +199,20 @@ function parseLine(raw: string): ParsedLine | null {
   // centavos, so requiring one kills header/junk drafts without touching real
   // receipts. A price-less real line is better missed (add it with + Add item)
   // than a phantom ₱0 line the owner must delete.
-  const pricedIdx = moneyIdx.filter((i) => /\d+\.\d{1,2}/.test(tokens[i]))
+  // A decimal followed by a unit word is a quantity, not a price: "1.5 KG
+  // ASUKAL 84.00" must read qty 1.5, not a ₱1.50 unit price.
+  const pricedIdx = moneyIdx.filter(
+    (i) =>
+      /\d+\.\d{1,2}/.test(tokens[i]) &&
+      !/^(kg|kilos?|kilo|g|gramo|grams?|pc|pcs|pcks?|x|×|@|\*)$/i.test(tokens[i + 1] ?? ''),
+  )
   if (pricedIdx.length === 0) return null
+  // Left-to-right rule: on a thermal receipt the price sits at the RIGHT
+  // edge — name on the left, money last. A "price" buried mid-line with
+  // words after it ("12.00 PESOS CHANGE", headers, footers) is not goods.
+  const lastPriced = pricedIdx[pricedIdx.length - 1]
+  const afterPrice = tokens.slice(lastPriced + 1).filter((tok) => !/^[.,;:]+$/.test(tok))
+  if (afterPrice.length > 0) return null
   const moneyIdx2 = pricedIdx
 
   const lastMoney = moneyIdx2[moneyIdx2.length - 1]
@@ -252,7 +264,11 @@ function parseLine(raw: string): ParsedLine | null {
   }
   if (!Number.isFinite(qty) || qty <= 0 || qty > 9999) qty = 1
   void qtyUnit
-  const nameCandidate = nameParts.join(' ').replace(/\s*[x×@*]\s*$/i, '').trim() || deindexed
+  const nameCandidate = nameParts.join(' ').replace(/\s*[x×@*]\s*$/i, '').trim()
+  // A product name needs a real word in it: one run of 3+ letters. Kills
+  // OCR junk ("Be =D pc" — fragments of 2, 1) that happens to sit left of
+  // a decimal, while "555 SARDINES" and "UFC" still pass on their long word.
+  if (!/[a-zA-Z]{3,}/.test(nameCandidate)) return null
   return { qty, nameCandidate, unitPriceCentavos: unitPrice, lineTotalCentavos: lineTotal }
 }
 

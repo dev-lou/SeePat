@@ -237,7 +237,7 @@ and technically defensible.
   **Sipat Insights**                Explainable business
                                       recommendations
 
-  **Sipat Score**                   Simple, explainable business-health
+  **SeePat Score**                   Simple, explainable business-health
                                       indicator
 
   **Nasaan ang Puhunan Ko?**          Capital decomposition and
@@ -326,9 +326,9 @@ This is **Capital Intelligence for Microenterprises**.
 
 ------------------------------------------------------------------------
 
-## 10. Sipat Score
+## 10. SeePat Score
 
-Sipat Score should **not** be an arbitrary AI-generated score.
+SeePat Score should **not** be an arbitrary AI-generated score.
 
 It should be an explainable composite indicator based on measurable
 dimensions such as:
@@ -342,7 +342,7 @@ dimensions such as:
 
 Example:
 
-### Sipat Score: 76/100 --- MAAYOS
+### SeePat Score: 76/100 --- MAAYOS
 
 > **Malakas:** Profit margin and inventory turnover\
 > **Bantayan:** Customer utang\
@@ -504,7 +504,7 @@ bleeding in from the top edge, and every text step is verified against
 it.
 
 Against that quiet canvas, exactly **one surface inverts**: the jewel
-card that carries the day's real profit or the Sipat Score. It is a deep
+card that carries the day's real profit or the SeePat Score. It is a deep
 navy body with a diagonal sheen, a gold sun glowing in one corner, a
 grain overlay and a 1px gold highlight along its top edge. The point is
 not decoration. Money is the one thing the owner opens the app to see,
@@ -523,7 +523,7 @@ every sari-sari store sign painted by the same sign-maker.
 -   **Navy — the flag's blue.** All structure: chrome, primary actions,
 the active tab, the jewel card. The wordmark spells "See" in it.
 -   **Gold — the flag's yellow.** The sun in the mark, the "Pat" in the
-    wordmark, the Sipat Score gauge, and the trend line *on navy* — which
+    wordmark, the SeePat Score gauge, and the trend line *on navy* — which
     is why the day's chart reads as a sunrise over the ledger. The
     wordmark is deliberately set at 1.2rem bold so gold clears the
     14pt-bold line and only has to reach 3:1 there, instead of being
@@ -552,7 +552,7 @@ Three rules hold the rest of it together:
 
 Data visualisation follows the deterministic engine rather than
 decorating it: a smoothed area chart for the 7-day sales shape, an
-8-week Sipat Score trend that switches from a curve to columns when a
+8-week SeePat Score trend that switches from a curve to columns when a
 week has no sales (an area chart would have to plunge to zero and invent
 a collapse that never happened), and a donut for *Nasaan ang Puhunan
 Ko?* where each arc is a component of capital. Charts whose data is
@@ -585,7 +585,7 @@ Five things fix that, and none of them is a pattern:
 -   **A fill with a top and a bottom.** Every light card is filled with a
     very shallow vertical gradient (white to `--color-card-deep`), so the
     surface catches light instead of being a rectangle of colour. The
-    Sipat Score is still verified against the *foot* of that gradient,
+    SeePat Score is still verified against the *foot* of that gradient,
     because that is where dark text has least contrast.
 -   **Elevation in three layers, never one.** A 1px contact shadow where
     the card meets the page, a mid layer that models it, and a wide
@@ -654,7 +654,7 @@ aftermotion never stops, in any mood: an earlier version held them still
 when Pat was worried, and a bird whose only obvious motion was disabled
 read as a static image.
 
-**Pat never invents a word.** Its mood is derived from the Sipat Score
+**Pat never invents a word.** Its mood is derived from the SeePat Score
 band or from the real voice pipeline (a ledger error outranks a soft
 margin; "working" is tied to the on-device model actually transcribing
 rather than to a decorative spinner), and its speech bubble is always a
@@ -737,7 +737,7 @@ Negosyo functionality.
 
 -   Expanded conversational insights
 -   Voice transactions
--   Sipat Score
+-   SeePat Score
 -   Capital intelligence
 -   Advanced profitability analysis
 -   Restocking recommendations
@@ -936,7 +936,7 @@ previously compiled from the following sources:
     reporting, inventory, analytics, and operational-management
     capabilities.
 
-**Important:** SeePat's Business Twin, Sipat Score,
+**Important:** SeePat's Business Twin, SeePat Score,
 Voice-to-Business-Record, Ask My Negosyo, Capital Intelligence, Nasaan
 ang Puhunan Ko?, pricing model, validation targets, and proposed
 architecture are **startup-design elements of the SeePat concept**,

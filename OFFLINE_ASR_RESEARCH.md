@@ -364,7 +364,7 @@ notice), and every request returned 200.
 | Screen / feature | Result |
 |---|---|
 | Splash → app shell | renders, hands off without a blank frame |
-| Twin dashboard | profit headline, week toggle, Sipat Score ring, capital breakdown, “Where did the money go?”, Business Twin, Watch out |
+| Twin dashboard | profit headline, week toggle, SeePat Score ring, capital breakdown, “Where did the money go?”, Business Twin, Watch out |
 | Record sale (Ledger) | item **Coke Mismo** × 3 @ ₱12.50 → *“Recorded: ₱37.50 sale”*, appears at the top of the ledger, count 233 → 234 |
 | Entry modes | Sale, Utang, Expense, Purchase, Payment, Capital, Take out — all render the right fields; Payment lists each customer's outstanding balance |
 | Expense post | ₱250 → *“Recorded: ₱250.”*, ledger 235 |

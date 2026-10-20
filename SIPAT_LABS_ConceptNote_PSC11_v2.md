@@ -50,7 +50,7 @@ SeePat is a mobile-first, voice-first financial and business decision-intelligen
 
 The system combines structured business recording, deterministic financial computations, natural-language processing, speech recognition, analytics, forecasting, and explainable AI.
 
-**One architectural rule governs all of it: arithmetic computes every financial figure, and AI may only interpret or phrase them.** Every number SeePat shows — profit, cash, inventory value, receivables, capital position, and the Sipat Score — is produced by fixed, versioned formulas applied to the owner's own records, and is reproducible: the same records always produce the same answer. Language AI is confined to understanding speech, detecting patterns, and generating explanations; it is never the source of a peso value. Two consequences matter to a government and institutional audience: **the numbers cannot be hallucinated**, and **the product does not need an AI service to work.**
+**One architectural rule governs all of it: arithmetic computes every financial figure, and AI may only interpret or phrase them.** Every number SeePat shows — profit, cash, inventory value, receivables, capital position, and the SeePat Score — is produced by fixed, versioned formulas applied to the owner's own records, and is reproducible: the same records always produce the same answer. Language AI is confined to understanding speech, detecting patterns, and generating explanations; it is never the source of a peso value. Two consequences matter to a government and institutional audience: **the numbers cannot be hallucinated**, and **the product does not need an AI service to work.**
 
 **By default, the owner's data does not leave the phone.** The prototype keeps the ledger on the device, requires no account, and answers questions with no internet connection; no server in the current architecture holds sales or customer data. Voice capture uses either the browser's recognizer, when online, or an on-device Whisper-class model (MIT-licensed) downloaded once with the owner's consent. This is privacy by architecture rather than by policy, and it is also why the product remains usable where signal is intermittent and mobile data is expensive. Cloud backup, multi-device access, and institutional dashboards are deliberately positioned as server-dependent paid features (Section VII), so the free tier costs the owner nothing and costs SeePat nothing to serve.
 
@@ -248,7 +248,7 @@ Everything the prototype does on the owner's phone has a marginal cost of ₱0, 
 - voice-to-transaction capture;
 - the on-device offline voice model;
 - deterministic question answering; and
-- the current Sipat Score with its explanation.
+- the current SeePat Score with its explanation.
 
 **SeePat PRO — proposed ₱99 / month.** Server-dependent capabilities:
 

@@ -72,7 +72,7 @@ describe('screen copy is complete in both languages', () => {
     for (const [key, entry] of entries) {
       // Every placeholder name the table uses, so a new string that invents a
       // fourteenth one fails here instead of rendering `{file}` in the dialog.
-      const params = { n: 1, date: 'x', mb: 1, runtime: 1, amount: '₱1', tier: 'PRO', what: 'x', done: 'a', total: 'b', pct: '1', sign: '+', name: 'x', qty: 1, label: 'x', file: 1, now: 2, item: 'Coke', unit: 'kg', shop: 'Nena Store' }
+      const params = { n: 1, date: 'x', mb: 1, runtime: 1, amount: '₱1', tier: 'PRO', what: 'x', done: 'a', total: 'b', pct: '1', sign: '+', name: 'x', qty: 1, label: 'x', file: 1, now: 2, item: 'Coke', unit: 'kg', shop: 'Nena Store', cost: '₱1', tubo: '₱1' }
       for (const lang of LANGS) {
         const rendered = interpolate(entry[lang], params)
         expect(rendered, `${key} in ${lang} kept a raw {placeholder}`).not.toMatch(/\{\w+\}/)

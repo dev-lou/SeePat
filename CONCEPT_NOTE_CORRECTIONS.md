@@ -66,14 +66,14 @@ during development — the seeded 21-day history failed the identity until it wa
 
 ---
 
-## 3. Sipat Score was not reproducible — contradicting its own claim
+## 3. SeePat Score was not reproducible — contradicting its own claim
 
 **The problem.** Section 10 said the score "should not be an arbitrary AI-generated score" and that
 "every score must be decomposable into its contributing metrics" — but published **no weights, no
 normalisation, no baseline, and no period**. An underdetermined composite is exactly the thing it
 disclaimed.
 
-**The fix.** **Sipat Score v1** publishes six weighted dimensions summing to exactly 1.00
+**The fix.** **SeePat Score v1** publishes six weighted dimensions summing to exactly 1.00
 (Profitability 0.25, Cash-flow 0.20, Inventory efficiency 0.15, Receivable exposure 0.15, Expense
 control 0.15, Sales stability 0.10), each with its basis and its full-marks threshold. The score is
 **versioned** so model changes never silently rewrite an owner's history.
@@ -236,7 +236,7 @@ Three decisions were made, and each is enforced in code rather than by taste:
    feel unfinished.
 2. **One inverted surface, and the flag's three colours.** The jewel card (deep navy, diagonal sheen, a gold
    sun glowing in one corner, grain, a 1px gold inner top highlight) is the only dark surface in the product,
-   and it is spent on the two numbers that matter: the day's real profit and the Sipat Score. Everything else
+   and it is spent on the two numbers that matter: the day's real profit and the SeePat Score. Everything else
    is purposely flat so nothing competes with them.
 
    The palette is then the **national flag**, which is a design decision and a load-bearing one: navy for all
@@ -306,7 +306,7 @@ independent periods (3.6s to 26s) so no two motions ever land together, plus a ~
 lid clocks that occasionally overlap into a double blink.
 
 The owl is also the app's most disciplined component: **Pat only ever says sentences the engine already wrote,
-and already translated.** Its mood comes from the Sipat Score band or from the real voice pipeline — an error
+and already translated.** Its mood comes from the SeePat Score band or from the real voice pipeline — an error
 outranks a soft margin, and "working" is tied to the offline model actually transcribing rather than to a
 decorative spinner.
 

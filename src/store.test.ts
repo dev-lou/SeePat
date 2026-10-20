@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { deriveCustomer, deriveSku, slugId } from './store.ts'
+import { suggestedCost, suggestedPrice } from './engine/voice.ts'
+import type { Ledger } from './engine/types.ts'
 
 /**
  * The owner's own book: items and customers they typed themselves.
@@ -69,6 +71,38 @@ describe('a new item', () => {
     expect(sku.aliases).toContain('lucky')
     expect(sku.aliases).toContain('pancit')
     for (const alias of sku.aliases) expect(alias).toBe(alias.toLowerCase())
+  })
+
+  it('keeps owner-typed bought-for and sell-for — binili ng 21, ibebenta ng 24', () => {
+    const sku = deriveSku('Coke Mismo', 'pc', new Set(), {
+      buyPriceCentavos: 2100,
+      sellPriceCentavos: 2400,
+    })
+    expect(sku.buyPriceCentavos).toBe(2100)
+    expect(sku.sellPriceCentavos).toBe(2400)
+  })
+
+  it('leaves prices off when the owner types none, so old ledgers load unchanged', () => {
+    const sku = deriveSku('Coke Mismo', 'pc', new Set())
+    expect(sku.buyPriceCentavos).toBeUndefined()
+    expect(sku.sellPriceCentavos).toBeUndefined()
+  })
+
+  it('prefills recording screens from the typed prices when no sale or purchase exists yet', () => {
+    const sku = deriveSku('Coke Mismo', 'pc', new Set(), {
+      buyPriceCentavos: 2100,
+      sellPriceCentavos: 2400,
+    })
+    const ledger = { transactions: [], skus: [sku], customers: [], voids: [] } as Ledger
+    expect(suggestedPrice(ledger, sku.id)).toBe(2400)
+    expect(suggestedCost(ledger, sku.id)).toBe(2100)
+  })
+
+  it('prefills nothing when the owner typed no prices and no transactions exist', () => {
+    const sku = deriveSku('Coke Mismo', 'pc', new Set())
+    const ledger = { transactions: [], skus: [sku], customers: [], voids: [] } as Ledger
+    expect(suggestedPrice(ledger, sku.id)).toBe(0)
+    expect(suggestedCost(ledger, sku.id)).toBe(0)
   })
 
   it('does not repeat an alias', () => {

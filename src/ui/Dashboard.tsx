@@ -377,7 +377,7 @@ export function Dashboard({
             type="button"
             onClick={onOpenScore}
             className="owl-buddy shrink-0 transition-transform active:scale-95"
-            aria-label={`Sipat Score ${score.value}/100 — ${bandLabel(score.band, lang)}`}
+            aria-label={`SeePat Score ${score.value}/100 — ${bandLabel(score.band, lang)}`}
           >
             <img src="/seepat-mark.png" alt="" width={88} height={88} />
           </button>

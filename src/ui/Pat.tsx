@@ -58,7 +58,7 @@ const BAND_MOOD: Record<ScoreBand, PatMood> = {
   critical: 'concerned',
 }
 
-/** Mood from the Sipat Score band — pure, so Pat can never disagree with the gauge. */
+/** Mood from the SeePat Score band — pure, so Pat can never disagree with the gauge. */
 export function moodForBand(band: ScoreBand): PatMood {
   return BAND_MOOD[band]
 }

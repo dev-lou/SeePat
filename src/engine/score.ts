@@ -6,7 +6,7 @@ import { pick as pickCopy } from '../i18n/index.ts'
 import type { Bilingual, Lang } from '../i18n/index.ts'
 
 /**
- * Sipat Score v1.
+ * SeePat Score v1.
  *
  * The concept document promised a score that is "not an arbitrary AI-generated
  * score" and that "every score must be decomposable into its contributing
@@ -16,7 +16,7 @@ import type { Bilingual, Lang } from '../i18n/index.ts'
  * the same score.
  */
 
-export const SCORE_VERSION = 'Sipat-Score v1'
+export const SCORE_VERSION = 'SeePat-Score v1'
 
 /**
  * Bands are KEYS, not words.

@@ -101,6 +101,28 @@ describe('parseReceiptText', () => {
     expect(draft.lines).toHaveLength(0)
   })
 
+  it('only reads lines whose price sits at the right edge — name left, price right', () => {
+    // "12.00 PESOS CHANGE" has words after the money: footer, not goods.
+    const draft = parseReceiptText(['12.00 PESOS CHANGE', 'COKE MISMO 15.00'].join('\n'), ledger())
+    expect(draft.lines).toHaveLength(1)
+    expect(draft.lines[0].skuId).toBe('coke_mismo')
+  })
+
+  it('drops junk with too few letters even when a decimal sits nearby', () => {
+    // "Be =D pc 3.50" reads left-to-right as garbage + price, not a product.
+    const draft = parseReceiptText(['Be =D pc 3.50', 'COKE MISMO 15.00'].join('\n'), ledger())
+    expect(draft.lines).toHaveLength(1)
+    expect(draft.lines[0].skuId).toBe('coke_mismo')
+  })
+
+  it('reads a kilo qty as qty, not as a unit price', () => {
+    // "1.5 KG ASUKAL 84.00": 1.5 is the kilos, 84.00 the total.
+    const draft = parseReceiptText('1.5 KG ASUKAL 84.00', ledger())
+    expect(draft.lines).toHaveLength(1)
+    expect(draft.lines[0].qty).toBe(1.5)
+    expect(draft.lines[0].lineTotalCentavos).toBe(8400)
+  })
+
   it('drops price-less lines even when a priced line is present', () => {
     // Price-only gate: "BIGAS" has no decimal price, so it is junk until the
     // owner adds it by hand — the priced line still drafts normally.

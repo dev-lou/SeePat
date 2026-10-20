@@ -24,7 +24,7 @@ function scoreOf(l: Ledger, now: Date, lang: Lang = 'en') {
   )
 }
 
-describe('Sipat Score', () => {
+describe('SeePat Score', () => {
   it('is versioned', () => {
     expect(scoreOf(ledger, NOW).version).toBe(SCORE_VERSION)
   })

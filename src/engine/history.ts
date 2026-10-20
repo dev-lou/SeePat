@@ -9,7 +9,7 @@ import { dayMonth } from '../i18n/index.ts'
 import type { Lang } from '../i18n/index.ts'
 
 /**
- * Sipat Score over time.
+ * SeePat Score over time.
  *
  * The concept document promises a score that is reproducible and decomposable,
  * which makes a *history* of it almost free: each past week's score is just the

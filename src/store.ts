@@ -86,7 +86,12 @@ export function slugId(name: string, taken: Set<string>): string {
  * screen that adds an item and then wants to select it cannot read a value
  * produced inside a `setState` updater, which React may run later, and twice.
  */
-export function deriveSku(name: string, unit: string, taken: Set<string>): Sku {
+export function deriveSku(
+  name: string,
+  unit: string,
+  taken: Set<string>,
+  prices?: { buyPriceCentavos?: number; sellPriceCentavos?: number },
+): Sku {
   const cleanUnit = unit.trim() || 'pc'
   const words = name.toLowerCase().split(/\s+/).filter(Boolean)
   return {
@@ -97,6 +102,8 @@ export function deriveSku(name: string, unit: string, taken: Set<string>): Sku {
     // The whole name, then its words: the voice matcher looks for aliases, and
     // a new item that voice can never match would be a silent second-class one.
     aliases: [...new Set([name.toLowerCase().trim(), ...words])],
+    ...(prices?.buyPriceCentavos ? { buyPriceCentavos: prices.buyPriceCentavos } : null),
+    ...(prices?.sellPriceCentavos ? { sellPriceCentavos: prices.sellPriceCentavos } : null),
   }
 }
 
@@ -179,8 +186,8 @@ export interface Negosyo {
    * falls back to naming a count, and a deleted customer still shows up in the
    * utang book while they owe money.
    */
-  addSku(input: { name: string; unit?: string }): SkuId
-  updateSku(id: SkuId, patch: { name?: string; unit?: string }): void
+  addSku(input: { name: string; unit?: string; buyPriceCentavos?: number; sellPriceCentavos?: number }): SkuId
+  updateSku(id: SkuId, patch: { name?: string; unit?: string; buyPriceCentavos?: number; sellPriceCentavos?: number }): void
   removeSku(id: SkuId): void
   addCustomer(input: { name: string }): CustomerId
   updateCustomer(id: CustomerId, patch: { name?: string }): void
@@ -331,10 +338,13 @@ export function useNegosyo(): Negosyo {
   )
 
   const addSku = useCallback(
-    (input: { name: string; unit?: string }) => {
+    (input: { name: string; unit?: string; buyPriceCentavos?: number; sellPriceCentavos?: number }) => {
       // Derived from the ledger as it stands, not inside the updater, so the id
       // is real at the call site: see `deriveSku`.
-      const sku = deriveSku(input.name, input.unit ?? 'pc', new Set(ledger.skus.map((s) => s.id)))
+      const sku = deriveSku(input.name, input.unit ?? 'pc', new Set(ledger.skus.map((s) => s.id)), {
+        buyPriceCentavos: input.buyPriceCentavos,
+        sellPriceCentavos: input.sellPriceCentavos,
+      })
       update({ ...ledger, skus: [...ledger.skus, sku] })
       return sku.id
     },
@@ -342,7 +352,7 @@ export function useNegosyo(): Negosyo {
   )
 
   const updateSku = useCallback(
-    (id: SkuId, patch: { name?: string; unit?: string }) => {
+    (id: SkuId, patch: { name?: string; unit?: string; buyPriceCentavos?: number; sellPriceCentavos?: number }) => {
       setLedger((current) => {
         const next: Ledger = {
           ...current,
@@ -354,6 +364,12 @@ export function useNegosyo(): Negosyo {
               ...sku,
               name,
               unit,
+              // Owner-typed bought-for/sell-for: the sheet always prefills
+              // the effective value, so saving writes it back wholesale — an
+              // emptied field clears the default (undefined keys drop out of
+              // the persisted JSON on their own).
+              buyPriceCentavos: patch.buyPriceCentavos,
+              sellPriceCentavos: patch.sellPriceCentavos,
               // Renaming an item re-teaches the voice matcher: an owner who
               // renames "Coke" to "Coke Mismo" would otherwise be stuck with an
               // alias that only matches the old word.

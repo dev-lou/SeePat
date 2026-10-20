@@ -72,7 +72,7 @@ competitor feature lists — a finding about this sample, not proof nobody has i
 | GCash / Maya / bank recorded as a channel, not as cash | **Differentiator** | Providers show *their* transaction history. No reviewed product reconciles GCash **and** Maya **and** cash **and** utang in one shop ledger. Also removes a nonsense "negative drawer" figure. |
 | Voice sale entry with on-device Whisper | **Differentiator** | No reviewed competitor lists on-device speech. Strongest claim we have, and it is free at the margin. |
 | Deterministic Ask (no LLM, answers from the Twin) | **Differentiator** | Explainable, cheap, cannot invent advice. |
-| Sipat Score | **Differentiator, with a caveat** | Lista already offers a *consumer credit score*. Ours must stay visibly a behaviour/health measure of the shop and never imply a credit bureau score or a lending decision. |
+| SeePat Score | **Differentiator, with a caveat** | Lista already offers a *consumer credit score*. Ours must stay visibly a behaviour/health measure of the shop and never imply a credit bureau score or a lending decision. |
 | Backup / restore / export | Necessary, not distinctive | Cloud access appears in Lista, BukuWarung and Peddlr. Our owner-controlled export is the stronger version — Peddlr's founders themselves noted records living only on the phone are lost with the phone. |
 | Simulated checkout, AI fair-use meter, offline ASR download flow | Necessary plumbing | Small, and they keep the free tier from quietly losing money. Keep. |
 | Score history | Table stakes as *data*, differentiator as *history* | It was sold once, which was wrong: it is arithmetic over records already on the phone. Now free and shown. |

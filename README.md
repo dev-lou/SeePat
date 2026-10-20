@@ -106,7 +106,7 @@ Five destinations, plus two secondary screens.
 | **Tala** (Ledger) | `tala` | Recording: cash sale, credit sale, purchase, expense, payment, capital, withdrawal, stock adjustment, void |
 | **Boses** (Voice) | `boses` | Speak the sale; the ledger writes itself |
 | **Tanong** (Ask) | `tanong` | "Nasaan ang puhunan ko?" — typed or spoken; deterministic answers with a chart, read back out loud |
-| **Score** | `score` | Sipat Score, decomposed into weighted dimensions |
+| **Score** | `score` | SeePat Score, decomposed into weighted dimensions |
 | **Plano** (Plan) | `plan` | FREE / PRO, simulated checkout |
 | **Offline** | `offline` | Voice model download, engine selection, what works without signal |
 
@@ -139,7 +139,7 @@ returns a draft, and requires confirmation.
 
 **Pat, the owl mascot.** One character with five outfits, drawn as inline SVG and animated with
 CSS keyframes — no animation runtime, no extra bytes on the critical path. Its mood comes from the
-Sipat Score band, or on the Voice screen from the real capture state; it never speaks a sentence
+SeePat Score band, or on the Voice screen from the real capture state; it never speaks a sentence
 the engine did not write.
 
 ## 4. Architecture
@@ -186,7 +186,7 @@ src/
 │   ├── metrics.ts (154)          windowed period metrics (double fold)
 │   ├── capital.ts (283)          capital composition + provenance
 │   ├── period.ts (56)            local-day boundaries, Windows, date keys
-│   ├── score.ts (296)            Sipat Score v1, weighted dimensions, bands
+│   ├── score.ts (296)            SeePat Score v1, weighted dimensions, bands
 │   ├── history.ts (102)          weekly score recomputation
 │   ├── narrator.ts (733)         12 intents → answers with evidence
 │   ├── voice.ts (396)            constrained spoken-input parser → drafts
@@ -254,7 +254,7 @@ Both are guaranteed consistent because both reduce to the same identity:
 Assets − Liabilities  ==  Capital − Withdrawals + Cumulative Net Profit
 ```
 
-**Sipat Score** (`score.ts`). `SCORE_VERSION = 'Sipat-Score v1'`. The concept promised a score
+**SeePat Score** (`score.ts`). `SCORE_VERSION = 'SeePat-Score v1'`. The concept promised a score
 that is "not an arbitrary AI-generated score" and is "decomposable into its contributing
 metrics" — but published no weights, normalisation, or baseline, which left it underdetermined and
 therefore not reproducible. Weights and every formula are fixed and versioned here, so the same
@@ -853,7 +853,7 @@ Honest status, because a prototype that overstates itself is a liability.
 
 The corrections log is worth reading before the concept note. It records the substantive fixes
 this implementation is based on: *puhunan* meaning two different things, a COGS formula that
-contradicted the product's own central promise, a Sipat Score with no published weights (i.e. not
+contradicted the product's own central promise, a SeePat Score with no published weights (i.e. not
 reproducible despite claiming to be), unit economics that were never modelled, an over-promised
 voice pipeline, an undesigned cold start, ambiguous void semantics, and the brand rename from
 TimbangAI to SeePat.

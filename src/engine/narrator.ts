@@ -871,8 +871,8 @@ export function answerIntent(
         // The score always arrives with its words attached: a bare "81" tells an
         // owner nothing, and the figure is only meaningful next to the band it
         // falls in.
-        // The version already names the product ("Sipat-Score v1"), so prefixing
-        // "Sipat Score" as well printed the name twice on the card.
+        // The version already names the product ("SeePat-Score v1"), so prefixing
+        // "SeePat Score" as well printed the name twice on the card.
         headline: `${score.value} out of 100 — ${bandLabel(score.band, lang)} (${score.version})`,
         // The parts of the score, so an owner can see WHICH part moved when the
         // number does. A single total is not actionable; a short bar is.

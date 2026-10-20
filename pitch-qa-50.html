@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SeePat — 50 Pitch Questions &amp; Answers</title>
-<meta name="description" content="Fifty judge-ready questions and answers about the SeePat concept and system: problem, product, technology, business model, competition, pilot, risks, vision." />
+<title>SeePat — 50 Judge Questions, Short Answers</title>
+<meta name="description" content="25 questions I answer, 25 questions about the system — each answered in 1-2 short lines for the PSC Q&A." />
 <style>
   :root {
     --navy: #0c1440;
@@ -16,7 +16,6 @@
     --muted: #5c6080;
     --card: #ffffff;
     --line: #e5dcc4;
-    --good: #0f7a4d;
     --radius: 14px;
   }
   * { box-sizing: border-box; }
@@ -28,7 +27,6 @@
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     line-height: 1.6;
   }
-  /* ——— Masthead ——— */
   .masthead {
     background:
       radial-gradient(1100px 300px at 85% -60px, rgba(232,179,60,.28), transparent 60%),
@@ -66,17 +64,13 @@
   h1 .gold { color: var(--gold); font-style: italic; }
   .lede { color: #d7dcf5; max-width: 62ch; margin: 0 0 1.4rem; font-size: 1.02rem; }
   .lede strong { color: #fff; }
-  .meta-row {
-    display: flex; flex-wrap: wrap; gap: .5rem;
-    padding-bottom: 2rem;
-  }
+  .meta-row { display: flex; flex-wrap: wrap; gap: .5rem; padding-bottom: 2rem; }
   .meta-pill {
     font-size: .8rem; color: #eef0ff;
     border: 1px solid rgba(255,255,255,.28);
     background: rgba(255,255,255,.08);
     padding: .28rem .7rem; border-radius: 999px;
   }
-  /* ——— Toolbar ——— */
   .toolbar {
     position: sticky; top: 0; z-index: 20;
     background: rgba(250,246,236,.94);
@@ -99,11 +93,8 @@
     border: 1px solid var(--navy); background: var(--navy); color: #fff;
     border-radius: 999px; padding: .45rem .95rem;
     font-size: .85rem; font-weight: 600; cursor: pointer;
-    transition: transform .12s ease, background .12s ease;
   }
-  .btn:hover { transform: translateY(-1px); background: var(--navy-2); }
   .btn.ghost { background: transparent; color: var(--navy); }
-  .btn.ghost:hover { background: rgba(12,20,64,.07); }
   .count { font-size: .85rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
   .chips { display: flex; flex-wrap: wrap; gap: .45rem; padding: .7rem 1.25rem 0; }
   .chips .wrap { display: flex; flex-wrap: wrap; gap: .45rem; }
@@ -111,88 +102,59 @@
     border: 1px solid var(--line); background: #fff; color: var(--ink);
     border-radius: 999px; padding: .3rem .8rem;
     font-size: .8rem; font-weight: 600; cursor: pointer;
-    transition: all .12s ease;
   }
   .chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
-  /* ——— Questions ——— */
   main { padding: 1.4rem 1.25rem 4rem; }
-  .cat-label {
-    font-family: Georgia, serif; font-style: italic;
-    color: var(--gold-deep);
-    font-size: 1.25rem;
-    margin: 2.2rem 0 .4rem;
-    display: flex; align-items: baseline; gap: .7rem;
+  .part-label { font-family: Georgia, serif; font-size: 1.5rem; color: var(--navy); margin: 2.2rem 0 .2rem; }
+  .part-sub { color: var(--muted); margin: 0 0 .6rem; font-size: .95rem; }
+  .score-note {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: .7rem 1rem; font-size: .85rem; color: var(--muted); margin: 0 0 1rem;
   }
-  .cat-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .score-note b { color: var(--navy); }
   details.qa {
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     margin: .6rem 0;
     overflow: hidden;
-    box-shadow: 0 1px 0 rgba(12,20,64,.05);
-    animation: rise .45s ease both;
   }
   details.qa[open] { border-color: var(--navy); box-shadow: 0 8px 26px rgba(12,20,64,.12); }
   details.qa.flash { outline: 3px solid var(--gold); }
-  summary {
-    list-style: none; cursor: pointer;
-    display: flex; gap: .8rem; align-items: flex-start;
-    padding: .9rem 1rem;
-  }
+  summary { list-style: none; cursor: pointer; display: flex; gap: .8rem; align-items: flex-start; padding: .9rem 1rem; }
   summary::-webkit-details-marker { display: none; }
   .num {
-    flex: none;
-    font-family: Georgia, serif; font-weight: 700;
+    flex: none; font-family: Georgia, serif; font-weight: 700;
     background: var(--navy); color: var(--gold);
     width: 2rem; height: 2rem; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: .9rem; margin-top: .1rem;
   }
   .q-text { font-weight: 700; font-size: 1rem; }
-  .q-cat {
-    display: inline-block; font-size: .7rem; font-weight: 700;
-    letter-spacing: .08em; text-transform: uppercase;
-    color: var(--gold-deep); margin-bottom: .15rem;
-  }
-  .chev { margin-left: auto; flex: none; color: var(--muted); transition: transform .15s ease; font-size: 1.1rem; }
-  details[open] .chev { transform: rotate(90deg); }
+  .q-cat { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-deep); margin-bottom: .15rem; }
+  .chev { margin-left: auto; flex: none; color: var(--muted); font-size: 1.1rem; }
   .answer { padding: 0 1rem 1rem 3.8rem; color: #33375a; }
-  .answer p { margin: .45rem 0; }
-  .answer .punch {
+  .answer .say {
     border-left: 3px solid var(--gold);
     background: #fdf8ea;
     padding: .5rem .8rem; border-radius: 0 8px 8px 0;
     font-weight: 600; color: var(--ink);
-  }
-  .answer code {
-    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-    font-size: .85em; background: #f0ecdd; padding: .1em .35em; border-radius: 5px;
+    margin: .45rem 0;
   }
   .copy {
     margin-top: .5rem; font-size: .78rem;
     border: 1px solid var(--line); background: #fff; border-radius: 999px;
     padding: .25rem .7rem; cursor: pointer; color: var(--muted); font-weight: 600;
   }
-  .copy:hover { color: var(--navy); border-color: var(--navy); }
-  footer {
-    background: var(--navy); color: #c9cef0;
-    padding: 2rem 1.25rem 2.6rem; font-size: .88rem;
-  }
+  footer { background: var(--navy); color: #c9cef0; padding: 2rem 1.25rem 2.6rem; font-size: .88rem; }
   footer strong { color: var(--gold); }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @media (max-width: 560px) {
-    .answer { padding-left: 1rem; }
-    .count { margin-left: 0; }
-  }
+  @media (max-width: 560px) { .answer { padding-left: 1rem; } .count { margin-left: 0; } }
   @media print {
     .toolbar, .chips, .copy, .btn { display: none !important; }
     .masthead { background: none; color: #000; padding: 0; }
     .masthead::after { display: none; }
     h1, .lede, .meta-pill { color: #000; }
-    .meta-pill { border-color: #999; }
-    details.qa { break-inside: avoid; box-shadow: none; animation: none; }
-    details.qa:not([open]) { display: block; }
+    details.qa { break-inside: avoid; }
     details.qa:not([open]) .answer { display: block; }
   }
 </style>
@@ -202,10 +164,11 @@
 <header class="masthead">
   <div class="wrap">
     <span class="kicker">SIPAT Labs · Philippine Startup Challenge XI</span>
-    <h1>SeePat: 50 questions a judge could ask, <span class="gold">answered.</span></h1>
+    <h1>50 judge questions. <span class="gold">Short answers.</span></h1>
     <p class="lede">
-      The financial copilot for every Filipino negosyo — <strong>record → compute → understand → predict → decide</strong>.
-      Search, filter by round, hit <strong>Surprise me</strong> to drill, or print this page as a briefing pack.
+      <strong>Part 1 (1–25): questions I answer</strong> — story, users, money, plan, ask.
+      <strong>Part 2 (26–50): questions about the system</strong> — how it works, plain words.
+      Every answer fits in <strong>2 lines</strong> — short enough to say in the 5-minute Q&amp;A.
     </p>
     <div class="meta-row">
       <span class="meta-pill">Sari-sari · Karinderya · Palengke</span>
@@ -220,7 +183,7 @@
   <div class="wrap">
     <label class="search" aria-label="Search questions and answers">
       <span aria-hidden="true">⌕</span>
-      <input id="q" type="search" placeholder="Search — try “utang”, “score”, “₱99”, “offline”…" autocomplete="off" />
+      <input id="q" type="search" placeholder="Search — try kita, utang, ₱99, offline…" autocomplete="off" />
     </label>
     <button class="btn" id="shuffle" type="button">Surprise me</button>
     <button class="btn ghost" id="expand" type="button">Expand all</button>
@@ -233,155 +196,131 @@
 
 <main><div class="wrap" id="list">
 
-<!-- ═══════════ 1 · THE PROBLEM ═══════════ -->
-<h2 class="cat-label" data-cat="problem">Round 1 — The problem</h2>
+<h2 class="part-label">Part 1 — Questions I answer</h2>
+<p class="part-sub">What a PSC judge asks the founder. Say the gold line, then stop.</p>
+<div class="score-note">Mapped to the PSC scorecard: <b>Viability 25% · Relevance 25% · Impact 20% · Creativity 20% · Presentation 10%</b>. 5-minute pitch, 5-minute Q&amp;A — every answer below fits in one breath.</div>
 
-<details class="qa" data-cat="problem" open><summary><span class="num">1</span><span><span class="q-cat">Problem</span><br><span class="q-text">What problem does SeePat solve, in one breath?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">Millions of Filipino owners know today's sales — but not today's profit.</p><p>A sari-sari owner can tell you ₱8,000 entered the box, yet not how much she actually earned once inventory cost, expenses, <em>utang</em> sales, and money taken home for the household are counted. SeePat closes that gap.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me" open><summary><span class="num">1</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">What problem are you solving?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Owners know their sales but not their profit. SeePat tells them what they really earned.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">2</span><span><span class="q-cat">Problem</span><br><span class="q-text">Who exactly is this for?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>Primary:</strong> sari-sari stores, carinderias and food stalls, public-market vendors, home-based sellers, and neighborhood micro-retailers — owner-operated businesses run without an accountant.</p><p><strong>Secondary (go-to-market):</strong> cooperatives, LGUs, livelihood programs, and microfinance institutions that can sponsor cohorts of stores.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">2</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">Who exactly has this problem?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Sari-sari, karinderya, palengke vendors — 1.1 million microenterprises, 9 of 10 PH businesses.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">3</span><span><span class="q-cat">Problem</span><br><span class="q-text">How big is the market, with sources?</span></span><span class="chev">›</span></summary><div class="answer"><p>2024 Philippine MSME statistics (DTI/PSA, via PIA): <strong>1,236,908 MSMEs — 99.63% of all establishments</strong>, of which <strong>1,125,476 (90.66%) are microenterprises</strong>.</p><p>DTI's digitalization baseline adds the gap: 23% of surveyed MSMEs used no ICT tools, 51% used only basic tools, 6% used advanced tools — and 73% reported needing capacity building, especially financial management.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">3</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">How do you know the problem is real?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">DTI found only 6% of MSMEs use advanced digital tools — and our pilot interviews ask owners to state their profit.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">4</span><span><span class="q-cat">Problem</span><br><span class="q-text">What are the “five information gaps”?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">Profit · Capital · Cash-flow · Inventory · Decision.</p><p><em>Magkano talaga ang kinita ko? Nasaan ang puhunan ko? Bakit malakas ang benta pero walang cash? Ano ang mabilis maubos? Ano ang gagawin ko bukas?</em> — every SeePat screen answers one of these five.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">4</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">What do they use today instead?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Notebooks, memory, GCash history — scattered, never connected into one picture.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">5</span><span><span class="q-cat">Problem</span><br><span class="q-text">Why don't notebooks, calculators, and chat messages suffice?</span></span><span class="chev">›</span></summary><div class="answer"><p>They fragment the truth: sales in one notebook, <em>utang</em> in another, expenses in memory, GCash history in an app. Nothing connects sales, expenses, inventory, receivables, and cash into one reliable view — so the owner sees <strong>cash movement, not the financial state of the business</strong>.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">5</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">What is your solution, simply?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">A phone app: speak or snap, and it tells you your profit, your utang, and what to do next.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">6</span><span><span class="q-cat">Problem</span><br><span class="q-text">Why hasn't existing POS software solved this?</span></span><span class="chev">›</span></summary><div class="answer"><p>The problem was never just missing POS software. It is the absence of <strong>accessible business intelligence for entrepreneurs who are not accountants or data analysts</strong>. Incumbents record transactions well; none explains <em>why the numbers moved</em> or <em>where the capital sits</em> in words an owner understands.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">6</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">What have you built so far?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">A working app I can demo today — 407 automated tests, not slides.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="problem"><summary><span class="num">7</span><span><span class="q-cat">Problem</span><br><span class="q-text">How do you know owners really can't state their profit?</span></span><span class="chev">›</span></summary><div class="answer"><p>Our interview pack (12–15 owners, Dingle and nearby barangays) makes this the core hypothesis — <em>“can she state her profit without counting?”</em> — with a baseline interview and a five-question findings sheet. We state plainly: fieldwork is pending, and the pilot re-asks the same question at exit so the claim becomes a count, not an anecdote.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">7</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">Who pays, and how much?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">App is free forever. PRO is ₱99/month — only for internet parts like cloud backup.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 2 · SOLUTION & PRODUCT ═══════════ -->
-<h2 class="cat-label" data-cat="product">Round 2 — Solution &amp; product</h2>
+<details class="qa" data-cat="me"><summary><span class="num">8</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">Who is your first customer?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Coops and LGUs first — one signature reaches 10–20 stores they already trust.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">8</span><span><span class="q-cat">Product</span><br><span class="q-text">What is SeePat in one sentence?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">A mobile-first, voice-enabled financial decision copilot for Filipino microentrepreneurs.</p><p>Not accounting software first — it begins with how a negosyo is actually run: speak or type a sale, and get back profit, capital, <em>utang</em>, stock, and what to do next.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">9</span><span><span class="q-cat">I answer · Creativity</span><br><span class="q-text">Who are your competitors?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Peddlr, Lista, Packworks — good at recording. None explains what the numbers mean.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">9</span><span><span class="q-cat">Product</span><br><span class="q-text">How does it work, end to end?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">RECORD → COMPUTE → UNDERSTAND → PREDICT → DECIDE.</p><p>The owner records (voice, text, or form) → deterministic formulas compute the books → the app explains in Filipino or English → restock and collection guidance follows → she decides. A spoken <em>“Sipat, nakabenta ako ng sampung Coke…”</em> becomes a structured draft she confirms — never an auto-posted record.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">10</span><span><span class="q-cat">I answer · Creativity</span><br><span class="q-text">What makes you different?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">We answer “nasaan ang puhunan ko?” — where your money sits — nobody else does that.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">10</span><span><span class="q-cat">Product</span><br><span class="q-text">What is the “Business Twin”?</span></span><span class="chev">›</span></summary><div class="answer"><p>The technological heart of SeePat: a live digital representation of the negosyo — <strong>cash + inventory + receivables + payables + sales + expenses + capital + profit</strong> — updated by every verified transaction. Ask <em>“Nasaan ang puhunan ko?”</em> and it answers from her own ledger: cash tonight, stock value, who still owes, what was spent.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">11</span><span><span class="q-cat">I answer · Creativity</span><br><span class="q-text">Why can't ChatGPT do this?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">ChatGPT can't see her books. We compute from her real records — offline, for free.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">11</span><span><span class="q-cat">Product</span><br><span class="q-text">What are the core modules?</span></span><span class="chev">›</span></summary><div class="answer"><p>Sipat <strong>Ledger</strong> (sales, purchases, expenses, cash), <strong>Inventory</strong> (stock, COGS, fast/slow movers, restocking), <strong>Utang</strong> (receivables and repayments), <strong>Voice</strong> (speech/text to transactions), <strong>Insights</strong> (explainable recommendations), <strong>Score</strong> (business-health indicator), <strong>capital views</strong> (<em>Nasaan ang Puhunan Ko?</em>), and <strong>receipt scanning</strong> (photo → draft → confirm).</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">12</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">What impact will this bring?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Shops that know their profit survive — that is jobs kept and SDG 8, 9, 10 in action.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">12</span><span><span class="q-cat">Product</span><br><span class="q-text">How does receipt scanning work?</span></span><span class="chev">›</span></summary><div class="answer"><p>Photograph a supplier receipt and the on-device reader drafts the purchase: lines matched to her items, totals checked, mismatches flagged. She reviews <strong>every line before anything is recorded</strong> — the same confirm-before-save rule as voice. Free in the base plan; only a future cloud second-read for unreadable photos sits behind PRO.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">13</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">How will you measure that impact?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">% of owners who can state their profit at exit, utang collected, stores still recording at week 8.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">13</span><span><span class="q-cat">Product</span><br><span class="q-text">How does it handle utang?</span></span><span class="chev">›</span></summary><div class="answer"><p><em>Utang</em> is a first-class receivable, not cash revenue: who owes, how much, part-payments with running balances, overpayment warnings, and a “collect first” priority when exposure is high. The clearest roadmap gap — follow-up reminders and shareable statements via Messenger/SMS — is specified and ranked first.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">14</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">How will you scale beyond the pilot?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Through coops and LGUs — partners owners trust, not one-by-one selling.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">14</span><span><span class="q-cat">Product</span><br><span class="q-text">What is the Sipat Score?</span></span><span class="chev">›</span></summary><div class="answer"><p>A <strong>versioned, decomposable shop-health indicator out of 100</strong> — six weighted dimensions summing to exactly 1.00 (profitability .25, cash-flow .20, inventory .15, receivables .15, expense control .15, sales stability .10). Same ledger, same score, every point attributable. It is a behavior measure of the shop — <strong>never a credit score</strong>, never a lending decision.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">15</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">What is your pilot plan?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">30 Dingle stores, free for 8–12 weeks — we set up, visit weekly, measure everything.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">15</span><span><span class="q-cat">Product</span><br><span class="q-text">What changes for the owner “tomorrow morning”?</span></span><span class="chev">›</span></summary><div class="answer"><p>She opens the app and sees: real profit today, cash on hand, who still owes (collect first — ₱4,158.65 in our demo), what is running low (reorder this), and the one thing to do first. That is the decision gap closing — from <em>“malakas ang benta”</em> to <em>“ito ang gagawin ko.”</em></p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">16</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">What would make the pilot a failure?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Fewer than half still recording at week 8 — or slower than the notebook.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="product"><summary><span class="num">16</span><span><span class="q-cat">Product</span><br><span class="q-text">What platforms does it run on?</span></span><span class="chev">›</span></summary><div class="answer"><p>A mobile-first <strong>Progressive Web App</strong>: runs in the browser, installs on Android, works offline once cached. No account, nothing sent anywhere — the ledger never leaves her phone. A <em>Kalagayan</em> panel shows live connectivity, cache state, mic availability, and exactly which features work with no signal.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">17</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">What traction do you have now?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Honestly: working prototype, pilot next. No invented users — judges trust empty tables over fake ones.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 3 · TECHNOLOGY & TRUST ═══════════ -->
-<h2 class="cat-label" data-cat="tech">Round 3 — Technology &amp; trust</h2>
+<details class="qa" data-cat="me"><summary><span class="num">18</span><span><span class="q-cat">I answer · Viability</span><br><span class="q-text">What is your biggest risk?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Speed. Slower than the notebook means nobody uses it — so the pilot times every transaction.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">17</span><span><span class="q-cat">Technology</span><br><span class="q-text">Where does AI sit in the system — exactly?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">Business Records → Financial Engine → Business Twin → Analytics → AI Explanation → Owner Decision. Never Records → LLM → Answer.</p><p>Every figure is computed by deterministic formulas from the verified ledger; AI is confined to interpretation, explanation, and prediction. That makes the system accurate, auditable, explainable — and runnable offline at zero marginal cost.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">19</span><span><span class="q-cat">I answer · Team</span><br><span class="q-text">Why is your team the one to build this?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">We live where our users live — SIPAT LABS, ISUFST Dingle. Visits are free, fixes ship same-day.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">18</span><span><span class="q-cat">Technology</span><br><span class="q-text">How is profit actually computed?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>Perpetual inventory at moving weighted-average cost</strong>: cost of goods sold is derived at the moment of each sale, so daily profit is available without counting shelves. Values are exact integers in centavos — the books cannot drift. The accounting identity <code>Assets − Liabilities = Capital Injected − Withdrawals + Cumulative Net Profit</code> is asserted after every transaction by an automated test suite.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">20</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">Why should DICT care?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Filipino ICT innovation that works with no signal — proven today, not promised.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">19</span><span><span class="q-cat">Technology</span><br><span class="q-text">What are the “two capital questions”?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>Composition</strong> — <em>Nasaan ang puhunan ko?</em> Where capital sits right now (cash + paninda + utang owed to her + equipment − supplier debt). <strong>Provenance</strong> — <em>Saan napunta ang pera ko?</em> How capital was built and consumed since inception. Withdrawals and expenses are flows, never locations — both views reduce to the same identity, so they can never disagree.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">21</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">Why should DTI care?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Every store I onboard is one MSME digitized — DTI's own “Tindahan Mo, e-Level Up Mo!” goal.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">20</span><span><span class="q-cat">Technology</span><br><span class="q-text">How does voice capture avoid costly mistakes?</span></span><span class="chev">›</span></summary><div class="answer"><p>Three deliberate constraints: (1) <strong>constrained vocabulary</strong> — the recognizer distinguishes items she actually sells plus numbers, not open transcription; (2) <strong>numbers never auto-post</strong> — a misheard quantity silently corrupts everything, so amounts always need her tap; (3) <strong>drafts, not records</strong> — voice output cannot persist until she accepts it. “AI never silently modifies financial records” is a property of the software, not a promise.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">22</span><span><span class="q-cat">I answer · Impact</span><br><span class="q-text">Why should DOST care?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">SETUP-ready upgrade for the smallest firms — productivity with before-and-after numbers.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">21</span><span><span class="q-cat">Technology</span><br><span class="q-text">Which voice engines, and why?</span></span><span class="chev">›</span></summary><div class="answer"><p>Google's server recognizer is the default (best Taglish accuracy). The <strong>offline fallback is a multilingual Whisper Tiny model (~42MB, MIT-licensed)</strong> downloaded once with consent, transcribing fully on-device. The 320MB Filipino Vosk model was evaluated and rejected: ~19% word error on clean speech, ~98% on BABEL, and a CC-BY-NC-SA license that forbids commercial use — and we say so openly in the app.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">23</span><span><span class="q-cat">I answer · Relevance</span><br><span class="q-text">How much does the pilot cost?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Within our filed ₱150,000 — no new money asked. Stores are never paid to join.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">22</span><span><span class="q-cat">Technology</span><br><span class="q-text">What about Taglish accuracy honestly?</span></span><span class="chev">›</span></summary><div class="answer"><p>Free-form Taglish runs ~19–25% word error even on the best engines — which is precisely why we do slot-filling against her known SKU list instead of open transcription, keep voice an <strong>accelerator with a typed equivalent for every flow</strong>, and never let even a hallucinated sentence reach the ledger unconfirmed.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">24</span><span><span class="q-cat">I answer · Presentation</span><br><span class="q-text">What changes for the owner tomorrow?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">She opens the app: today's profit, who owes, what to restock — and the one thing to do first.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">23</span><span><span class="q-cat">Technology</span><br><span class="q-text">What works with no internet?</span></span><span class="chev">›</span></summary><div class="answer"><p>Everything that matters daily: recording, the deterministic engine, the Twin, capital views, deterministic answers, receipt scanning, and downloaded voice. Only two features need a server — <strong>AI narration and cloud backup</strong> — which is exactly why only those two are sold.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="me"><summary><span class="num">25</span><span><span class="q-cat">I answer · Ask</span><br><span class="q-text">What are you asking for?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">A free 30-store pilot — plus intro letters to coops and LGU livelihood offices.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">24</span><span><span class="q-cat">Technology</span><br><span class="q-text">How is owner data protected?</span></span><span class="chev">›</span></summary><div class="answer"><p>The ledger never leaves her phone — no account, no upload. Backup is an owner-controlled export file (memory card, email, another phone). During the pilot, the team sees figures only when she shows or reads them out. Speech goes to Google only in online mode; the offline voice never sends audio anywhere.</p><button class="copy" type="button">Copy answer</button></div></details>
+<h2 class="part-label">Part 2 — Questions about the system</h2>
+<p class="part-sub">What a technical judge asks to check I'm not bluffing. Same 2-line rule.</p>
 
-<details class="qa" data-cat="tech"><summary><span class="num">25</span><span><span class="q-cat">Technology</span><br><span class="q-text">How do GCash and Maya fit in?</span></span><span class="chev">›</span></summary><div class="answer"><p>Recorded as <strong>channels money arrives through, kept apart from drawer cash</strong> — so a GCash-heavy day never reads as an empty box, and cash can never nonsensically go negative. Reconciling cash, GCash, Maya, bank, and <em>utang</em> in one shop ledger is one of our differentiators; deep e-wallet reconciliation is honestly listed as not yet built.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">26</span><span><span class="q-cat">System</span><br><span class="q-text">How does it work, step by step?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">She records → app computes → it explains → she decides. Nothing saves without her tap.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">26</span><span><span class="q-cat">Technology</span><br><span class="q-text">Is household money separated from store money?</span></span><span class="chev">›</span></summary><div class="answer"><p>Yes — and this is a differentiator. Money taken home (<em>kinuha para sa bahay</em>) is recorded as a withdrawal, never as a store expense, so profit stays about the shop. The audit's own recommendation is to make this even more explicit in the UI as “money you took home.”</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">27</span><span><span class="q-cat">System</span><br><span class="q-text">Can the AI invent wrong numbers?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">No. AI only explains — every peso comes from fixed math on her real records.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="tech"><summary><span class="num">27</span><span><span class="q-cat">Technology</span><br><span class="q-text">How mature is the prototype, technically?</span></span><span class="chev">›</span></summary><div class="answer"><p>Working prototype, pre-MVP: records cash and <em>utang</em> sales, purchases, expenses, payments, capital injections, withdrawals, and stock adjustments end to end, with the accounting identities asserted by an automated test suite (400+ tests). Not yet delivered: accounts, cloud backup, first-run onboarding for non-team owners, and the pilot release.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">28</span><span><span class="q-cat">System</span><br><span class="q-text">How is profit computed?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Each sale deducts its buying cost instantly — daily profit with no shelf-counting.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 4 · BUSINESS MODEL ═══════════ -->
-<h2 class="cat-label" data-cat="business">Round 4 — Business model</h2>
+<details class="qa" data-cat="system"><summary><span class="num">29</span><span><span class="q-cat">System</span><br><span class="q-text">What is the Business Twin?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">A live picture of the shop: cash, stock, who owes her, profit — updated every sale.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">28</span><span><span class="q-cat">Business</span><br><span class="q-text">What is the pricing?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">FREE ₱0 for life · PRO ₱99/month or ₱999/year.</p><p>FREE is the entire local product — ledger, inventory, <em>utang</em>, capital views, voice, offline model, answers, Score and history. PRO is only the two things that genuinely need a server: <strong>AI narration and a cloud copy that survives a lost phone</strong>. The rule is enforced in code, so the free tier can never quietly become loss-making.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">30</span><span><span class="q-cat">System</span><br><span class="q-text">How does voice recording work?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">“Sipat, nakabenta ako…” becomes a draft she confirms — prices always need her OK.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">29</span><span><span class="q-cat">Business</span><br><span class="q-text">Why is giving so much away free sustainable?</span></span><span class="chev">›</span></summary><div class="answer"><p>On-device is free at the margin: recognition happens on the phone, the answer layer performs no inference, and there is no per-user server cost. What costs us nothing to run, we charge nothing for — permanently. That is also what lets a ₱99 price exist at all in a market where competitors' free tiers already cover basic bookkeeping.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">31</span><span><span class="q-cat">System</span><br><span class="q-text">Does voice work offline?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Yes — a small 42MB model downloads once on Wi-Fi, then runs fully on the phone.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">30</span><span><span class="q-cat">Business</span><br><span class="q-text">What are the unit economics of one PRO store?</span></span><span class="chev">›</span></summary><div class="answer"><p>Effective revenue <strong>₱94.27/month</strong> (30% annual prepay honestly applied, not ₱99 quoted flat), GCash fee ~₱2.35 (PayMongo 2.23% + VAT), AI narration placeholder ₱7.50 (deliberately high), infrastructure ₱1,450/month past ~150 stores (~3,000 stores per project). Break-even on variable cost is immediate per PRO store — and card payments (3.125% + ₱13.39) would make ₱99 uneconomic, which the pilot must test.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">32</span><span><span class="q-cat">System</span><br><span class="q-text">How accurate is the Taglish voice?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">About 4 of 5 words right — so we match her item list, and she confirms every price.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">31</span><span><span class="q-cat">Business</span><br><span class="q-text">What does the revenue projection say?</span></span><span class="chev">›</span></summary><div class="answer"><p>Generated by arithmetic in the repo, not hand-written: base case reaches ~₱271k annual run-rate in year one and ~₱701k revenue in year two (conservative ~₱194k, optimistic ~₱1.67M). Even the optimistic case is ~0.3% of microenterprises — reached through institutional partners, never claimed as national market share. Stated plainly: <strong>₱99 subscriptions alone are not a salary</strong>.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">33</span><span><span class="q-cat">System</span><br><span class="q-text">How does receipt scanning work?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Picturan lang ang resibo — app drafts the purchase, she checks every line.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">32</span><span><span class="q-cat">Business</span><br><span class="q-text">Why are institutions the primary channel?</span></span><span class="chev">›</span></summary><div class="answer"><p>Direct ₱99 subscriptions are a hard market against free competitors — so cooperatives, LGUs, and livelihood programs buying <strong>₱120/store/year cohort licenses</strong> are the primary revenue line, with retail PRO as the second. One letter of intent puts 10–20 stores in reach through a partner owners already trust — distribution and revenue in the same signature.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">34</span><span><span class="q-cat">System</span><br><span class="q-text">How does it handle utang?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Utang is money owed — never counted as cash. Who owes, how much, collect-first nudges.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">33</span><span><span class="q-cat">Business</span><br><span class="q-text">What happened to the ₱199 NEGOSYO plan?</span></span><span class="chev">›</span></summary><div class="answer"><p>Withdrawn from sale and deleted from the plan list — it survives only as a retired receipt name so old invoices still read correctly. Existing holders migrate to PRO without a price rise, never silently down to free. Two plans, one list, nothing that can disagree: FREE and PRO.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">35</span><span><span class="q-cat">System</span><br><span class="q-text">What is the SeePat Score?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Shop health out of 100 — profit, cash, stock, utang, gastos, steadiness. Never a credit score.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="business"><summary><span class="num">34</span><span><span class="q-cat">Business</span><br><span class="q-text">How will owners pay?</span></span><span class="chev">›</span></summary><div class="answer"><p>GCash (and Maya/card) via PayMongo, with a simulated checkout in the prototype that states plainly no real payment happens. The pilot measures the payment mix — because if owners pay mostly by card, the fee structure forces a rethink of the ₱99 price point itself.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">36</span><span><span class="q-cat">System</span><br><span class="q-text">Is family money mixed with store money?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">No. Money taken home is “kinuha” — profit stays about the shop.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 5 · COMPETITION ═══════════ -->
-<h2 class="cat-label" data-cat="competition">Round 5 — Competition</h2>
+<details class="qa" data-cat="system"><summary><span class="num">37</span><span><span class="q-cat">System</span><br><span class="q-text">What works with no internet?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Everything daily — records, answers, voice, scan. Only cloud backup needs internet.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="competition"><summary><span class="num">35</span><span><span class="q-cat">Competition</span><br><span class="q-text">Who are the competitors, and what do they do well?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>Peddlr</strong> (2M+ stores served) — POS, inventory, expenses, ledgers, offline. <strong>Packworks</strong> (~270k stores, DOST-backed ML) — sari-sari digitization. <strong>Lista</strong> — simple bookkeeping and receivables. <strong>StoreHub/full POS</strong> — retail depth. We credit them by name in the concept note — claiming otherwise is the fastest way to lose a judge's confidence.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">38</span><span><span class="q-cat">System</span><br><span class="q-text">Where does her data go?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Nowhere. The ledger never leaves her phone — no account, no upload.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="competition"><summary><span class="num">36</span><span><span class="q-cat">Competition</span><br><span class="q-text">What is genuinely different about SeePat?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">Capital decomposition · grounded answers · explainable score · Taglish voice · offline at ₱0.</p><p>No reviewed competitor answers <em>“nasaan ang puhunan ko?”</em>, grounds every answer in the owner's verified ledger, decomposes its score, designs voice around Taglish business speech, or runs its intelligence offline with zero marginal AI cost. Ledgers and offline selling are table stakes — we match them; these five are the reasons to switch.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">39</span><span><span class="q-cat">System</span><br><span class="q-text">How do GCash and Maya fit?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Separate pockets — GCash money is not drawer money. Deep reconciliation: not yet built.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="competition"><summary><span class="num">37</span><span><span class="q-cat">Competition</span><br><span class="q-text">Where is SeePat honestly behind?</span></span><span class="chev">›</span></summary><div class="answer"><p>Payments and e-wallet reconciliation, receipt-printer and barcode hardware, multi-branch depth, and any distribution footprint. Deliberate near-term trade-offs, not oversights — which is why our beachhead is <strong>microenterprise decision support, not retail infrastructure</strong>.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">40</span><span><span class="q-cat">System</span><br><span class="q-text">What phones does it run on?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Any Android with a browser — installs like an app, works offline once saved.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="competition"><summary><span class="num">38</span><span><span class="q-cat">Competition</span><br><span class="q-text">Why can't an owner just ask ChatGPT about her business?</span></span><span class="chev">›</span></summary><div class="answer"><p>A generic chatbot gives generic advice — possibly fluent, possibly wrong, grounded in nothing. SeePat computes from <strong>her verified books</strong>: the numbers are hers, the explanation cites them, and the whole thing works offline with no per-question cost. AI that cannot see her ledger cannot tell her where her <em>puhunan</em> is.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">41</span><span><span class="q-cat">System</span><br><span class="q-text">How do you know the numbers are correct?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">The app re-checks its own balance after every transaction — 407 tests prove it.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="competition"><summary><span class="num">39</span><span><span class="q-cat">Competition</span><br><span class="q-text">Does it issue official receipts or handle taxes?</span></span><span class="chev">›</span></summary><div class="answer"><p>No — and we state it plainly. SeePat is a <strong>management-accounting tool</strong>: it helps an owner understand her own business. It is not a BIR-registered POS and does not issue official receipts. That avoids a heavy accreditation program and sets correct expectations — a strength, not a gap.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">42</span><span><span class="q-cat">System</span><br><span class="q-text">Why is giving it away free sustainable?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Free parts run on her phone — ₱0 cost per use, so ₱0 price forever.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 6 · PILOT & VALIDATION ═══════════ -->
-<h2 class="cat-label" data-cat="pilot">Round 6 — Pilot &amp; validation</h2>
+<details class="qa" data-cat="system"><summary><span class="num">43</span><span><span class="q-cat">System</span><br><span class="q-text">Will ₱99 subscriptions pay a salary?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">No — and we say so. Coops and LGUs carry revenue; subscriptions prove willingness to pay.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="pilot"><summary><span class="num">40</span><span><span class="q-cat">Pilot</span><br><span class="q-text">What is the pilot plan?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>Thirty microenterprises in and around Dingle, Iloilo</strong> (18 near the ISUFST campus + 12 at a public market as a contrast site) use SeePat free for <strong>8–12 weeks</strong>: baseline interviews, in-store onboarding (slower than 20 minutes is a product defect), weekly support visits, exit interviews — including stores that stopped using it.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">44</span><span><span class="q-cat">System</span><br><span class="q-text">What if she deletes something by mistake?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Nothing is ever deleted — mistakes are voided, history stays, anything can be replayed.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="pilot"><summary><span class="num">41</span><span><span class="q-cat">Pilot</span><br><span class="q-text">What exactly is measured?</span></span><span class="chev">›</span></summary><div class="answer"><p>Records per trading day, <strong>time to record one transaction</strong> (the number that decides everything), profit accuracy via manual recomputation on 3 stores, inventory discrepancy on top-10 items, uncollected receivables vs baseline, profit-vs-sales understanding, voice first-attempt accuracy, trust in explanations, <strong>willingness to pay asked twice</strong> (before and after real use), and retention at weeks 8 and 12.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">45</span><span><span class="q-cat">System</span><br><span class="q-text">What is deliberately NOT built?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Servers, printers, hardware. No screen promises a room that was never built.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="pilot"><summary><span class="num">42</span><span><span class="q-cat">Pilot</span><br><span class="q-text">What would make the pilot a failure?</span></span><span class="chev">›</span></summary><div class="answer"><p>Stated in advance so results can't be reinterpreted: fewer than half the stores still recording at week 8 · recording slower than the notebook · profit that doesn't reconcile on manual check · no store able to name a price at exit (then retail subscription dies and the model falls back to institutional). A pilot that can fail is a pilot a panel can trust.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">46</span><span><span class="q-cat">System</span><br><span class="q-text">Can you demo it live right now?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Yes — hand me a real receipt and real Taglish, and we run it.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="pilot"><summary><span class="num">43</span><span><span class="q-cat">Pilot</span><br><span class="q-text">What is the current validation status — honestly?</span></span><span class="chev">›</span></summary><div class="answer"><p>Working prototype with deterministic-engine test coverage; interview pack and findings structure ready; pilot planned for 30 stores. <strong>Field interviews not yet conducted</strong> — every placeholder figure is marked as such, because a filled-in table nobody collected would be worse than an empty one. The committee asked for interviews and findings; we show the instrument, not invented results.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">47</span><span><span class="q-cat">System</span><br><span class="q-text">Does it print receipts or handle taxes?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">No — it's a management tool, not a BIR POS. Deliberate, and stated upfront.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="pilot"><summary><span class="num">44</span><span><span class="q-cat">Pilot</span><br><span class="q-text">How much does the pilot cost?</span></span><span class="chev">›</span></summary><div class="answer"><p>Within the already-filed ₱150,000 budget: ₱15,000 user research and validation, ₱20,000 pilot deployment and onboarding, plus transport. <strong>No new funding requested for this phase.</strong> Stores are never paid to participate — payment would make the willingness-to-pay measurement meaningless.</p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">48</span><span><span class="q-cat">System</span><br><span class="q-text">What breaks if 1,000 stores join?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Nothing on their phones — free tier has no server to overload.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<!-- ═══════════ 7 · RISKS ═══════════ -->
-<h2 class="cat-label" data-cat="risks">Round 7 — Risks &amp; limitations</h2>
+<details class="qa" data-cat="system"><summary><span class="num">49</span><span><span class="q-cat">System</span><br><span class="q-text">How will owners pay you?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">GCash — the money they already use. Pilot measures the real mix.</p><button class="copy" type="button">Copy answer</button></div></details>
 
-<details class="qa" data-cat="risks"><summary><span class="num">45</span><span><span class="q-cat">Risks</span><br><span class="q-text">What is the single biggest risk?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">Time to record a transaction.</p><p>A bookkeeping app slower than the notebook is not used, however correct it is. That is why the pilot times 3 transactions per store at weeks 2 and 8 — and why voice must become the primary path, not an accelerator, if typing loses to paper.</p><button class="copy" type="button">Copy answer</button></div></details>
-
-<details class="qa" data-cat="risks"><summary><span class="num">46</span><span><span class="q-cat">Risks</span><br><span class="q-text">What other risks keep you up at night?</span></span><span class="chev">›</span></summary><div class="answer"><p>Voice accuracy on real noisy-store Taglish · distribution against incumbents with millions of stores · card-payment economics breaking ₱99 · data loss during a pilot (logged with date and recovery, never smoothed over) · scope creep into POS hardware instead of decision support. Each has a named mitigation in the concept note and audit.</p><button class="copy" type="button">Copy answer</button></div></details>
-
-<details class="qa" data-cat="risks"><summary><span class="num">47</span><span><span class="q-cat">Risks</span><br><span class="q-text">What is deliberately NOT built, and why?</span></span><span class="chev">›</span></summary><div class="answer"><p>Forecasting, benchmarking, staff accounts, and bulk reports need a server nobody has paid for yet — parking them was the right call. E-wallet reconciliation, printer/barcode hardware, and multi-branch depth are explicit near-term trade-offs. The honesty rule holds: <strong>no screen gates a door onto a room that was never built</strong>.</p><button class="copy" type="button">Copy answer</button></div></details>
-
-<!-- ═══════════ 8 · VISION & ASK ═══════════ -->
-<h2 class="cat-label" data-cat="vision">Final round — Vision &amp; ask</h2>
-
-<details class="qa" data-cat="vision"><summary><span class="num">48</span><span><span class="q-cat">Vision</span><br><span class="q-text">Why this team, why Dingle, why now?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>SIPAT LABS, ISUFST Dingle Campus</strong> — the team lives where its users live, so weekly support visits are free and same-day fixes are possible. DTI's <em>Tindahan Mo, e-Level Up Mo!</em> pushes the same digitization direction. Smartphones plus on-device AI finally make Taglish voice intelligence cost ₱0 to serve — the economic unlock this product is built on.</p><button class="copy" type="button">Copy answer</button></div></details>
-
-<details class="qa" data-cat="vision"><summary><span class="num">49</span><span><span class="q-cat">Vision</span><br><span class="q-text">How does this connect to the SDGs?</span></span><span class="chev">›</span></summary><div class="answer"><p><strong>SDG 8</strong> (decent work &amp; economic growth — MSME development), <strong>SDG 9</strong> (innovation &amp; infrastructure — digital transformation for the smallest enterprises), <strong>SDG 10</strong> (reduced inequalities — business intelligence for entrepreneurs who cannot afford accountants or analytics).</p><button class="copy" type="button">Copy answer</button></div></details>
-
-<details class="qa" data-cat="vision"><summary><span class="num">50</span><span><span class="q-cat">Vision</span><br><span class="q-text">What are you asking for?</span></span><span class="chev">›</span></summary><div class="answer"><p class="punch">A free 8–12 week pilot with 30 Dingle stores — plus letters of intent from cooperatives and LGU livelihood offices.</p><p>No cost to partners or stores, no obligation after. In return: setup and training in every store, weekly support, and a plain-language evidence summary — replacing every assumption in this pack with a measurement. <em>Maliit na negosyo. Malaking bukas.</em></p><button class="copy" type="button">Copy answer</button></div></details>
+<details class="qa" data-cat="system"><summary><span class="num">50</span><span><span class="q-cat">System</span><br><span class="q-text">Why now — why hasn't this existed?</span></span><span class="chev">›</span></summary><div class="answer"><p class="say">Cheap phones can finally run voice AI offline at ₱0 — that unlock didn't exist before.</p><button class="copy" type="button">Copy answer</button></div></details>
 
 </div></main>
 
 <footer>
   <div class="wrap">
     <p><strong>SeePat</strong> · Ang Financial Copilot ng Negosyo · SIPAT LABS, ISUFST Dingle Campus, Iloilo</p>
-    <p>Sources: DTI/PSA 2024 MSME statistics (via PIA) · DTI Baseline Survey on Digitalization of MSMEs (Sept 2020) · PSC XI concept note &amp; corrections · revenue-model arithmetic in-repo · pilot plan &amp; interview pack. Field figures marked pending until the pilot replaces assumptions with measurements.</p>
+    <p>PSC scorecard: Viability 25% · Relevance 25% · Impact 20% · Creativity 20% · Presentation 10% (PSC X national finals; verify against your PSC XI packet). Sources: DTI/PSA 2024 MSME stats (via PIA) · DTI digitalization baseline 2020 · concept note · in-repo arithmetic · pilot plan.</p>
   </div>
 </footer>
 
 <script>
 (function () {
   var items = Array.prototype.slice.call(document.querySelectorAll('details.qa'));
-  var heads = Array.prototype.slice.call(document.querySelectorAll('.cat-label'));
   var chipsBox = document.getElementById('chips');
   var input = document.getElementById('q');
   var count = document.getElementById('count');
   var CATS = [
-    ['problem', 'The problem'],
-    ['product', 'Solution & product'],
-    ['tech', 'Technology & trust'],
-    ['business', 'Business model'],
-    ['competition', 'Competition'],
-    ['pilot', 'Pilot & validation'],
-    ['risks', 'Risks'],
-    ['vision', 'Vision & ask']
+    ['me', 'Questions I answer'],
+    ['system', 'Questions about the system']
   ];
   var active = null;
 
@@ -411,14 +350,6 @@
       var show = okCat && okTerm;
       d.style.display = show ? '' : 'none';
       if (show) { shown++; if (d.open) open++; }
-    });
-    var shownCats = {};
-    items.forEach(function (d) {
-      if (d.style.display !== 'none') shownCats[d.getAttribute('data-cat')] = true;
-    });
-    heads.forEach(function (h) {
-      var c = h.getAttribute('data-cat');
-      h.style.display = (shownCats[c] && (!active || active === c)) ? '' : 'none';
     });
     count.textContent = shown + ' of 50 · ' + open + ' open';
   }

@@ -354,7 +354,7 @@ export const UI = {
   'dash.mathCogs': { en: 'Cost of goods', fil: 'Halaga ng paninda' },
   'dash.mathExpenses': { en: 'Expenses', fil: 'Gastos' },
   'dash.mathShrinkage': { en: 'Spoilage & losses', fil: 'Nasira at nawala' },
-  'dash.scoreTitle': { en: 'Sipat Score', fil: 'Sipat Score' },
+  'dash.scoreTitle': { en: 'SeePat Score', fil: 'SeePat Score' },
   'dash.scoreEmpty': {
     en: 'Not enough data yet for a full reading.',
     fil: 'Kulang pa ang datos para sa buong pagsusuri.',
@@ -769,6 +769,9 @@ export const UI = {
   'items.editTitle': { en: 'Edit item', fil: 'Baguhin ang paninda' },
   'items.namePlaceholder': { en: 'E.g. Coke Mismo', fil: 'Hal. Coke Mismo' },
   'items.fieldName': { en: 'Item name', fil: 'Pangalan ng paninda' },
+  'items.fieldBought': { en: 'Bought for (each)', fil: 'Binili sa (bawat isa)' },
+  'items.fieldSell': { en: 'Sell for (each)', fil: 'Ibenta sa (bawat isa)' },
+  'items.priceHint': { en: 'So the list can show bought-for, sell-for, and tubo.', fil: 'Para makita sa listahan ang binili, benta, at tubo.' },
   'items.fieldUnit': { en: 'Sold by', fil: 'Ibinebenta sa' },
   'items.unit.pc': { en: 'Piece', fil: 'Piraso' },
   'items.unit.pack': { en: 'Pack', fil: 'Pakete' },
@@ -780,6 +783,8 @@ export const UI = {
   'items.count': { en: '{n} items', fil: '{n} paninda' },
   'items.search': { en: 'Search your items…', fil: 'Hanapin ang paninda mo…' },
   'items.lastPrice': { en: 'last sold at {amount}', fil: 'huling benta sa {amount}' },
+  'items.costLine': { en: 'bought for {cost} · tubo {tubo} each', fil: 'binili sa {cost} · tubo {tubo} bawat isa' },
+  'items.noCost': { en: 'no purchase yet — add cost to see tubo', fil: 'wala pang bili — maglagay ng puhunan para makita ang tubo' },
   'items.stockField': { en: 'Stock on hand (count the shelf)', fil: 'Stock sa shelf (bilangin)' },
   'items.stockNeedNumber': {
     en: 'Stock must be a number, zero or more.',
@@ -1094,6 +1099,8 @@ export const UI = {
   'receipt.flagPrice': { en: 'check price', fil: 'i-check ang presyo' },
   'receipt.flagCheck': { en: 'please check', fil: 'pakisuri' },
   'receipt.removeLine': { en: 'Remove line', fil: 'Alisin ang linya' },
+  'receipt.removeShort': { en: 'Remove', fil: 'Alisin' },
+  'receipt.editName': { en: 'Item name — fix it here', fil: 'Pangalan — ayusin dito' },
   'receipt.addLine': { en: '+ Add item the camera missed', fil: '+ Idagdag ang panindang hindi nakita' },
   'receipt.cameraTitle': { en: 'Take a photo of the receipt', fil: 'Kuhanan ng larawan ang resibo' },
   'receipt.cameraCapture': { en: 'Capture', fil: 'Kunan' },
@@ -1395,8 +1402,8 @@ export const UI = {
     fil: 'Hindi lang benta — nasaan napunta ang pera.',
   },
   'welcome.see.body': {
-    en: 'What you really earned after paying for stock and utang, where your money is sitting right now, and a Sipat Score you can open up piece by piece. Every number is counted from your own records — none of it is a guess.',
-    fil: 'Ang tunay na kinita mo pagkatapos bayaran ang paninda at utang, kung nasaan ang pera mo ngayon, at Sipat Score na mabubuksan mo piraso-piraso. Kinukwenta lahat mula sa rekord mo — walang hinula.',
+    en: 'What you really earned after paying for stock and utang, where your money is sitting right now, and a SeePat Score you can open up piece by piece. Every number is counted from your own records — none of it is a guess.',
+    fil: 'Ang tunay na kinita mo pagkatapos bayaran ang paninda at utang, kung nasaan ang pera mo ngayon, at SeePat Score na mabubuksan mo piraso-piraso. Kinukwenta lahat mula sa rekord mo — walang hinula.',
   },
 
   'welcome.yours.eyebrow': { en: 'Yours', fil: 'Sa iyo' },

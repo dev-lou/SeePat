@@ -104,7 +104,7 @@ the prototype's AI-free answering layer can run **offline at zero marginal cost*
 | **Sipat Utang** | Customer receivables and repayment tracking |
 | **Sipat Voice** | Voice/text to structured business transactions |
 | **Sipat Insights** | Explainable business recommendations |
-| **Sipat Score** | Versioned, decomposable business-health indicator |
+| **SeePat Score** | Versioned, decomposable business-health indicator |
 | **Nasaan ang Puhunan Ko?** | Capital decomposition and visualisation |
 
 ### C. Two distinct capital questions *(corrected)*
@@ -149,11 +149,11 @@ basis, and sales recorded before the matching purchase is entered produce a *neg
 position — which keeps the identity intact and self-corrects when the purchase is recorded, rather
 than silently booking cost against an asset that was never created.
 
-### E. Sipat Score *(corrected)*
+### E. SeePat Score *(corrected)*
 
 The earlier note promised a score that is "not an arbitrary AI-generated score" and "decomposable
 into its contributing metrics" — but published no weights, normalisation or baseline, which left it
-underdetermined and therefore not reproducible. **Sipat Score v1** now publishes six weighted
+underdetermined and therefore not reproducible. **SeePat Score v1** now publishes six weighted
 dimensions whose weights sum to exactly 1.00:
 
 | Dimension | Weight | Basis | Full marks at |
@@ -237,7 +237,7 @@ SeePat aims to democratise business intelligence for Filipino microentrepreneurs
 accessible, explainable tool for financial visibility and everyday decision-making. Specifically:
 
 1. Develop a functional mobile-first MVP integrating sales, expenses, inventory, utang, profit
-   computation, Sipat Score and insights. **_(Substantially complete — see IX.C.)_**
+   computation, SeePat Score and insights. **_(Substantially complete — see IX.C.)_**
 2. Achieve **at least 95% accuracy against manually verified test cases** for deterministic
    financial computation. **_(Automated verification is in place; the accounting identity is asserted
    after every transaction.)_**
@@ -333,7 +333,7 @@ sold is what has a marginal cost or needs a server to be worth anything.
 
 ### SeePat FREE — ₱0/month
 Core transaction recording, inventory, utang tracking, daily and weekly profit, **Nasaan ang Puhunan
-Ko?** and **Saan Napunta ang Pera Ko?**, the current Sipat Score, unlimited questions answered by
+Ko?** and **Saan Napunta ang Pera Ko?**, the current SeePat Score, unlimited questions answered by
 the **deterministic** engine — and **voice capture**, including the one-time download of the on-device
 voice model.
 
@@ -349,7 +349,7 @@ voice model.
 
 ### SeePat PRO — proposed ₱99/month
 **AI na Paliwanag** — the LLM layer that explains *why* the deterministic figures moved, and the only
-feature with a real per-use cost — plus Sipat Score history and trend, cloud backup and multi-device
+feature with a real per-use cost — plus SeePat Score history and trend, cloud backup and multi-device
 sync, receipt photo import, and restocking recommendations.
 
 ### Institutional packages
@@ -542,6 +542,6 @@ Decision Optimisation → Microenterprise Financial Intelligence Platform**
    rates for Filipino models; Whisper-family hallucination behaviour (ACM FAccT 2024); and per-minute
    transcription pricing for Whisper-class, Google Cloud STT and AWS Transcribe.
 
-**Important:** the Business Twin, Sipat Score, Voice-to-Business-Record, Ask My Negosyo, Capital
+**Important:** the Business Twin, SeePat Score, Voice-to-Business-Record, Ask My Negosyo, Capital
 Intelligence, "Nasaan ang Puhunan Ko?", the pricing model, the validation targets and the proposed
 architecture are **SeePat design elements**, not claims sourced from the competing products above.

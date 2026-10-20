@@ -21,7 +21,7 @@ function currentScore(l: Ledger, now: Date, lang: Lang): number {
   ).value
 }
 
-describe('Sipat Score history', () => {
+describe('SeePat Score history', () => {
   it('returns the requested number of weeks, oldest first', () => {
     const trend = scoreHistory(ledger, 4, NOW, 'fil')
     expect(trend.weeks).toHaveLength(4)

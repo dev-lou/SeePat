@@ -21,7 +21,7 @@ import {
  *
  * **It shows the product instead of describing it.** Every slide's artwork is a
  * real component from the app — the listen waveform, the capital donut rendered
- * from the owner's own ledger, the Sipat Score ring — not a stock illustration of
+ * from the owner's own ledger, the SeePat Score ring — not a stock illustration of
  * a phone. The owner sees the interface they are about to get, which is the one
  * thing a tour can do that a screenshot cannot.
  *

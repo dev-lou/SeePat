@@ -102,6 +102,9 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
   const [editing, setEditing] = useState<{ mode: 'add' | 'edit'; id?: string } | null>(null)
   const [name, setName] = useState('')
   const [unit, setUnit] = useState('pc')
+  /** Owner-typed bought-for / sell-for, in the display unit — "21 then 24". */
+  const [bought, setBought] = useState('')
+  const [sell, setSell] = useState('')
   /** The shelf count, typed in the unit the owner counts in — see `save`. */
   const [stock, setStock] = useState('')
   const [pendingDelete, setPendingDelete] = useState<Sku | null>(null)
@@ -165,11 +168,23 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
     return true
   }
 
+  /** Display-unit pesos for the sheet: stored default first, else last transaction. */
+  function priceField(sku: Sku | undefined, which: 'buy' | 'sell'): string {
+    if (!sku) return ''
+    const stored = which === 'buy' ? sku.buyPriceCentavos : sku.sellPriceCentavos
+    const base = stored ?? (which === 'buy' ? suggestedCost(negosyo.ledger, sku.id) : suggestedPrice(negosyo.ledger, sku.id))
+    if (!base || base <= 0) return ''
+    const display = pricePerDisplayUnit(sku.baseUnit, base)
+    return String(display / 100)
+  }
+
   function openAdd() {
     setEditing({ mode: 'add' })
     setName('')
     setUnit('pc')
     setStock('')
+    setBought('')
+    setSell('')
   }
 
   function openEdit(sku: Sku) {
@@ -177,6 +192,8 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
     setName(sku.name)
     setUnit(sku.unit)
     setStock(displayOnHand(sku))
+    setBought(priceField(sku, 'buy'))
+    setSell(priceField(sku, 'sell'))
   }
 
   function save() {
@@ -212,12 +229,26 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
     // base unit.
     const baseUnit = unit === 'kg' || unit === 'g' ? 'g' : 'pc'
 
+    // Bought-for / sell-for are typed in the display unit selected above and
+    // stored per base unit. Empty means "no default" — it never writes zero,
+    // because a ₱0 default would prefill every later sale and purchase.
+    const boughtNum = bought.trim() === '' ? null : Number(bought.trim())
+    const sellNum = sell.trim() === '' ? null : Number(sell.trim())
+    if ((boughtNum !== null && (!Number.isFinite(boughtNum) || boughtNum <= 0)) || (sellNum !== null && (!Number.isFinite(sellNum) || sellNum <= 0))) {
+      toast.show({ title: t('items.restockNeedNumbers'), tone: 'warn' })
+      return
+    }
+    const buyPriceCentavos =
+      boughtNum === null ? undefined : pricePerBaseUnit(baseUnit, pesos(boughtNum))
+    const sellPriceCentavos =
+      sellNum === null ? undefined : pricePerBaseUnit(baseUnit, pesos(sellNum))
+
     if (current) {
-      negosyo.updateSku(current.id, { name: clean, unit })
+      negosyo.updateSku(current.id, { name: clean, unit, buyPriceCentavos, sellPriceCentavos })
       const corrected = counted !== null && writeStockCorrection(current.id, baseUnit, counted)
       toast.show({ title: corrected ? t('items.stockSaved') : t('items.updated'), tone: 'success' })
     } else {
-      const id = negosyo.addSku({ name: clean, unit })
+      const id = negosyo.addSku({ name: clean, unit, buyPriceCentavos, sellPriceCentavos })
       const corrected = counted !== null && writeStockCorrection(id, baseUnit, counted)
       toast.show({
         title: corrected ? t('items.stockSaved') : t('items.added', { name: clean }),
@@ -319,6 +350,46 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
       </div>
 
       {/*
+       * Bought-for / sell-for, right here in one page: "binili ko ng 21,
+       * ibebenta ko ng 24". Typed per piece (or per kilo); stored per base
+       * unit. These become the prefills everywhere prices are asked, and the
+       * tubo the list row shows.
+       */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Field label={t('items.fieldBought')}>
+          <input
+            className={inputClass}
+            type="number"
+            inputMode="decimal"
+            min="0"
+            spellCheck={false}
+            value={bought}
+            placeholder="21"
+            onChange={(e) => setBought(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') save()
+            }}
+          />
+        </Field>
+        <Field label={t('items.fieldSell')}>
+          <input
+            className={inputClass}
+            type="number"
+            inputMode="decimal"
+            min="0"
+            spellCheck={false}
+            value={sell}
+            placeholder="24"
+            onChange={(e) => setSell(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') save()
+            }}
+          />
+        </Field>
+      </div>
+      <p className="mt-1.5 text-[0.8125rem] text-fg-faint">{t('items.priceHint')}</p>
+
+      {/*
        * The missing shelf count: until this existed the only way stock entered
        * the books was a purchase, so a wrong count — or opening stock never
        * bought through the app — could never be fixed, and every later sale
@@ -412,6 +483,12 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
                 sku.baseUnit,
                 suggestedPrice(negosyo.ledger, sku.id),
               )
+              // Bought-for, in the same unit: last purchase cost, so the row
+              // reads "bought for X → sell for Y → tubo Z" at a glance.
+              const lastCost = pricePerDisplayUnit(
+                sku.baseUnit,
+                suggestedCost(negosyo.ledger, sku.id),
+              )
               // What is actually on the shelf, in the unit the owner counts in:
               // kilos to one decimal, pieces whole — the same rounding the
               // best-sellers list uses, so the two screens never disagree.
@@ -436,6 +513,14 @@ export function ItemsScreen({ negosyo }: { negosyo: Negosyo }) {
                     </div>
                     <div className="num mt-0.5 text-[0.8125rem] text-fg-faint">
                       {last > 0 ? t('items.lastPrice', { amount: formatPHP(last) }) : t('items.noPrice')}
+                    </div>
+                    <div className="num mt-0.5 text-[0.8125rem] font-semibold text-fg-faint">
+                      {lastCost > 0 && last > 0
+                        ? t('items.costLine', {
+                            cost: formatPHP(lastCost),
+                            tubo: formatPHP(last - lastCost),
+                          })
+                        : t('items.noCost')}
                     </div>
                     <div
                       className={`num mt-0.5 text-[0.8125rem] font-semibold ${onHand > 0 ? 'text-fg-faint' : 'text-red-700'}`}

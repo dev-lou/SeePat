@@ -278,7 +278,7 @@ export const FEATURES: FeatureDef[] = [
   },
   {
     key: 'score_current',
-    label: { en: "Sipat Score — today's reading", fil: 'Sipat Score — marka ngayon' },
+    label: { en: "SeePat Score — today's reading", fil: 'SeePat Score — marka ngayon' },
     tier: 'free',
     onDevice: true,
   },

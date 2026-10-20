@@ -20,6 +20,13 @@ export interface Sku {
   baseUnit: string
   /** Spoken/typed aliases used by the constrained voice matcher. */
   aliases: string[]
+  /**
+   * Owner-typed defaults, per BASE unit in centavos — "bought for 21, sell
+   * for 24". Set in My Items; used as the prefill when no transaction has
+   * set a price yet. Optional so old ledgers and backups load unchanged.
+   */
+  buyPriceCentavos?: Centavos
+  sellPriceCentavos?: Centavos
 }
 
 export interface Customer {

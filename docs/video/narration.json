@@ -9,7 +9,7 @@
     { "beat": "ledger", "chip": "WHERE EVERY PESO LANDS", "card": "The ledger - every benta, utang, gastos" },
     { "beat": "voice-sale", "chip": "SPEAK IT, THEN CONFIRM", "card": "Speaking a sale in Taglish" },
     { "beat": "ask-capital", "chip": "ASK IN TAGLISH", "card": "Asking the ledger in your own words" },
-    { "beat": "sipat-score", "chip": "THE SCORE", "card": "The Sipat Score, and why" },
+    { "beat": "sipat-score", "chip": "THE SCORE", "card": "The SeePat Score, and why" },
     { "beat": "settings", "chip": "ALREADY ON THE PHONE", "card": "The voice model on the phone" },
     { "beat": "offline", "chip": "NO SIGNAL, STILL WORKS", "card": "With no signal at all" }
   ],
@@ -28,7 +28,7 @@
     { "id": 12, "beat": "ask-capital", "offset": 0.8, "max": 2.6, "caption": true, "text": "Then ask in your own words." },
     { "id": 13, "beat": "ask-capital", "offset": 3.4, "max": 3.2, "caption": true, "text": "Nasaan ang puhunan ko? Where is my capital?" },
     { "id": 14, "beat": "ask-capital", "offset": 7.0, "max": 4.2, "caption": true, "text": "Every figure comes from your own ledger, not from a language model." },
-    { "id": 15, "beat": "sipat-score", "offset": 1.0, "max": 4.4, "caption": true, "text": "The Sipat Score grades the business out of one hundred." },
+    { "id": 15, "beat": "sipat-score", "offset": 1.0, "max": 4.4, "caption": true, "text": "The SeePat Score grades the business out of one hundred." },
     { "id": 16, "beat": "sipat-score", "offset": 6.0, "max": 3.6, "caption": true, "text": "Every point is explained, in your own numbers." },
     { "id": 17, "beat": "settings", "offset": 0.9, "max": 3.8, "caption": true, "text": "The voice model downloads once, then it lives on the phone." },
     { "id": 18, "beat": "offline", "offset": 0.6, "max": 3.4, "caption": true, "text": "No signal? It still records, and it still answers." },

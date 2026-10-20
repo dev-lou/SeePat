@@ -545,13 +545,30 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
                     </div>
                     <button
                       type="button"
-                      className="inline-flex min-h-11 items-center px-2 text-[0.8125rem] font-bold text-red-700"
+                      className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-xl border-2 border-red-600 bg-red-50 px-3.5 text-[0.875rem] font-extrabold text-red-700"
                       onClick={() => setRows((cur) => (cur ?? []).filter((x) => x.key !== r.key))}
                       aria-label={t('receipt.removeLine')}
                     >
-                      ×
+                      <span aria-hidden="true" className="text-[1.1rem] leading-none">×</span>
+                      {t('receipt.removeShort')}
                     </button>
                   </div>
+                  {r.skuId === '' ? (
+                    <Field label={t('receipt.editName')}>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        spellCheck={false}
+                        value={r.newSkuName}
+                        placeholder={t('receipt.newItem')}
+                        onChange={(e) =>
+                          setRows((cur) =>
+                            (cur ?? []).map((x) => (x.key === r.key ? { ...x, newSkuName: e.target.value } : x)),
+                          )
+                        }
+                      />
+                    </Field>
+                  ) : null}
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     <Field label={t('receipt.qty')}>
                       <input

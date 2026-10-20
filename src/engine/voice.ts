@@ -355,7 +355,12 @@ function findFuzzyHits(
     .sort((a, b) => a.index - b.index)
 }
 
-/** Most recent unit price this store used for a SKU — offered, then confirmed. */
+/**
+ * Most recent unit price this store used for a SKU — offered, then confirmed.
+ * Falls back to the owner's typed sell-for on the item (My Items), so a new
+ * item with no sales yet still prefills. Real sales always win over the
+ * default: the last thing she actually charged is the truer price.
+ */
 export function suggestedPrice(ledger: Ledger, skuId: SkuId): Centavos {
   for (let i = ledger.transactions.length - 1; i >= 0; i -= 1) {
     const txn = ledger.transactions[i]
@@ -364,10 +369,13 @@ export function suggestedPrice(ledger: Ledger, skuId: SkuId): Centavos {
       if (line) return line.unitPriceCentavos
     }
   }
-  return 0
+  return ledger.skus.find((s) => s.id === skuId)?.sellPriceCentavos ?? 0
 }
 
-/** Most recent unit cost this store paid for a SKU. */
+/**
+ * Most recent unit cost this store paid for a SKU, falling back to the
+ * owner's typed bought-for on the item — same rule as the sell price.
+ */
 export function suggestedCost(ledger: Ledger, skuId: SkuId): Centavos {
   for (let i = ledger.transactions.length - 1; i >= 0; i -= 1) {
     const txn = ledger.transactions[i]
@@ -376,7 +384,7 @@ export function suggestedCost(ledger: Ledger, skuId: SkuId): Centavos {
       if (line) return line.unitCostCentavos
     }
   }
-  return 0
+  return ledger.skus.find((s) => s.id === skuId)?.buyPriceCentavos ?? 0
 }
 
 function findCustomer(transcript: string, ledger: Ledger): CustomerId | undefined {
