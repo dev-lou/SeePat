@@ -291,9 +291,18 @@ export function VoiceScreen({
   }
 
   function stopListening() {
+    const id = engine?.id
     engineRef.current?.stop()
     engineRef.current = null
     setListening(false)
+    // Same rule as the Ask screen: the offline engine transcribes AFTER the
+    // mic is released, which takes seconds — keep "transcribing" on screen
+    // until the take lands in onEnd instead of dropping to idle with nothing
+    // to show for it.
+    if (id === OFFLINE_ENGINE_ID) {
+      setStatus('transcribing')
+      return
+    }
     setStatus(null)
     // Stopped mid-sentence, so these words are unfinished — they join the box
     // for hand-finishing or for the next take to continue from.

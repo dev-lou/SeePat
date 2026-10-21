@@ -449,6 +449,23 @@ export function ReceiptScreen({ negosyo }: { negosyo: Negosyo }) {
       <Card>
         <SectionTitle hint={t('receipt.step1Hint')}>{t('receipt.captureTitle')}</SectionTitle>
         <p className="text-[0.875rem] leading-relaxed text-fg-subtle">{t('receipt.captureBody')}</p>
+        {/* Framing is the whole accuracy story: a blurry, shadowed, far-away
+            photo is unreadable by any engine, on-device or cloud. These three
+            lines are the cheapest accuracy fix in the product. */}
+        <ul className="mt-2 space-y-1 text-[0.8125rem] leading-snug text-fg-subtle">
+          <li className="flex gap-2">
+            <span aria-hidden>📷</span>
+            <span>{t('receipt.tipFill')}</span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden>💡</span>
+            <span>{t('receipt.tipLight')}</span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden>🧾</span>
+            <span>{t('receipt.tipFlat')}</span>
+          </li>
+        </ul>
         <div className="mt-3 flex flex-wrap gap-1.5 rounded-2xl border border-white/80 bg-white/60 p-1.5 shadow-xs backdrop-blur-md">
           {(['mock', 'tesseract'] as OcrEngineId[]).map((id) => (
             <Chip key={id} active={engine === id} onClick={() => setEngine(id)}>

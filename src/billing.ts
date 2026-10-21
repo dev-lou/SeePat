@@ -123,8 +123,8 @@ export const INSTITUTIONAL = {
     fil: 'Institusyon',
   } as Bilingual,
   tagline: {
-    en: 'One licence for many stores, with a single view for cooperatives, LGUs, and livelihood programs.',
-    fil: 'Isang lisensya para sa maraming tindahan, iisang tanawin para sa kooperatiba, LGU, at livelihood program.',
+    en: 'You pay once for many stores. You get one simple dashboard for the whole program.',
+    fil: 'Isang bayad para sa maraming tindahan. Isang simpleng dashboard para sa buong programa.',
   } as Bilingual,
 }
 

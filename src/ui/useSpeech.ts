@@ -8,6 +8,7 @@ import {
   subscribeSpeaking,
   subscribeVoice,
 } from '../speech.ts'
+import type { SpeechOutcome } from '../speech.ts'
 import { readPersisted, writePersisted } from '../storage.ts'
 import type { Lang } from '../i18n/index.ts'
 
@@ -76,8 +77,11 @@ export interface Speech {
    * answer did not speak the asked language (a phone with no Tagalog voice).
    */
   voiceExact: boolean | null
-  /** Reads one answer. Cancels whatever was already speaking. */
-  say: (text: string) => void
+  /**
+   * Reads one answer. Cancels whatever was speaking first. Resolves with what
+   * happened — the screen reports a refusal instead of going silently deaf.
+   */
+  say: (text: string) => Promise<SpeechOutcome>
   stop: () => void
 }
 
@@ -85,14 +89,9 @@ export function useSpeech(lang: Lang): Speech {
   const speaking = useSyncExternalStore(subscribeSpeaking, isSpeaking, () => false)
   const voiceExact = useSyncExternalStore(subscribeVoice, lastVoiceWasExact, () => null)
 
-  const say = useCallback(
-    (text: string) => {
-      // Fire and forget: every outcome (no voice, cancelled, nothing to say) is a
-      // normal one, and the store already reports what is happening.
-      void speak(text, lang)
-    },
-    [lang],
-  )
+  // The promise is returned, not swallowed: a phone that refuses to speak is
+  // a normal outcome, but the screen — not the store — owns telling the owner.
+  const say = useCallback((text: string) => speak(text, lang), [lang])
 
   // Leaving the screen stops the voice. An answer that keeps talking to an empty
   // screen is worse than one that was never read.

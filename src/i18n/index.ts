@@ -584,6 +584,10 @@ export const UI = {
     en: 'This phone has no voice for reading answers out loud. Everything is written on the screen.',
     fil: 'Walang boses na pambasa ng sagot sa phone na ito. Nasa screen ang lahat.',
   },
+  'ask.speakFailed': {
+    en: 'SeePat could not read this out loud on your phone — the answer is written on the card. Tap “Hear the answer” to try again.',
+    fil: 'Hindi mabasa ni SeePat nang malakas sa phone na ito — nakasulat ang sagot sa card. Pindutin ang “Pakinggan ang sagot” para subukang muli.',
+  },
   'ask.didYouMean': { en: 'Did you mean one of these?', fil: 'Ito ba ang ibig mong sabihin?' },
 
   // --- Ask: starter questions --------------------------------------------
@@ -1071,6 +1075,18 @@ export const UI = {
     en: 'Take a photo of the receipt. The app drafts the purchase — you check it before anything is recorded.',
     fil: 'Kuhanan ng larawan ang resibo. Gagawa ang app ng draft ng bili — suriin mo muna bago may maitala.',
   },
+  'receipt.tipFill': {
+    en: 'Fill the frame with the receipt — close, straight, no table around it.',
+    fil: 'Punuin ang frame ng resibo — malapit, tuwid, walang mesa sa paligid.',
+  },
+  'receipt.tipLight': {
+    en: 'Good light, no flash glare or shadow over the prices.',
+    fil: 'Maliwanag — walang silaw ng flash o anino sa mga presyo.',
+  },
+  'receipt.tipFlat': {
+    en: 'Flatten folds. One receipt per photo.',
+    fil: 'Unatin ang mga tupi. Isang resibo kada larawan.',
+  },
   'receipt.engineMock': { en: 'Sample', fil: 'Sample' },
   'receipt.engineTesseract': { en: 'Real scan', fil: 'Tunay na scan' },
   'receipt.engineNote': {
@@ -1221,7 +1237,7 @@ export const UI = {
   },
   'plan.badgeBest': { en: 'Best value', fil: 'Pinakasulit' },
   'plan.badgeCurrent': { en: 'Current', fil: 'Kasalukuyan' },
-  'plan.institutionalHint': { en: 'For institutions', fil: 'Para sa mga institusyon' },
+  'plan.institutionalHint': { en: 'For DTI · DICT · DOST · LGU · coops', fil: 'Para sa DTI · DICT · DOST · LGU · coop' },
   'plan.contact': { en: 'Get in touch', fil: 'Makipag-ugnayan' },
   'plan.receiptsTitle': { en: 'Receipts', fil: 'Mga Resibo' },
   'plan.whyPriceTitle': { en: 'Why the price is what it is', fil: 'Bakit ganito ang presyo' },
@@ -1285,11 +1301,19 @@ export const UI = {
   'app.settingsVoice': { en: 'Boses', fil: 'Boses' },
   'app.settingsApp': { en: 'App', fil: 'App' },
   'app.settingsData': { en: 'Data on this phone', fil: 'Data sa phone na ito' },
-  'plan.cohortTitle': { en: 'For cooperatives and LGUs', fil: 'Para sa kooperatiba at LGU' },
+  'plan.cohortTitle': { en: 'One payment covers the whole program', fil: 'Isang bayad, sakop ang buong programa' },
   'plan.cohortBody': {
-    en: 'One licence for many stores: an opt-in, aggregate view of how a cohort records, earns and completes — never any store\u2019s raw ledger.',
-    fil: 'Isang lisensya para sa maraming tindahan: opt-in na pinagsamang tanaw kung paano nagtatala, kumikita at nakukumpleto ang grupo — hindi kailanman ang hilaw na libro ng isang tindahan.',
+    en: 'You buy licences in bulk — every store gets the full app. You see one dashboard for the whole group: how many stores record, how many earn more, and the typical score. You never see a store\u2019s private sales book. Stores join only when they say yes.',
+    fil: 'Bulk ang pagbili ng lisensya — bawat tindahan, buong app ang gamit. Isang dashboard lang ang makikita mo para sa grupo: ilang tindahan ang nagtatala, ilan ang kumikita pa, at ang karaniwang score. Hindi mo makikita ang pribadong libro ng isang tindahan. Sali lang ang tindahan kapag pumayag ito.',
   },
+  'plan.cohortGet1': { en: 'Bulk licences — every covered store uses the full app', fil: 'Bulk na lisensya — buong app sa bawat sakop na tindahan' },
+  'plan.cohortGet2': { en: 'One program view — totals and trends only', fil: 'Isang tanaw ng programa — kabuuan at trend lang' },
+  'plan.cohortGet3': { en: 'Private by design — no raw ledger, opt-in only', fil: 'Pribado — walang hilaw na libro, sali lang kung payag' },
+  'plan.cohortExample': { en: 'Example — what a 3-store pilot looks like (demo numbers)', fil: 'Halimbawa — 3 tindahan sa pilot (demo numbers lang)' },
+  'plan.cohortActive': { en: 'stores reporting', fil: 'tindahang nagtatala' },
+  'plan.cohortProfit': { en: 'stores earning more', fil: 'tindahang kumikita pa' },
+  'plan.cohortScore': { en: 'typical score (out of 100)', fil: 'karaniwang score (sa 100)' },
+  'plan.cohortDemoNote': { en: 'Demo numbers — your pilot\u2019s real data replaces this.', fil: 'Demo numbers lang — papalitan ito ng tunay na datos ng pilot ninyo.' },
   'backup.title': { en: 'Your records, kept safe', fil: 'Ang rekord mo, ligtas' },
   'backup.hint': { en: 'on this phone', fil: 'sa phone na ito' },
   'backup.body': {

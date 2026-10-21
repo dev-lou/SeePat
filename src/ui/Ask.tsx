@@ -8,7 +8,7 @@ import type { Negosyo } from '../store.ts'
 import { AI_QUESTION_LIMIT } from '../billing.ts'
 import type { Billing } from '../billing.ts'
 import { Pat } from './Pat.tsx'
-import { spokenAnswer } from '../speech.ts'
+import { spokenAnswer, warmSpeech } from '../speech.ts'
 import { isFatalSpeechFailure, useDictation } from './useDictation.ts'
 import { setSpeakEnabled, useSpeakEnabled, useSpeech } from './useSpeech.ts'
 import { useLang, useT } from '../i18n/index.ts'
@@ -82,6 +82,28 @@ export function AskScreen({
   const speech = useSpeech(lang)
   /** Which card is currently being read, so its button can offer "stop". */
   const [reading, setReading] = useState<number | null>(null)
+  /** The phone refused to speak — shown once, honestly, instead of silence. */
+  const [speakFailed, setSpeakFailed] = useState(false)
+
+  /**
+   * Read one answer out loud, and say so when the phone refuses.
+   *
+   * `speech.say` used to be fire-and-forget: on phones where the synthesizer
+   * never talks (no voice, blocked speech, an utterance the platform drops),
+   * the owner tapped "Hear the answer" and heard nothing with no explanation.
+   * 'cancelled' is the owner pressing stop — not a failure — so only a real
+   * refusal raises the notice.
+   */
+  function readAloud(text: string, index: number | null) {
+    if (index !== null) setReading(index)
+    setSpeakFailed(false)
+    void speech.say(text).then((outcome) => {
+      if (outcome !== 'spoken' && outcome !== 'cancelled') {
+        if (index !== null) setReading(null)
+        setSpeakFailed(true)
+      }
+    })
+  }
 
   const context = { ledger: negosyo.ledger, twin: negosyo.twin, now: negosyo.now }
   const history = useMemo(
@@ -103,11 +125,11 @@ export function AskScreen({
     setAsked((current) => [{ text: trimmed, outLoud }, ...current].slice(0, 8))
     setQuestion('')
     setReading(null)
+    setSpeakFailed(false)
     if (outLoud && speakOn && speech.supported) {
       // Answered from the same call the card is about to render, so the voice and
       // the card can never be reading two different answers.
-      speech.say(spokenAnswer(ask(trimmed, context, lang)))
-      setReading(0)
+      readAloud(spokenAnswer(ask(trimmed, context, lang)), 0)
     }
   }
 
@@ -200,6 +222,10 @@ export function AskScreen({
               // SeePat must not hear her own voice. Stopping first also means the
               // answer being read cannot end up inside the next question.
               speech.stop()
+              // Prime the voice list inside this tap: phone browsers load voices
+              // lazily, and some gate speech behind a user gesture — this is the
+              // gesture, before the answer (and its reading) exists.
+              warmSpeech()
               dictation.start()
             }}
             disabled={!dictation.available}
@@ -265,6 +291,15 @@ export function AskScreen({
           <Button variant="ghost" className="mt-2 w-full" onClick={remedy.action}>
             {remedy.label}
           </Button>
+        ) : null}
+
+        {/* The phone was asked to speak and refused (no voice, blocked speech,
+            a dropped utterance). The answer is already written on the card, so
+            this names the failure instead of leaving a dead "reading" state. */}
+        {speakFailed ? (
+          <p className="mt-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-[0.8125rem] leading-relaxed text-amber-900">
+            {t('ask.speakFailed')}
+          </p>
         ) : null}
 
         {/* Which engine is listening matters here: one needs the internet and one
@@ -432,8 +467,7 @@ export function AskScreen({
                       speech.stop()
                       return
                     }
-                    speech.say(spokenAnswer(answer))
-                    setReading(index)
+                    readAloud(spokenAnswer(answer), index)
                   }}
                 >
                   <span className="inline-flex items-center justify-center gap-2">

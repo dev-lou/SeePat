@@ -153,10 +153,23 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
   }, [engine, handleEnd])
 
   const stop = useCallback(() => {
+    const instance = engineRef.current
+    const id = engine?.id
     const spoken = sessionRef.current.final || interimRef.current
-    engineRef.current?.stop()
+    instance?.stop()
     engineRef.current = null
     setListening(false)
+    // The offline engine only reports words AFTER the mic is released —
+    // transcription takes seconds on a phone. Clearing the status here would
+    // leave a dead screen while it works, so it stays on "transcribing" until
+    // the words (or the failure) arrive through the session callbacks, which
+    // is what `handleEnd` already handles. Nothing is asked here: the offline
+    // engine reports a single final transcript, and asking the empty interim
+    // would fire a blank question before the real one lands.
+    if (id === OFFLINE_ENGINE_ID) {
+      setStatus('transcribing')
+      return
+    }
     setStatus(null)
     // Tapping stop is a decision that the sentence is finished, so what was heard
     // is asked. `handleEnd` will not run for the browser engine after a stop — its
@@ -165,7 +178,7 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
       setInterim('')
       questionRef.current(spoken.trim())
     }
-  }, [])
+  }, [engine])
 
   const preferOffline = useCallback(() => {
     setForceOffline(true)

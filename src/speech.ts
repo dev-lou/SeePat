@@ -426,6 +426,24 @@ async function voicesReady(timeoutMs = 1200): Promise<readonly VoiceLike[]> {
   })
 }
 
+/**
+ * Prime the voice list inside a user tap.
+ *
+ * Phone browsers load voices lazily — the first read on a fresh page can find
+ * an empty list and speak with the wrong voice, or nothing at all. Calling
+ * this from the mic button (a real user gesture) also gives platforms that
+ * gate speech behind interaction a chance to unlock before the answer arrives.
+ * Fire-and-forget: every outcome, including unsupported, is normal here.
+ */
+export function warmSpeech(): void {
+  if (!isSpeechSupported()) return
+  try {
+    void voicesReady().then(() => {})
+  } catch {
+    // Voice list is best-effort; the read path reports honestly on its own.
+  }
+}
+
 function speakChunk(
   chunk: string,
   voice: VoiceLike | null,

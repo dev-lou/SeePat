@@ -72,6 +72,61 @@ export const MOCK_RECEIPT_TEXT = [
   'TOTAL 69.00',
 ].join('\n')
 
+/**
+ * Pixel contrast for OCR: spreads mid-tones so faint thermal print separates
+ * from the paper. Pure, so the curve is unit-tested rather than eyeballed.
+ */
+export function contrastStretch(value: number): number {
+  const stretched = (value - 128) * 1.4 + 128
+  if (stretched <= 0) return 0
+  if (stretched >= 255) return 255
+  return Math.round(stretched)
+}
+
+/**
+ * Straighten the photo for the reader before Tesseract ever sees it.
+ *
+ * Two real-world problems, both fixed here rather than in the engine: thermal
+ * text is small (images narrower than ~1800px are upscaled, capped at 2.5× to
+ * bound memory on a cheap phone), and color carries no information on a
+ * receipt — glare and warm store light tint the paper without changing a
+ * single letter, so the photo is grayscaled with contrast. Returns the input
+ * untouched outside a DOM (tests) or on any failure: an unprocessed photo
+ * still reads, just worse.
+ */
+export async function preprocessForOcr(image: Blob): Promise<Blob> {
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return image
+  try {
+    const bitmap = await createImageBitmap(image)
+    const scale = Math.min(2.5, Math.max(1, 1800 / bitmap.width))
+    const width = Math.max(1, Math.round(bitmap.width * scale))
+    const height = Math.max(1, Math.round(bitmap.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) {
+      bitmap.close?.()
+      return image
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height)
+    bitmap.close?.()
+    const data = ctx.getImageData(0, 0, width, height)
+    const px = data.data
+    for (let i = 0; i + 2 < px.length; i += 4) {
+      const gray = contrastStretch(0.299 * (px[i] ?? 0) + 0.587 * (px[i + 1] ?? 0) + 0.114 * (px[i + 2] ?? 0))
+      px[i] = gray
+      px[i + 1] = gray
+      px[i + 2] = gray
+    }
+    ctx.putImageData(data, 0, 0)
+    const out: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+    return out ?? image
+  } catch {
+    return image
+  }
+}
+
 export async function runOcr(image: Blob | string, engine: OcrEngineId): Promise<OcrResult> {
   if (engine === 'mock') {
     await new Promise((r) => setTimeout(r, 350))
@@ -79,7 +134,8 @@ export async function runOcr(image: Blob | string, engine: OcrEngineId): Promise
   }
   try {
     const worker = await loadTesseract()
-    const { data } = await worker.recognize(image as Blob)
+    const photo = typeof image === 'string' ? image : await preprocessForOcr(image)
+    const { data } = await worker.recognize(photo as Blob)
     return { text: data.text?.trim() ?? '', confidence: (data.confidence ?? 50) / 100, engine }
   } catch (error) {
     const raw = error instanceof Error ? error.message : String(error)

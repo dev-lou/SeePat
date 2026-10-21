@@ -416,11 +416,28 @@ export function PlanScreen({ billing }: { billing: Billing }) {
         <p className="text-[0.875rem] leading-relaxed text-fg-subtle">
           {pick(lang, INSTITUTIONAL.tagline)}
         </p>
+        <p className="mt-3 text-[0.875rem] font-bold leading-snug text-fg">
+          {t('plan.cohortTitle')}
+        </p>
+        <ul className="mt-2 space-y-1.5 text-[0.875rem] leading-snug text-fg-subtle">
+          <li className="flex gap-2">
+            <span aria-hidden>✓</span>
+            <span>{t('plan.cohortGet1')}</span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden>✓</span>
+            <span>{t('plan.cohortGet2')}</span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden>✓</span>
+            <span>{t('plan.cohortGet3')}</span>
+          </li>
+        </ul>
         {/* What an LGU actually buys, sketched with the shape of real data:
             cohort indicators only — no store's raw ledger ever appears here. */}
         <CohortPreview />
         <p className="mt-3 text-[0.875rem] leading-relaxed text-fg-subtle">
-          {t('plan.cohortTitle')}: {t('plan.cohortBody')}
+          {t('plan.cohortBody')}
         </p>
         <Button variant="ghost" className="mt-3 w-full" onClick={close}>
           {t('plan.contact')}
@@ -659,6 +676,7 @@ function CheckoutSheet({
 }
 
 function CohortPreview() {
+  const t = useT()
   // Illustrative shape, not a claim: three demo stores showing the aggregate
   // arithmetic an institutional buyer would see. Pilot data replaces this.
   const summary = summarizeCohort([
@@ -666,23 +684,42 @@ function CohortPreview() {
     { storeId: 'demo-2', recordingDays: 4, profitUp: false, completedOnboarding: true, scoreLatest: 58 },
     { storeId: 'demo-3', recordingDays: 7, profitUp: true, completedOnboarding: false, scoreLatest: 81 },
   ])
+  const earning = Math.round(summary.profitUpShare * summary.stores)
   return (
-    <div className="mt-3 grid grid-cols-3 gap-2.5 rounded-2xl border border-line bg-card p-3.5">
-      <div>
-        <div className="num text-[1.25rem] font-black leading-none text-fg">{summary.activeStores}/{summary.stores}</div>
-        <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">active</div>
-      </div>
-      <div>
-        <div className="num text-[1.25rem] font-black leading-none text-fg">
-          {Math.round(summary.profitUpShare * 100)}%
+    <figure className="mt-3 rounded-2xl border border-line bg-card p-3.5">
+      <figcaption className="text-[0.75rem] font-bold leading-snug text-fg-faint">
+        {t('plan.cohortExample')}
+      </figcaption>
+      <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+        <div>
+          <div className="num text-[1.25rem] font-black leading-none text-fg">
+            {summary.activeStores} of {summary.stores}
+          </div>
+          <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">
+            {t('plan.cohortActive')}
+          </div>
         </div>
-        <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">profit up</div>
+        <div>
+          <div className="num text-[1.25rem] font-black leading-none text-fg">
+            {earning} of {summary.stores}
+          </div>
+          <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">
+            {t('plan.cohortProfit')}
+          </div>
+        </div>
+        <div>
+          <div className="num text-[1.25rem] font-black leading-none text-fg">
+            {summary.scoreMedian}<span className="text-[0.8125rem] font-bold text-fg-faint">/100</span>
+          </div>
+          <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">
+            {t('plan.cohortScore')}
+          </div>
+        </div>
       </div>
-      <div>
-        <div className="num text-[1.25rem] font-black leading-none text-fg">{summary.scoreMedian}</div>
-        <div className="mt-1 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-faint">median score</div>
-      </div>
-    </div>
+      <figcaption className="mt-2.5 text-[0.75rem] leading-snug text-fg-faint">
+        {t('plan.cohortDemoNote')}
+      </figcaption>
+    </figure>
   )
 }
 
