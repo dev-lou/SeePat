@@ -126,10 +126,11 @@ export function VoiceScreen({
    * callback, and reading `error`/`transcript` state there would see the values
    * from *before* the update. The ref is what the session actually did.
    */
-  const sessionRef = useRef<{ final: string; partial: string; failed: boolean }>({
+  const sessionRef = useRef<{ final: string; partial: string; failed: boolean; settled: boolean }>({
     final: '',
     partial: '',
     failed: false,
+    settled: false,
   })
 
   /*
@@ -217,7 +218,7 @@ export function VoiceScreen({
     setTranscript('')
     setStatus(null)
     setListening(true)
-    sessionRef.current = { final: '', partial: '', failed: false }
+    sessionRef.current = { final: '', partial: '', failed: false, settled: false }
     const instance = getEngines().find((e) => e.id === engineId)
     engineRef.current = instance ?? null
     const hints = speechHints
@@ -237,6 +238,7 @@ export function VoiceScreen({
       },
       (message, code) => {
         sessionRef.current.failed = true
+        sessionRef.current.settled = true
         setError(message)
         setErrorCode(code ?? null)
         setListening(false)
@@ -247,9 +249,13 @@ export function VoiceScreen({
         // The session is over, whatever the reason. Leaving the listening state
         // on the assumption that a callback is coming is how the mic ended up
         // pulsing red at an owner who had already stopped talking.
+        const session = sessionRef.current
+        // One take, one delivery: stopping now finalizes through this callback,
+        // so a second arrival must not append the words twice.
+        if (session.settled) return
+        session.settled = true
         setListening(false)
         setStatus(null)
-        const session = sessionRef.current
         if (session.final) {
           // The take's words join whatever is already in the box: a second
           // take continues the list instead of erasing the first take.
@@ -292,14 +298,20 @@ export function VoiceScreen({
 
   function stopListening() {
     const id = engine?.id
+    // A take that already landed has nothing left to stop — raising a
+    // "transcribing" state now would stick, because onEnd already ran.
+    if (sessionRef.current.settled) return
     engineRef.current?.stop()
     engineRef.current = null
     setListening(false)
-    // Same rule as the Ask screen: the offline engine transcribes AFTER the
-    // mic is released, which takes seconds — keep "transcribing" on screen
-    // until the take lands in onEnd instead of dropping to idle with nothing
-    // to show for it.
-    if (id === OFFLINE_ENGINE_ID) {
+    // Stopping asks the engine for its final words, which land in onEnd:
+    // a finished take is parsed into a draft, a partial one joins the box
+    // for hand-finishing. The screen stays on "transcribing" until then —
+    // for the internet engine that is a blink, for the offline engine it is
+    // seconds. Nothing is appended here: appending now and in onEnd would put
+    // every take in twice. The typed engine never opens a session, so the old
+    // path stands for it.
+    if (id === OFFLINE_ENGINE_ID || id === 'web-speech') {
       setStatus('transcribing')
       return
     }

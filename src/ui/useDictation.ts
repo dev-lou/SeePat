@@ -90,7 +90,11 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
   const [errorCode, setErrorCode] = useState<AsrErrorCode | null>(null)
 
   const engineRef = useRef<AsrEngine | null>(null)
-  const sessionRef = useRef<{ final: string; failed: boolean }>({ final: '', failed: false })
+  const sessionRef = useRef<{ final: string; failed: boolean; settled: boolean }>({
+    final: '',
+    failed: false,
+    settled: false,
+  })
   const interimRef = useRef('')
 
   /*
@@ -104,9 +108,13 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
   }, [onQuestion])
 
   const handleEnd = useCallback(() => {
+    const session = sessionRef.current
+    // One question per take: the internet engine now finalizes through this
+    // callback after a tap on stop, so a second arrival must not ask twice.
+    if (session.settled) return
+    session.settled = true
     setListening(false)
     setStatus(null)
-    const session = sessionRef.current
     const heard = session.final || interimRef.current
     if (heard.trim().length > 0 && !session.failed) {
       setInterim('')
@@ -128,7 +136,7 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
     setInterim('')
     setStatus(null)
     setListening(true)
-    sessionRef.current = { final: '', failed: false }
+    sessionRef.current = { final: '', failed: false, settled: false }
     interimRef.current = ''
 
     const instance = getEngines().find((candidate) => candidate.id === engine.id) ?? null
@@ -141,6 +149,7 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
       },
       (message, code) => {
         sessionRef.current.failed = true
+        sessionRef.current.settled = true
         if (code && isFatalSpeechFailure(code)) browserSpeechIsDead = true
         setError(message)
         setErrorCode(code ?? null)
@@ -155,29 +164,27 @@ export function useDictation({ onQuestion }: { onQuestion: (text: string) => voi
   const stop = useCallback(() => {
     const instance = engineRef.current
     const id = engine?.id
-    const spoken = sessionRef.current.final || interimRef.current
+    // A session that already ended has nothing left to stop — raising a
+    // "transcribing" state now would stick, because no callback will ever
+    // come to clear it.
+    if (sessionRef.current.settled) return
     instance?.stop()
     engineRef.current = null
     setListening(false)
-    // The offline engine only reports words AFTER the mic is released —
-    // transcription takes seconds on a phone. Clearing the status here would
-    // leave a dead screen while it works, so it stays on "transcribing" until
-    // the words (or the failure) arrive through the session callbacks, which
-    // is what `handleEnd` already handles. Nothing is asked here: the offline
-    // engine reports a single final transcript, and asking the empty interim
-    // would fire a blank question before the real one lands.
-    if (id === OFFLINE_ENGINE_ID) {
+    // Stopping asks the engine for its final words; they arrive through the
+    // session callbacks (`handleEnd`) — immediately for the internet engine,
+    // seconds later for the offline one. The screen stays on "transcribing"
+    // until then: clearing it here was the dead screen the owner hit, where
+    // tapping stop showed nothing while the words were on their way. Nothing
+    // is asked here anymore — the browser engine used to need that because
+    // stopping detached its handlers and threw the final transcript away, and
+    // that is exactly the bug being fixed. The typed engine never opens a
+    // session, so there is nothing to wait for.
+    if (id && id !== 'typed') {
       setStatus('transcribing')
       return
     }
     setStatus(null)
-    // Tapping stop is a decision that the sentence is finished, so what was heard
-    // is asked. `handleEnd` will not run for the browser engine after a stop — its
-    // handlers are detached — so this is the only path for that case.
-    if (!sessionRef.current.failed && spoken.trim().length > 0) {
-      setInterim('')
-      questionRef.current(spoken.trim())
-    }
   }, [engine])
 
   const preferOffline = useCallback(() => {

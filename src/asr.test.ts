@@ -237,7 +237,10 @@ describe('the browser engine always reports the end of a session', () => {
     expect(rec.ends).toBe(1)
   })
 
-  it('goes quiet after stop, so a late error cannot surface as a stale message', () => {
+  it('delivers the final words after stop instead of throwing them away', () => {
+    // The bug the owner hit on the Ask screen: tapping stop detached the
+    // handlers, so the final transcript arriving a beat later had nowhere to
+    // land and the screen went silent with nothing to show.
     installFakeBrowser()
     // One instance, held: each engine keeps its own `recognition` in a closure,
     // so stopping a freshly created second engine would stop nothing.
@@ -247,13 +250,30 @@ describe('the browser engine always reports the end of a session', () => {
 
     engine.stop()
     expect(instance?.stopped).toBe(true)
-    expect(instance?.onend).toBeNull()
-    expect(instance?.onerror).toBeNull()
-    expect(instance?.onresult).toBeNull()
+
+    // The browser finalizes: final transcript, then the end — delivered once.
+    instance?.onresult?.(speechEvent('limang Coke', true))
+    instance?.onend?.()
+    expect(rec.results.at(-1)).toEqual({ transcript: 'limang Coke', final: true })
+    expect(rec.ends).toBe(1)
+  })
+
+  it('goes quiet after the end, so a late error cannot surface as a stale message', () => {
+    installFakeBrowser()
+    const engine = createWebSpeechEngine()
+    const rec = record(engine)
+    const instance = FakeRecognition.latest
+
+    engine.stop()
+    instance?.onresult?.(speechEvent('limang Coke', true))
+    instance?.onend?.()
+    expect(rec.ends).toBe(1)
 
     // Whatever the browser does next is no longer the screen's business.
     instance?.onend?.()
-    expect(rec.ends).toBe(0)
+    instance?.onerror?.({ error: 'network' })
+    expect(rec.ends).toBe(1)
+    expect(rec.errors).toEqual([])
   })
 })
 

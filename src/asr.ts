@@ -376,6 +376,10 @@ function attachShopGrammar(recognition: SpeechRecognitionLike, hints?: AsrHints)
 export function createWebSpeechEngine(): AsrEngine {
   let recognition: SpeechRecognitionLike | null = null
   let watchdog: ReturnType<typeof setTimeout> | undefined
+  // Latest session's exit path, so `stop()` can settle even when the
+  // recognition object itself is unusable. Reassigned every `start()`;
+  // `finish` is idempotent, so a stale reference is harmless.
+  let finishSession: (() => void) | null = null
 
   return {
     id: 'web-speech',
@@ -428,6 +432,7 @@ export function createWebSpeechEngine(): AsrEngine {
         if (recognition === instance) recognition = null
         onEnd?.()
       }
+      finishSession = finish
 
       onStatus?.('listening')
       instance.lang = SPOKEN_LOCALE
@@ -525,15 +530,19 @@ export function createWebSpeechEngine(): AsrEngine {
         watchdog = undefined
       }
       if (!instance) return
+      // Finalize *through* the callbacks, not around them. `stop()` asks the
+      // engine for its final transcript, which arrives via onresult → onend →
+      // `finish` → onEnd. Detaching the handlers here threw the owner's last
+      // words away: tapping stop discarded the sentence it was meant to keep,
+      // and the screen went silent with nothing to show. Late events after
+      // `finish` are still ignored — `finish` detaches everything exactly once.
       try {
         instance.stop()
       } catch {
-        // Already stopped, or the browser refused. Either way the UI has moved
-        // on — `finish` will not run because the handlers are detached below.
+        // The recognizer is already dead — settle through the same exit path
+        // so the screen never sticks on "transcribing" with no end coming.
+        finishSession?.()
       }
-      instance.onresult = null
-      instance.onerror = null
-      instance.onend = null
     },
   }
 }
