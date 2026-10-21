@@ -408,7 +408,7 @@ export function stopSpeaking(): void {
  * a first answer read with an empty list would be read by whatever the platform
  * picks — which is exactly the wrong-language case we are trying to avoid.
  */
-async function voicesReady(timeoutMs = 1200): Promise<readonly VoiceLike[]> {
+async function voicesReady(timeoutMs = 2500): Promise<readonly VoiceLike[]> {
   const synth = window.speechSynthesis
   const immediate = synth.getVoices()
   if (immediate.length > 0) return immediate
@@ -447,14 +447,17 @@ export function warmSpeech(): void {
 function speakChunk(
   chunk: string,
   voice: VoiceLike | null,
-  lang: Lang,
-): Promise<'ok' | 'cancelled' | 'error'> {
+  utterLang: string,
+): Promise<{ outcome: 'ok' | 'cancelled' | 'error'; busy: boolean }> {
   return new Promise((resolve) => {
     const synth = window.speechSynthesis
     const utterance = new window.SpeechSynthesisUtterance(chunk)
     // A Tagalog voice reads the English loanwords in these answers fine; an
     // English voice reading Tagalog is the fallback we already know about.
-    utterance.lang = voice?.lang ?? localeFor(lang)
+    // `utterLang` is always a locale something on the phone can actually
+    // speak — never a bare request for a voice that is not installed, which
+    // some phones answer with silence.
+    utterance.lang = utterLang
     if (voice) utterance.voice = voice as SpeechSynthesisVoice
     // Slightly under normal pace. These are figures an owner is writing down or
     // checking against a notebook, and a reading is not a broadcast.
@@ -462,12 +465,13 @@ function speakChunk(
     utterance.pitch = 1
 
     let settled = false
+    let everBusy = false
     const finish = (outcome: 'ok' | 'cancelled' | 'error'): void => {
       if (settled) return
       settled = true
       clearInterval(poll)
       if (releaseCurrent === release) releaseCurrent = null
-      resolve(outcome)
+      resolve({ outcome, busy: everBusy })
     }
     const release = (): void => finish('cancelled')
     releaseCurrent = release
@@ -489,7 +493,6 @@ function speakChunk(
      */
     const beganAt = Date.now()
     const deadline = beganAt + budgetMs(chunk)
-    let everBusy = false
     const poll = setInterval(() => {
       if (synth.speaking || synth.pending) {
         everBusy = true
@@ -529,22 +532,34 @@ export async function speak(text: string, lang: Lang): Promise<SpeechOutcome> {
   const choice = chooseVoice(await voicesReady(), lang)
   lastVoiceExact = choice === null ? false : choice.exact
   emitVoice()
+  // When the platform lists no voices at all (some phones, some standalone
+  // installs), the utterance must not ask for a locale nothing can speak —
+  // Filipino with no Filipino voice is silence. English is the voice every
+  // phone has, so it is the fallback; the Tagalog words still come out, just
+  // accented, which the UI already discloses.
+  const utterLang = choice?.voice?.lang ?? (lang === 'fil' ? 'en-US' : localeFor(lang))
 
   setSpeaking(true)
   try {
     let read = 0
     let refused = 0
+    let busy = false
     for (const chunk of chunks) {
-      const outcome = await speakChunk(chunk, choice?.voice ?? null, lang)
-      if (outcome === 'cancelled') return 'cancelled'
+      const result = await speakChunk(chunk, choice?.voice ?? null, utterLang)
+      if (result.outcome === 'cancelled') return 'cancelled'
       // A chunk that errored is not fatal on its own: a phone that refuses one
       // utterance will often read the next, and losing the last line beats
       // losing the whole answer. Only a run where nothing at all came out is
       // reported as a failure.
-      if (outcome === 'ok') read += 1
+      if (result.outcome === 'ok') read += 1
       else refused += 1
+      busy = busy || result.busy
     }
     if (read === 0 && refused > 0) return 'error'
+    // Every chunk "finished" yet the speaker never moved: nothing was heard,
+    // so saying 'spoken' would be a lie the screen cannot detect. Report it
+    // and the UI raises the honest notice instead of sitting in silence.
+    if (!busy) return 'error'
     await drain()
     return 'spoken'
   } finally {
